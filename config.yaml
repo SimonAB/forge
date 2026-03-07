@@ -1,0 +1,120 @@
+# Directories whose direct children are Forge projects (each path can list more roots).
+# Tag those project folders with project_tag (e.g. 🔥 Forge) in Finder.
+project_roots:
+  - ~/Documents/Work/
+  - ~/Documents/Work/Projects
+  - ~/Documents/Work/Students/
+  - ~/Documents/Work/Reviews-grants/
+  - ~/Documents/Work/Reviews-papers/
+  - ~/Documents/Work/Teaching/2025-2026/
+  - ~/Documents/Sanctum/
+  - ~/Documents/Home/
+# Optional: only directories that have this Finder tag are treated as Forge projects.
+# If set, untagged folders under project_roots are ignored. Default: "🔥 Forge".
+project_tag: "🔥 Forge"
+board:
+  columns:
+  - name: Plan
+    tag: "Plan \U0001F4D0"
+    colour: 4   # Blue
+  - name: Active
+    tag: "Active \U0001F6A7"
+    colour: 2   # Green
+  - name: Analyse
+    tag: "Analyse \U0001F50D"
+    colour: 5   # Yellow
+  - name: Write
+    tag: "Write \u2712\uFE0F"
+    colour: 6   # Orange
+  - name: Review
+    tag: "Review \U0001F58D\uFE0F"
+    colour: 7   # Red
+  - name: Shipped
+    tag: "Shipped \U0001F680"
+    colour: 3   # Purple
+  - name: Paused
+    tag: "Paused \u23F8\uFE0F"
+    colour: 1   # Grey
+  meta_tags:
+  - "Mine \u2692\uFE0F"
+  - "Collab \U0001F91D"
+  - "Student \U0001F393"
+  tag_aliases:
+    "Plan \u263C": "Plan \U0001F4D0"
+    "Plan \U0001F4A1": "Plan \U0001F4D0"
+    "Review \U0001F4DD": "Review \U0001F58D\uFE0F"
+    "Edit \U0001F58D\uFE0F": "Review \U0001F58D\uFE0F"
+    "paused \u23F8\uFE0F": "Paused \u23F8\uFE0F"
+    "Paused \u23F8": "Paused \u23F8\uFE0F"
+    "Paused \u23F8\uFE0E": "Paused \u23F8\uFE0F"
+    "4. Write \u2712\uFE0F": "Write \u2712\uFE0F"
+    "active \U0001F6A7": "Active \U0001F6A7"
+    "3. Analyse \U0001F50D": "Analyse \U0001F50D"
+gtd:
+  contexts:
+  # Location
+  - office
+  - lab
+  - campus
+  - home
+  - errands
+  - shopping
+  # Activity
+  - writing
+  - review
+  - analysis
+  - planning
+  - deep-work
+  - low-energy
+  # Communication
+  - email
+  - slack
+  - calls
+  # Digital / Media
+  - computer
+  - reading
+  - watching
+  # Flexible
+  - anywhere
+  - agenda
+  reminders_list: Forge
+  calendar_name: Forge
+workspace_tags:
+- work
+project_areas:
+  research:
+  - Apodemus RNA vax - BBSRC
+  - Apodemus ageing - Tom's WT
+  - Apodemus vaccine exWAGO
+  - Apodemus-DTV_Vaccines
+  - Apodemus-WMHV
+  - Apodemus-vaccines
+  - Apodemus-virome
+  - Badgers
+  - Beetles Jacob Moorad
+  - Deer-stress
+  - Lepto
+  - Mus Ageing-Pol-III_BBSRC_2018
+  - Mus-Hb_Nutrition
+  - NERC-Birds_light_at_night
+  - Oncho - Mannu WT
+  - Oncho-MIRS-AI_Gates
+  - Schisto-DRIVERS
+  - Seaweed Biofouling
+  - Sheep_Alied
+  - Wild_Immunology
+  - ZebraFinches_ageing
+  - Mozzies - AcMedSci GCRF networking grant
+  - Mozzies - Mosquito Scotland
+  - Mozzies - VectorGrid-Africa
+  - Mozzies Nutrition Emilie
+  - Mozzies-AI_MIRS_Royal_Society
+  - Viruses-ViralHostPredictor
+  - Sunfish - NERC EOI
+  admin:
+  - Collaborations
+  - Studentships
+  - Writing tips
+  teaching: []
+terminal: auto
+
