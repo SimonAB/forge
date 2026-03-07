@@ -38,7 +38,13 @@ fi
 echo ""
 echo "Building forge..."
 cd "$FORGE_DIR"
-swift build 2>&1
+swift build -c debug 2>&1
+BIN_PATH=$(swift build -c debug --show-bin-path)
+
+if [ ! -f "$BIN_PATH/forge" ] || [ ! -f "$BIN_PATH/forge-menubar" ]; then
+    echo "Error: build succeeded but forge or forge-menubar binary not found at $BIN_PATH" >&2
+    exit 1
+fi
 
 echo ""
 echo "✓ Build complete"
@@ -53,7 +59,7 @@ else
     mkdir -p "$BIN_DIR"
 fi
 
-ln -sf "$BUILD_DIR/debug/forge" "$BIN_DIR/forge"
+ln -sf "$BIN_PATH/forge" "$BIN_DIR/forge"
 echo "✓ Symlinked forge → $BIN_DIR/forge"
 
 # 4. Create Forge.app bundle in /Applications
@@ -64,7 +70,7 @@ RESOURCES="$CONTENTS/Resources"
 
 mkdir -p "$MACOS" "$RESOURCES"
 
-cp "$BUILD_DIR/debug/forge-menubar" "$MACOS/Forge"
+cp "$BIN_PATH/forge-menubar" "$MACOS/Forge"
 
 cat > "$CONTENTS/Info.plist" << 'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>

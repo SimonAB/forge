@@ -22,7 +22,7 @@ public struct TaskFileFinder: Sendable {
         let fm = FileManager.default
         guard let enumerator = fm.enumerator(
             at: URL(fileURLWithPath: root),
-            includingPropertiesForKeys: [.isDirectoryKey, .isHiddenKey],
+            includingPropertiesForKeys: nil,
             options: []
         ) else { return [] }
 

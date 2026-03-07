@@ -19,6 +19,12 @@ final class StatusBarController: NSObject {
     /// Sync interval in seconds (default: 5 minutes).
     private let syncInterval: TimeInterval = 300
 
+    private static let relativeDateFormatter: RelativeDateTimeFormatter = {
+        let f = RelativeDateTimeFormatter()
+        f.unitsStyle = .abbreviated
+        return f
+    }()
+
     func start() {
         loadConfig()
         setupStatusItem()
@@ -143,9 +149,7 @@ final class StatusBarController: NSObject {
         menu.addItem(syncItem)
 
         if let lastSync = lastSyncDate {
-            let formatter = RelativeDateTimeFormatter()
-            formatter.unitsStyle = .abbreviated
-            let relative = formatter.localizedString(for: lastSync, relativeTo: Date())
+            let relative = Self.relativeDateFormatter.localizedString(for: lastSync, relativeTo: Date())
             let syncInfo = NSMenuItem(title: "Last sync: \(relative)", action: nil, keyEquivalent: "")
             syncInfo.isEnabled = false
             menu.addItem(syncInfo)
@@ -222,6 +226,22 @@ final class StatusBarController: NSObject {
     // MARK: - Refresh Counts
 
     private func refreshCounts() {
+        let config = self.config
+        let forgeDir = self.forgeDir
+        Task {
+            let (overdue, dueToday, inbox) = Self.computeCounts(config: config, forgeDir: forgeDir)
+            await MainActor.run {
+                self.overdueCount = overdue
+                self.dueTodayCount = dueToday
+                self.inboxCount = inbox
+                self.updateBadge()
+                self.rebuildMenu()
+            }
+        }
+    }
+
+    /// Runs off the main actor to avoid blocking the menu when scanning ~/Documents.
+    private static func computeCounts(config: ForgeConfig?, forgeDir: String?) -> (Int, Int, Int) {
         let markdownIO = MarkdownIO()
         let fm = FileManager.default
 
@@ -237,9 +257,7 @@ final class StatusBarController: NSObject {
             }
         }
 
-        overdueCount = overdue
-        dueTodayCount = dueToday
-
+        var inboxCount = 0
         if let config = config {
             let resolvedForgeDir = forgeDir ?? (config.resolvedWorkspacePath as NSString).appendingPathComponent("Forge")
             let inboxPath = (resolvedForgeDir as NSString).appendingPathComponent("inbox.md")
@@ -248,15 +266,10 @@ final class StatusBarController: NSObject {
                     from: (try? String(contentsOfFile: inboxPath, encoding: .utf8)) ?? ""
                 )
                 inboxCount = inboxTasks.filter { !$0.isCompleted }.count
-            } else {
-                inboxCount = 0
             }
-        } else {
-            inboxCount = 0
         }
 
-        updateBadge()
-        rebuildMenu()
+        return (overdue, dueToday, inboxCount)
     }
 
     // MARK: - Actions

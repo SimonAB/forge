@@ -211,8 +211,8 @@ def draw_icon(size):
     head_steel = (150, 148, 155)
     head_light = (200, 198, 205)
 
-    # Handle: diagonal from upper-right toward the hot metal
-    hx1 = cx + s * 0.30
+    # Handle: grip at upper-left, striking end at anvil (head at anvil end)
+    hx1 = cx - s * 0.30
     hy1 = cy - s * 0.32
     hx2 = cx + s * 0.04
     hy2 = face_top - s * 0.05
@@ -247,17 +247,18 @@ def draw_icon(size):
         (hx2 - dx + ldx, hy2 - dy + ldy), (hx2 - dx, hy2 - dy),
     ], fill=handle_light)
 
-    # Hammer head
+    # Hammer head at striking end (anvil side)
     head_len = s * 0.13
     head_w = s * 0.058
     cos_a, sin_a = math.cos(angle), math.sin(angle)
     cos_p, sin_p = math.cos(perp), math.sin(perp)
-    hcx, hcy = hx1, hy1
+    hcx, hcy = hx2, hy2
 
     def offset(bx, by, along, across):
         return (bx + cos_p * along + cos_a * across,
                 by + sin_p * along + sin_a * across)
 
+    # Head extends back toward grip (negative along)
     head_pts = [
         offset(hcx, hcy, -head_len / 2, -head_w / 2),
         offset(hcx, hcy, head_len / 2, -head_w / 2),
@@ -265,7 +266,7 @@ def draw_icon(size):
         offset(hcx, hcy, -head_len / 2, head_w / 2),
     ]
     draw.polygon(head_pts, fill=head_steel)
-    # Light face
+    # Light face (top of head)
     draw.polygon([
         head_pts[0], head_pts[1],
         offset(hcx, hcy, head_len / 2, -head_w * 0.1),
