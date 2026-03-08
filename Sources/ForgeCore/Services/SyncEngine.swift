@@ -67,7 +67,7 @@ public final class SyncEngine: @unchecked Sendable {
         let forgeLists = remindersBridge.allForgeListCalendars()
         let calendar = try calendarBridge.findOrCreateCalendar()
 
-        let sourced = try collectAllTasks()
+        let sourced = try await collectAllTasks()
         let allTasks = sourced.map(\.task)
 
         let reminders = try await remindersBridge.fetchReminders(from: forgeLists)
@@ -104,7 +104,7 @@ public final class SyncEngine: @unchecked Sendable {
             sourceByID: sourceByID, report: &report
         )
 
-        applyFinderTags(sourced: sourced)
+        await applyFinderTags(sourced: sourced)
 
         if !config.projectAreas.isEmpty {
             let rollup = RollupGenerator(config: config, forgeDir: forgeDir)
@@ -122,11 +122,11 @@ public final class SyncEngine: @unchecked Sendable {
 
     // MARK: - Collect Tasks
 
-    private func collectAllTasks() throws -> [SourcedTask] {
+    private func collectAllTasks() async throws -> [SourcedTask] {
         var result: [SourcedTask] = []
 
         let scanner = WorkspaceScanner(config: config)
-        let projects = try scanner.scanProjects()
+        let projects = try await scanner.scanProjects()
 
         for project in projects {
             let tasksPath = (project.path as NSString).appendingPathComponent("TASKS.md")
@@ -328,7 +328,7 @@ public final class SyncEngine: @unchecked Sendable {
 
     /// Apply frontmatter tags as Finder tags on area markdown files.
     /// Also ensures each project directory has its kanban column tag (so Finder reflects the board).
-    private func applyFinderTags(sourced: [SourcedTask]) {
+    private func applyFinderTags(sourced: [SourcedTask]) async {
         let tagStore = FinderTagStore()
         var processed = Set<String>()
 
@@ -339,7 +339,7 @@ public final class SyncEngine: @unchecked Sendable {
             let desired = Set(st.areaTags)
             guard !desired.isEmpty else { continue }
 
-            let existing = Set(tagStore.readTagsIfAvailable(at: st.filePath) ?? [])
+            let existing = Set(await tagStore.readTagsIfAvailable(at: st.filePath) ?? [])
             let toAdd = desired.subtracting(existing)
 
             for tag in toAdd {
@@ -352,17 +352,17 @@ public final class SyncEngine: @unchecked Sendable {
             guard !processed.contains(area.path) else { continue }
             guard let tags = area.frontmatter?.tags, !tags.isEmpty else { continue }
 
-            let existing = Set(tagStore.readTagsIfAvailable(at: area.path) ?? [])
+            let existing = Set(await tagStore.readTagsIfAvailable(at: area.path) ?? [])
             for tag in tags where !existing.contains(tag) {
                 try? tagStore.addTag(tag, at: area.path)
             }
         }
 
         let scanner = WorkspaceScanner(config: config, tagStore: tagStore)
-        guard let projects = try? scanner.scanProjects() else { return }
+        guard let projects = try? await scanner.scanProjects() else { return }
         for project in projects {
             guard let columnTag = project.workflowTag else { continue }
-            let existing = Set(tagStore.readTagsIfAvailable(at: project.path) ?? [])
+            let existing = Set(await tagStore.readTagsIfAvailable(at: project.path) ?? [])
             if !existing.contains(columnTag) {
                 try? tagStore.addTag(columnTag, at: project.path)
             }

@@ -19,7 +19,7 @@ final class BoardWindowController: NSObject, NSWindowDelegate {
         let tagStore = FinderTagStore()
 
         let fetchProjects: @Sendable () async throws -> [Project] = {
-            try scanner.scanProjects()
+            try await scanner.scanProjects()
         }
 
         let moveProject: @Sendable (Project, ColumnConfig) throws -> Void = { project, column in

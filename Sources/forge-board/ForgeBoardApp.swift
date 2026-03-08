@@ -103,7 +103,7 @@ private struct BoardRootView: View {
     private static func makeViewModel(_ config: ForgeConfig) -> BoardViewModel {
         let scanner = WorkspaceScanner(config: config)
         let tagStore = FinderTagStore()
-        let fetch: @Sendable () async throws -> [Project] = { try scanner.scanProjects() }
+        let fetch: @Sendable () async throws -> [Project] = { try await scanner.scanProjects() }
         let move: @Sendable (Project, ColumnConfig) throws -> Void = { project, column in
             if let existing = project.workflowTag {
                 try tagStore.removeTag(existing, at: project.path)

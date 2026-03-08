@@ -42,6 +42,35 @@ public struct WorkspaceScanner: Sendable {
         return projects
     }
 
+    /// Async version: scan the workspace without blocking the calling thread on tag I/O.
+    public func scanProjects() async throws -> [Project] {
+        let fm = FileManager.default
+        var projects: [Project] = []
+
+        for workspacePath in config.resolvedProjectRoots {
+            guard let contents = try? fm.contentsOfDirectory(atPath: workspacePath) else { continue }
+
+            for item in contents.sorted() {
+                guard !item.hasPrefix(".") else { continue }
+
+                let fullPath = (workspacePath as NSString).appendingPathComponent(item)
+                var isDir: ObjCBool = false
+                guard fm.fileExists(atPath: fullPath, isDirectory: &isDir), isDir.boolValue else {
+                    continue
+                }
+
+                let tags = await tagStore.readTagsIfAvailable(at: fullPath) ?? []
+                if let requiredTag = config.projectTag, !tags.contains(requiredTag) {
+                    continue
+                }
+                let project = classify(name: item, path: fullPath, tags: tags)
+                projects.append(project)
+            }
+        }
+
+        return projects
+    }
+
     /// Classify a directory's tags into workflow column and meta tags.
     private func classify(name: String, path: String, tags: [String]) -> Project {
         var workflowTag: String?
