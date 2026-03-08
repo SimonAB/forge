@@ -38,6 +38,16 @@ final class StatusBarController: NSObject {
         if config != nil {
             openBoardWindow()
         }
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(shortcutPreferencesDidChange),
+            name: ShortcutPreferences.didChangeNotification,
+            object: nil
+        )
+    }
+
+    @objc private func shortcutPreferencesDidChange() {
+        rebuildMenu()
     }
 
     // MARK: - Configuration
@@ -139,29 +149,31 @@ final class StatusBarController: NSObject {
         let captureItem = NSMenuItem(
             title: "Quick Capture…",
             action: #selector(openCapture),
-            keyEquivalent: "n"
+            keyEquivalent: ShortcutPreferences.spec(for: .quickCapture).keyEquivalent
         )
-        captureItem.keyEquivalentModifierMask = [.command, .shift]
+        captureItem.keyEquivalentModifierMask = ShortcutPreferences.spec(for: .quickCapture).modifierFlags
         captureItem.target = self
         menu.addItem(captureItem)
 
+        let captureSelectionSpec = ShortcutPreferences.spec(for: .captureSelection)
         let captureSelectionItem = NSMenuItem(
             title: "Capture Selection to Inbox",
             action: #selector(captureSelectionToInboxFromMenu),
-            keyEquivalent: "."
+            keyEquivalent: captureSelectionSpec.keyEquivalent
         )
-        captureSelectionItem.keyEquivalentModifierMask = [.control, .option, .command]
+        captureSelectionItem.keyEquivalentModifierMask = captureSelectionSpec.modifierFlags
         captureSelectionItem.target = self
         menu.addItem(captureSelectionItem)
 
         menu.addItem(NSMenuItem.separator())
 
+        let syncSpec = ShortcutPreferences.spec(for: .syncNow)
         let syncItem = NSMenuItem(
             title: "Sync Now",
             action: #selector(syncNow),
-            keyEquivalent: "s"
+            keyEquivalent: syncSpec.keyEquivalent
         )
-        syncItem.keyEquivalentModifierMask = [.command]
+        syncItem.keyEquivalentModifierMask = syncSpec.modifierFlags
         syncItem.target = self
         menu.addItem(syncItem)
 
@@ -175,12 +187,13 @@ final class StatusBarController: NSObject {
         menu.addItem(NSMenuItem.separator())
 
         if config != nil {
+            let boardSpec = ShortcutPreferences.spec(for: .openBoard)
             let boardItem = NSMenuItem(
                 title: "Board",
                 action: #selector(openBoardWindow),
-                keyEquivalent: "b"
+                keyEquivalent: boardSpec.keyEquivalent
             )
-            boardItem.keyEquivalentModifierMask = [.command]
+            boardItem.keyEquivalentModifierMask = boardSpec.modifierFlags
             boardItem.target = self
             menu.addItem(boardItem)
         }
@@ -193,12 +206,13 @@ final class StatusBarController: NSObject {
         boardTerminalItem.target = self
         menu.addItem(boardTerminalItem)
 
+        let reviewSpec = ShortcutPreferences.spec(for: .weeklyReview)
         let reviewItem = NSMenuItem(
             title: "Weekly Review in Terminal",
             action: #selector(openReview),
-            keyEquivalent: "r"
+            keyEquivalent: reviewSpec.keyEquivalent
         )
-        reviewItem.keyEquivalentModifierMask = [.command]
+        reviewItem.keyEquivalentModifierMask = reviewSpec.modifierFlags
         reviewItem.target = self
         menu.addItem(reviewItem)
 

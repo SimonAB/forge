@@ -1,4 +1,5 @@
 import AppKit
+import ApplicationServices
 import ForgeCore
 
 /// Preferences window with tabbed panels: General, Board, Workspace.
@@ -52,6 +53,11 @@ final class PreferencesWindowController: NSWindowController {
             }
         )
         tabView.addTabViewItem(workspaceItem)
+
+        let shortcutsItem = NSTabViewItem(identifier: "shortcuts")
+        shortcutsItem.label = "Shortcuts"
+        shortcutsItem.view = PreferencesShortcutsView()
+        tabView.addTabViewItem(shortcutsItem)
 
         window.contentView = tabView
         NSLayoutConstraint.activate([
@@ -419,6 +425,220 @@ private final class PreferencesWorkspaceView: NSView {
         } else {
             statusLabel?.stringValue = "Save failed."
             statusLabel?.textColor = .systemRed
+        }
+    }
+}
+
+// MARK: - Shortcuts panel
+
+private final class PreferencesShortcutsView: NSView {
+    override var isFlipped: Bool { true }
+
+    private let stackView = NSStackView()
+    private var recordingFor: ShortcutPreferences.Identifier?
+    private var localMonitor: Any?
+    private var rowViews: [ShortcutPreferences.Identifier: ShortcutRowView] = [:]
+    private weak var accessibilityLabel: NSTextField?
+    private weak var openAccessibilityButton: NSButton?
+
+    init() {
+        super.init(frame: .zero)
+        setupUI()
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    private func setupUI() {
+        let label = NSTextField(labelWithString: "Keyboard shortcuts")
+        label.font = .systemFont(ofSize: 13, weight: .semibold)
+        label.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(label)
+
+        let sub = NSTextField(labelWithString: "Click \"Change…\" then press the keys you want. Requires Accessibility permission for Capture Selection when another app is frontmost.")
+        sub.font = .systemFont(ofSize: 11, weight: .regular)
+        sub.textColor = .secondaryLabelColor
+        sub.maximumNumberOfLines = 2
+        sub.lineBreakMode = .byWordWrapping
+        sub.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(sub)
+
+        stackView.orientation = .vertical
+        stackView.spacing = 8
+        stackView.alignment = .leading
+        stackView.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(stackView)
+
+        for id in ShortcutPreferences.Identifier.allCases {
+            let row = ShortcutRowView(
+                label: ShortcutPreferences.label(for: id),
+                shortcutDisplay: ShortcutPreferences.displayString(for: ShortcutPreferences.spec(for: id)),
+                onChange: { [weak self] in self?.startRecording(for: id) }
+            )
+            stackView.addArrangedSubview(row)
+            rowViews[id] = row
+        }
+
+        let accessibilityLabel = NSTextField(labelWithString: "Capture Selection when another app (e.g. Finder, Mail) is active requires Accessibility permission.")
+        accessibilityLabel.font = .systemFont(ofSize: 11, weight: .regular)
+        accessibilityLabel.textColor = .secondaryLabelColor
+        accessibilityLabel.maximumNumberOfLines = 2
+        accessibilityLabel.lineBreakMode = .byWordWrapping
+        accessibilityLabel.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(accessibilityLabel)
+        self.accessibilityLabel = accessibilityLabel
+
+        let openAccessibilityButton = NSButton(title: "Open System Settings (Accessibility)", target: self, action: #selector(openAccessibilitySettings(_:)))
+        openAccessibilityButton.bezelStyle = .rounded
+        openAccessibilityButton.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(openAccessibilityButton)
+        self.openAccessibilityButton = openAccessibilityButton
+
+        NSLayoutConstraint.activate([
+            label.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            label.topAnchor.constraint(equalTo: topAnchor, constant: 20),
+            sub.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            sub.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -20),
+            sub.topAnchor.constraint(equalTo: label.bottomAnchor, constant: 6),
+            stackView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            stackView.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -20),
+            stackView.topAnchor.constraint(equalTo: sub.bottomAnchor, constant: 16),
+            accessibilityLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            accessibilityLabel.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -20),
+            accessibilityLabel.topAnchor.constraint(equalTo: stackView.bottomAnchor, constant: 20),
+            openAccessibilityButton.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            openAccessibilityButton.topAnchor.constraint(equalTo: accessibilityLabel.bottomAnchor, constant: 8),
+        ])
+        updateAccessibilityStatus()
+    }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        if window != nil {
+            updateAccessibilityStatus()
+        }
+    }
+
+    private func updateAccessibilityStatus() {
+        let trusted = AXIsProcessTrusted()
+        if trusted {
+            accessibilityLabel?.stringValue = "Capture Selection in other apps: Accessibility is allowed. The shortcut should work when Finder or Mail is frontmost."
+            accessibilityLabel?.textColor = .secondaryLabelColor
+        } else {
+            accessibilityLabel?.stringValue = "Capture Selection in other apps: Accessibility not allowed. Add \"\(ProcessInfo.processInfo.processName)\" to the list below and enable it, then switch back to Forge."
+            accessibilityLabel?.textColor = .systemOrange
+        }
+    }
+
+    private func startRecording(for id: ShortcutPreferences.Identifier) {
+        guard recordingFor == nil else { return }
+        recordingFor = id
+        rowViews[id]?.setRecording(true)
+
+        localMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let self = self, let id = self.recordingFor else { return event }
+            if event.keyCode == 53 {
+                self.cancelRecording(for: id)
+                return nil
+            }
+            let key = event.charactersIgnoringModifiers ?? ""
+            let spec = ShortcutPreferences.Spec(
+                keyEquivalent: key,
+                keyCode: event.keyCode,
+                modifierFlags: event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+            )
+            ShortcutPreferences.set(id, spec: spec)
+            self.rowViews[id]?.setShortcutDisplay(ShortcutPreferences.displayString(for: spec))
+            self.finishRecording(for: id)
+            return nil
+        }
+    }
+
+    private func finishRecording(for id: ShortcutPreferences.Identifier) {
+        if let mon = localMonitor {
+            NSEvent.removeMonitor(mon)
+            localMonitor = nil
+        }
+        recordingFor = nil
+        rowViews[id]?.setRecording(false)
+    }
+
+    private func cancelRecording(for id: ShortcutPreferences.Identifier) {
+        if let mon = localMonitor {
+            NSEvent.removeMonitor(mon)
+            localMonitor = nil
+        }
+        recordingFor = nil
+        rowViews[id]?.setRecording(false)
+        rowViews[id]?.setShortcutDisplay(ShortcutPreferences.displayString(for: ShortcutPreferences.spec(for: id)))
+    }
+
+    @objc private func openAccessibilitySettings(_ sender: Any?) {
+        let optionPrompt = "AXTrustedCheckOptionPrompt" as CFString
+        let options = [optionPrompt: true] as CFDictionary
+        AXIsProcessTrustedWithOptions(options)
+        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
+            NSWorkspace.shared.open(url)
+        }
+    }
+}
+
+private final class ShortcutRowView: NSView {
+    private let labelField: NSTextField
+    private let shortcutField: NSTextField
+    private let changeButton: NSButton
+    private let onChange: () -> Void
+
+    init(label: String, shortcutDisplay: String, onChange: @escaping () -> Void) {
+        self.onChange = onChange
+        labelField = NSTextField(labelWithString: label)
+        labelField.font = .systemFont(ofSize: 12, weight: .regular)
+        labelField.translatesAutoresizingMaskIntoConstraints = false
+
+        shortcutField = NSTextField(labelWithString: shortcutDisplay)
+        shortcutField.font = .monospacedSystemFont(ofSize: 12, weight: .medium)
+        shortcutField.translatesAutoresizingMaskIntoConstraints = false
+
+        changeButton = NSButton(title: "Change…", target: nil, action: nil)
+        changeButton.bezelStyle = .rounded
+        changeButton.translatesAutoresizingMaskIntoConstraints = false
+
+        super.init(frame: .zero)
+        translatesAutoresizingMaskIntoConstraints = false
+        addSubview(labelField)
+        addSubview(shortcutField)
+        addSubview(changeButton)
+        changeButton.target = self
+        changeButton.action = #selector(changeTapped(_:))
+
+        NSLayoutConstraint.activate([
+            heightAnchor.constraint(equalToConstant: 28),
+            labelField.leadingAnchor.constraint(equalTo: leadingAnchor),
+            labelField.centerYAnchor.constraint(equalTo: centerYAnchor),
+            labelField.widthAnchor.constraint(equalToConstant: 220),
+            shortcutField.leadingAnchor.constraint(equalTo: labelField.trailingAnchor, constant: 12),
+            shortcutField.centerYAnchor.constraint(equalTo: centerYAnchor),
+            shortcutField.widthAnchor.constraint(greaterThanOrEqualToConstant: 100),
+            changeButton.leadingAnchor.constraint(equalTo: shortcutField.trailingAnchor, constant: 12),
+            changeButton.centerYAnchor.constraint(equalTo: centerYAnchor),
+        ])
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    @objc private func changeTapped(_ sender: NSButton) {
+        onChange()
+    }
+
+    func setShortcutDisplay(_ s: String) {
+        shortcutField.stringValue = s
+    }
+
+    func setRecording(_ recording: Bool) {
+        if recording {
+            changeButton.title = "Press shortcut…"
+            shortcutField.stringValue = "…"
+        } else {
+            changeButton.title = "Change…"
         }
     }
 }
