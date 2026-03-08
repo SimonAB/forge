@@ -124,6 +124,10 @@ final class BoardWindowController: NSObject, NSWindowDelegate {
     /// Opens a file with the user's default editor preference (EditorPreferences). Used for TASKS.md on cards.
     private static func openFileWithEditor(url: URL, config: ForgeConfig?) {
         let path = url.path
+        // Create TASKS.md from template if missing (same structure as MarkdownIO.createEmptyTasksFile).
+        if url.lastPathComponent == "TASKS.md", !FileManager.default.fileExists(atPath: path) {
+            try? MarkdownIO().createEmptyTasksFile(at: path)
+        }
         let editor = EditorPreferences.loadPreferredEditor()
         if editor == nil || editor == "default" || editor?.isEmpty == true {
             NSWorkspace.shared.open(url)
