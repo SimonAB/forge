@@ -1,6 +1,7 @@
 import AppKit
 import ForgeCore
 import ForgeUI
+import UserNotifications
 
 /// Manages the menu bar status item, background sync timer, and menu actions.
 @MainActor
@@ -35,6 +36,7 @@ final class StatusBarController: NSObject {
         setupStatusItem()
         refreshCounts()
         startSyncTimer()
+        requestNotificationPermissionIfNeeded()
         if config != nil {
             openBoardWindow()
         }
@@ -44,6 +46,13 @@ final class StatusBarController: NSObject {
             name: ShortcutPreferences.didChangeNotification,
             object: nil
         )
+    }
+
+    private func requestNotificationPermissionIfNeeded() {
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            guard settings.authorizationStatus == .notDetermined else { return }
+            UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
+        }
     }
 
     @objc private func shortcutPreferencesDidChange() {
@@ -511,11 +520,45 @@ final class StatusBarController: NSObject {
 
     // MARK: - Notifications
 
+    /// Requests notification permission if not yet determined, then delivers the notification when permitted.
+    /// Falls back to AppleScript when permission is denied (e.g. running from Xcode without notification entitlement).
     private func sendNotification(title: String, body: String) {
-        let script = """
-        display notification "\(body.replacingOccurrences(of: "\"", with: "\\\""))" with title "\(title)"
-        """
-        var error: NSDictionary?
-        NSAppleScript(source: script)?.executeAndReturnError(&error)
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            switch settings.authorizationStatus {
+            case .authorized, .provisional:
+                Self.deliverNotification(title: title, body: body)
+            case .notDetermined:
+                UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { granted, _ in
+                    if granted {
+                        Self.deliverNotification(title: title, body: body)
+                    } else {
+                        Self.deliverNotificationViaAppleScript(title: title, body: body)
+                    }
+                }
+            case .denied, .ephemeral:
+                Self.deliverNotificationViaAppleScript(title: title, body: body)
+            @unknown default:
+                Self.deliverNotificationViaAppleScript(title: title, body: body)
+            }
+        }
+    }
+
+    private static nonisolated func deliverNotification(title: String, body: String) {
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        content.sound = .default
+        let request = UNNotificationRequest(
+            identifier: UUID().uuidString,
+            content: content,
+            trigger: UNTimeIntervalNotificationTrigger(timeInterval: 0.1, repeats: false)
+        )
+        UNUserNotificationCenter.current().add(request) { _ in }
+    }
+
+    private static nonisolated func deliverNotificationViaAppleScript(title: String, body: String) {
+        let escapedBody = body.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"")
+        let script = "display notification \"\(escapedBody)\" with title \"\(title)\""
+        NSAppleScript(source: script)?.executeAndReturnError(nil)
     }
 }
