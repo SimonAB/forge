@@ -11,7 +11,7 @@ struct ProcessCommand: AsyncParsableCommand {
     mutating func run() async throws {
         let config = try ConfigLoader.load()
         let forgeDir = ConfigLoader.forgeDirectory(for: config)
-        let inboxPath = (forgeDir as NSString).appendingPathComponent("inbox.md")
+        let inboxPath = ConfigLoader.inboxPath(forgeDir: forgeDir)
         let markdownIO = MarkdownIO()
 
         guard FileManager.default.fileExists(atPath: inboxPath) else {
@@ -50,6 +50,8 @@ struct ProcessCommand: AsyncParsableCommand {
         print("  \(dim)k.\(reset) Keep in inbox")
         print()
 
+        try? ForgePaths(forgeDir: forgeDir).ensureTaskFilesDirectoryExists()
+
         for task in pending {
             print("\(bold)→ \(task.text)\(reset)")
             print("  \(dim)Assign to project (number), s=someday, d=delete, k=keep:\(reset) ", terminator: "")
@@ -63,7 +65,7 @@ struct ProcessCommand: AsyncParsableCommand {
                     print("  Deleted.\n")
                 }
             } else if input.lowercased() == "s" {
-                let somedayPath = (forgeDir as NSString).appendingPathComponent("someday-maybe.md")
+                let somedayPath = ConfigLoader.somedayPath(forgeDir: forgeDir)
                 try markdownIO.appendTask(task, toFileAt: somedayPath)
                 _ = try markdownIO.completeTask(withID: task.id, inFileAt: inboxPath)
                 print("  Moved to someday/maybe.\n")

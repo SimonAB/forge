@@ -15,6 +15,7 @@ struct RollupCommand: ParsableCommand {
     mutating func run() throws {
         let config = try ConfigLoader.load()
         let forgeDir = ConfigLoader.forgeDirectory(for: config)
+        let taskFilesRoot = ConfigLoader.taskFilesRoot(forgeDir: forgeDir)
 
         let dim = "\u{1B}[2m"
         let green = "\u{1B}[32m"
@@ -29,7 +30,7 @@ struct RollupCommand: ParsableCommand {
             return
         }
 
-        let generator = RollupGenerator(config: config, forgeDir: forgeDir)
+        let generator = RollupGenerator(config: config, forgeDir: forgeDir, taskFilesRoot: taskFilesRoot)
         let report = try generator.generateAll()
 
         if report.areasUpdated == 0 {

@@ -25,7 +25,7 @@ struct ReviewCommand: AsyncParsableCommand {
 
         // Step 1: Inbox
         let forgeDir = ConfigLoader.forgeDirectory(for: config)
-        let inboxPath = (forgeDir as NSString).appendingPathComponent("inbox.md")
+        let inboxPath = ConfigLoader.inboxPath(forgeDir: forgeDir)
         let inboxTasks = FileManager.default.fileExists(atPath: inboxPath)
             ? markdownIO.parseTasks(from: (try? String(contentsOfFile: inboxPath, encoding: .utf8)) ?? "")
                 .filter { !$0.isCompleted }
@@ -187,7 +187,7 @@ struct ReviewCommand: AsyncParsableCommand {
         print()
 
         // Step 8: Someday/Maybe
-        let somedayPath = (forgeDir as NSString).appendingPathComponent("someday-maybe.md")
+        let somedayPath = ConfigLoader.somedayPath(forgeDir: forgeDir)
         let somedayTasks = FileManager.default.fileExists(atPath: somedayPath)
             ? markdownIO.parseTasks(from: (try? String(contentsOfFile: somedayPath, encoding: .utf8)) ?? "")
                 .filter { !$0.isCompleted }

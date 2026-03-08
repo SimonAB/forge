@@ -14,11 +14,12 @@ struct InboxCommand: ParsableCommand {
     mutating func run() throws {
         let config = try ConfigLoader.load()
         let forgeDir = ConfigLoader.forgeDirectory(for: config)
-        let inboxPath = (forgeDir as NSString).appendingPathComponent("inbox.md")
+        let inboxPath = ConfigLoader.inboxPath(forgeDir: forgeDir)
 
         if text.isEmpty {
             try showInbox(at: inboxPath)
         } else {
+            try ForgePaths(forgeDir: forgeDir).ensureTaskFilesDirectoryExists()
             try captureToInbox(text: text.joined(separator: " "), at: inboxPath)
         }
     }
