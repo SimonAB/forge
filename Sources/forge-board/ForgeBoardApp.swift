@@ -64,7 +64,12 @@ private struct BoardRootView: View {
             }
             try tagStore.addTag(column.tag, at: project.path)
         }
-        return BoardViewModel(config: config, fetchProjects: fetch, moveProject: move)
+        return BoardViewModel(
+            config: config,
+            fetchProjects: fetch,
+            moveProject: move,
+            filterMetaTags: BoardFilterPreferences.loadEnabledMetaTags()
+        )
     }
 
     private var revealAction: (Project) -> Void {
