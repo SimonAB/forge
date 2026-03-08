@@ -33,6 +33,33 @@ public struct BoardConfig: Codable, Sendable {
     }
 }
 
+// MARK: - Board filter preferences (UserDefaults)
+
+/// UserDefaults key and helpers for which meta tags appear in the board's filter picker.
+/// When unset or empty, all config meta tags are shown.
+public enum BoardFilterPreferences {
+    public static let userDefaultsKey = "ForgeBoardFilterMetaTags"
+
+    /// Meta tag strings to show in the board filter. Nil or empty = show all from config.
+    public static func loadEnabledMetaTags() -> [String]? {
+        guard let a = UserDefaults.standard.array(forKey: userDefaultsKey) as? [String], !a.isEmpty else {
+            return nil
+        }
+        return a
+    }
+
+    /// Persist the selected meta tags for the board filter. Pass nil or empty to mean "all".
+    public static func saveEnabledMetaTags(_ tags: [String]?) {
+        if let tags = tags, !tags.isEmpty {
+            UserDefaults.standard.set(tags, forKey: userDefaultsKey)
+        } else {
+            UserDefaults.standard.removeObject(forKey: userDefaultsKey)
+        }
+    }
+}
+
+// MARK: - GTD
+
 /// GTD-specific configuration.
 public struct GTDConfig: Codable, Sendable {
     public let contexts: [String]
@@ -188,7 +215,7 @@ extension ForgeConfig {
                     ColumnConfig(name: "Shipped", tag: "Shipped 🚀", colour: 3), // Purple
                     ColumnConfig(name: "Paused", tag: "Paused ⏸️", colour: 1),  // Grey
                 ],
-                metaTags: ["Mine ⚒️", "Collab 🤝", "Student 🎓"],
+                metaTags: ["URGENT ⚠️", "Collab 🤝", "Student 🎓"],
                 tagAliases: [
                     "active 🚧": "Active 🚧",
                     "Plan ☼": "Plan 📐",
