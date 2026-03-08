@@ -28,6 +28,16 @@ public final class BoardViewModel {
     /// When non-nil and non-empty, only these meta tags appear in the board filter picker; otherwise all from config.
     private let filterMetaTags: [String]?
 
+    /// Cached compiled regex for searchFilter; invalidated when searchFilter changes.
+    private var searchRegexCache: (pattern: String, regex: NSRegularExpression?, literalLower: String?)?
+
+    /// Cache for filtered projects and grouped columns to avoid recomputing on every body read.
+    private var boardCache: (
+        key: (projectCount: Int, columnFilter: String?, metaTagFilter: String?, pathSegmentFilter: String?, searchFilter: String?),
+        filtered: [Project],
+        grouped: [(column: ColumnConfig, projects: [Project])]
+    )?
+
     private let fetchProjects: @Sendable () async throws -> [Project]
     private let moveProject: @Sendable (Project, ColumnConfig) throws -> Void
 
@@ -59,12 +69,14 @@ public final class BoardViewModel {
                 let result = try await fetchProjects()
                 await MainActor.run {
                     self.projects = result
+                    self.boardCache = nil
                     self.isLoading = false
                     self.error = nil
                 }
             } catch {
                 await MainActor.run {
                     self.projects = []
+                    self.boardCache = nil
                     self.isLoading = false
                     self.error = error.localizedDescription
                 }
@@ -90,7 +102,24 @@ public final class BoardViewModel {
     /// Grouped columns: config columns in order plus "Untagged" if any project has no column.
     /// Respects columnFilter (single column) and metaTagFilter (projects must have that meta tag).
     public var groupedColumns: [(column: ColumnConfig, projects: [Project])] {
-        let filtered = filteredProjects
+        let key: (Int, String?, String?, String?, String?) = (
+            projects.count,
+            columnFilter,
+            metaTagFilter,
+            pathSegmentFilter,
+            searchFilter
+        )
+        if let cache = boardCache, cache.key.projectCount == key.0, cache.key.columnFilter == key.1,
+           cache.key.metaTagFilter == key.2, cache.key.pathSegmentFilter == key.3, cache.key.searchFilter == key.4 {
+            return cache.grouped
+        }
+        let filtered = computeFilteredProjects()
+        let grouped = computeGroupedColumns(from: filtered)
+        boardCache = ((key.0, key.1, key.2, key.3, key.4), filtered, grouped)
+        return grouped
+    }
+
+    private func computeGroupedColumns(from filtered: [Project]) -> [(column: ColumnConfig, projects: [Project])] {
         var result: [(column: ColumnConfig, projects: [Project])] = []
         if let name = columnFilter, !name.isEmpty {
             if name == "Untagged" {
@@ -120,7 +149,7 @@ public final class BoardViewModel {
     }
 
     /// Projects filtered by metaTagFilter, pathSegmentFilter, and searchFilter (regex) when set.
-    private var filteredProjects: [Project] {
+    private func computeFilteredProjects() -> [Project] {
         var list = projects
         if let segment = pathSegmentFilter, !segment.isEmpty {
             list = list.filter { $0.path.contains(segment) }
@@ -129,21 +158,35 @@ public final class BoardViewModel {
             list = list.filter { $0.metaTags.contains(tag) }
         }
         if let query = searchFilter, !query.isEmpty {
+            let (regex, literalLower) = compiledSearchRegex(for: query)
             list = list.filter { project in
-                Self.matchesSearch(query: query, project: project)
+                matchesSearch(project: project, regex: regex, literalLower: literalLower)
             }
         }
         return list
     }
 
-    /// Returns true if the project matches the search query (regex or literal substring). Case-insensitive.
-    private static func matchesSearch(query: String, project: Project) -> Bool {
+    /// Compile search pattern once per searchFilter; returns (regex, literalFallback) for use in filter.
+    private func compiledSearchRegex(for query: String) -> (NSRegularExpression?, String?) {
+        if let cached = searchRegexCache, cached.pattern == query {
+            return (cached.regex, cached.literalLower)
+        }
         let regex: NSRegularExpression?
+        let literalLower: String?
         do {
             regex = try NSRegularExpression(pattern: query, options: .caseInsensitive)
+            literalLower = nil
         } catch {
-            // Invalid regex: fall back to literal substring
-            let lower = query.lowercased()
+            regex = nil
+            literalLower = query.lowercased()
+        }
+        searchRegexCache = (query, regex, literalLower)
+        return (regex, literalLower)
+    }
+
+    /// Returns true if the project matches the search (using pre-compiled regex or literal).
+    private func matchesSearch(project: Project, regex: NSRegularExpression?, literalLower: String?) -> Bool {
+        if let lower = literalLower {
             return project.name.lowercased().contains(lower)
                 || project.path.lowercased().contains(lower)
                 || project.metaTags.contains { $0.lowercased().contains(lower) }
