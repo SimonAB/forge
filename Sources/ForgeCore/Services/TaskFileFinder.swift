@@ -18,6 +18,7 @@ public struct TaskFileFinder: Sendable {
     /// Hidden directories (`.` prefix) and build artefacts (`.build`, `node_modules`)
     /// are skipped for performance. Does not use skipsPackageDescendants, so TASKS.md
     /// inside Swift packages (e.g. projects containing Package.swift) are still found.
+    /// The root path is normalised (standardised, no trailing slash) so enumeration is consistent.
     ///
     /// - Parameters:
     ///   - root: Directory path to search under.
@@ -29,8 +30,12 @@ public struct TaskFileFinder: Sendable {
         maxDepth: Int? = nil
     ) -> [TaskFile] {
         let fm = FileManager.default
+        var normalisedRoot = (root as NSString).standardizingPath
+        if normalisedRoot.hasSuffix("/") {
+            normalisedRoot = String(normalisedRoot.dropLast())
+        }
         guard let enumerator = fm.enumerator(
-            at: URL(fileURLWithPath: root),
+            at: URL(fileURLWithPath: normalisedRoot),
             includingPropertiesForKeys: nil,
             options: []
         ) else { return [] }
