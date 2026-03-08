@@ -44,16 +44,8 @@ public struct BoardView: View {
             }
         }
         .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    viewModel.refresh()
-                } label: {
-                    Label("Refresh", systemImage: "arrow.clockwise")
-                }
-                .disabled(viewModel.isLoading)
-                .keyboardShortcut("r", modifiers: .command)
-            }
-            ToolbarItem(placement: .automatic) {
+            // MARK: - Filters (leading)
+            ToolbarItemGroup(placement: .automatic) {
                 Picker("Column", selection: Binding(
                     get: { viewModel.columnFilter ?? "" },
                     set: { viewModel.columnFilter = $0.isEmpty ? nil : $0 }
@@ -66,8 +58,7 @@ public struct BoardView: View {
                 }
                 .pickerStyle(.menu)
                 .frame(maxWidth: 120)
-            }
-            ToolbarItem(placement: .automatic) {
+
                 Picker("Delegation", selection: Binding(
                     get: { viewModel.metaTagFilter ?? "" },
                     set: { viewModel.metaTagFilter = $0.isEmpty ? nil : $0 }
@@ -79,8 +70,7 @@ public struct BoardView: View {
                 }
                 .pickerStyle(.menu)
                 .frame(maxWidth: 100)
-            }
-            ToolbarItem(placement: .automatic) {
+
                 Picker("Domain", selection: Binding(
                     get: { viewModel.pathSegmentFilter ?? "" },
                     set: { viewModel.pathSegmentFilter = $0.isEmpty ? nil : $0 }
@@ -93,49 +83,65 @@ public struct BoardView: View {
                 .pickerStyle(.menu)
                 .frame(maxWidth: 110)
             }
-            ToolbarItem(placement: .automatic) {
-                HStack(spacing: 4) {
+
+            // MARK: - Search (centre)
+            ToolbarItem(placement: .principal) {
+                HStack(spacing: 5) {
                     Image(systemName: "magnifyingglass")
-                        .foregroundStyle(.secondary)
-                        .font(.system(size: 12))
-                    TextField("Search (regex)", text: Binding(
+                        .foregroundStyle(.tertiary)
+                        .font(.system(size: 11, weight: .medium))
+                    TextField("Search", text: Binding(
                         get: { viewModel.searchFilter ?? "" },
                         set: { viewModel.searchFilter = $0.isEmpty ? nil : $0 }
                     ))
                     .textFieldStyle(.plain)
-                    .frame(minWidth: 120, maxWidth: 200)
+                    .frame(minWidth: 140, maxWidth: 220)
                 }
-                .padding(.horizontal, 8)
+                .padding(.horizontal, 6)
                 .padding(.vertical, 4)
-                .background(.quaternary.opacity(0.5))
-                .clipShape(RoundedRectangle(cornerRadius: 6))
             }
-            if runForgeInTerminal != nil {
-                ToolbarItem(placement: .automatic) {
+
+            // MARK: - Actions (trailing)
+            ToolbarItemGroup(placement: .primaryAction) {
+                if runForgeInTerminal != nil {
                     Menu {
-                        Button("Inbox (process)") {
-                            runForgeInTerminal?("forge process", viewModel.config.resolvedWorkspacePath)
+                        Section("Workflow") {
+                            Button("Inbox (process)") {
+                                runForgeInTerminal?("forge process", viewModel.config.resolvedWorkspacePath)
+                            }
+                            Button("Weekly review") {
+                                runForgeInTerminal?("forge review", viewModel.config.resolvedWorkspacePath)
+                            }
+                            Button("Due today") {
+                                runForgeInTerminal?("forge due", viewModel.config.resolvedWorkspacePath)
+                            }
+                            Button("Next actions") {
+                                runForgeInTerminal?("forge next", viewModel.config.resolvedWorkspacePath)
+                            }
                         }
-                        Button("Weekly review") {
-                            runForgeInTerminal?("forge review", viewModel.config.resolvedWorkspacePath)
-                        }
-                        Button("Due today") {
-                            runForgeInTerminal?("forge due", viewModel.config.resolvedWorkspacePath)
-                        }
-                        Button("Next actions") {
-                            runForgeInTerminal?("forge next", viewModel.config.resolvedWorkspacePath)
-                        }
-                        Divider()
-                        Button("Sync") {
-                            runForgeInTerminal?("forge sync", viewModel.config.resolvedWorkspacePath)
-                        }
-                        Button("Board (terminal)") {
-                            runForgeInTerminal?("forge board", viewModel.config.resolvedWorkspacePath)
+                        Section("Terminal") {
+                            Button("Sync") {
+                                runForgeInTerminal?("forge sync", viewModel.config.resolvedWorkspacePath)
+                            }
+                            Button("Board") {
+                                runForgeInTerminal?("forge board", viewModel.config.resolvedWorkspacePath)
+                            }
                         }
                     } label: {
                         Label("GTD", systemImage: "checklist")
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 4)
+                            .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(.quaternary, lineWidth: 0.5))
                     }
                 }
+
+                Button {
+                    viewModel.refresh()
+                } label: {
+                    Label("Refresh", systemImage: "arrow.clockwise")
+                }
+                .disabled(viewModel.isLoading)
+                .keyboardShortcut("r", modifiers: .command)
             }
         }
         .task {
