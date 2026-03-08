@@ -14,7 +14,8 @@ struct SyncCommand: AsyncParsableCommand {
     mutating func run() async throws {
         let config = try ConfigLoader.load()
         let forgeDir = ConfigLoader.forgeDirectory(for: config)
-        let engine = SyncEngine(config: config, forgeDir: forgeDir)
+        let taskFilesRoot = ConfigLoader.taskFilesRoot(forgeDir: forgeDir)
+        let engine = SyncEngine(config: config, forgeDir: forgeDir, taskFilesRoot: taskFilesRoot)
 
         let dim = "\u{1B}[2m"
         let bold = "\u{1B}[1m"

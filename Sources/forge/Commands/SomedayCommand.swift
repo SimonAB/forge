@@ -14,11 +14,12 @@ struct SomedayCommand: AsyncParsableCommand {
     mutating func run() async throws {
         let config = try ConfigLoader.load()
         let forgeDir = ConfigLoader.forgeDirectory(for: config)
-        let somedayPath = (forgeDir as NSString).appendingPathComponent("someday-maybe.md")
+        let somedayPath = ConfigLoader.somedayPath(forgeDir: forgeDir)
 
         if text.isEmpty {
             try await showSomeday(at: somedayPath, config: config)
         } else {
+            try ForgePaths(forgeDir: forgeDir).ensureTaskFilesDirectoryExists()
             try addToSomeday(text: text.joined(separator: " "), at: somedayPath)
         }
     }
