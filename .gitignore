@@ -14,5 +14,14 @@
 DerivedData/
 *.xcworkspace/xcuserdata/
 
+# Python (generate_icon, import scripts)
+__pycache__/
+*.pyc
+.pycache/
+
+# Editors / IDE
+.cursor/
+.focus
+
 # Task files (workspace-specific)
 tasks/
