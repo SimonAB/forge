@@ -9,15 +9,18 @@ public final class RollupGenerator {
 
     private let config: ForgeConfig
     private let forgeDir: String
+    /// Root directory for area .md files. When nil, forgeDir is used.
+    private let taskFilesRoot: String
     private let markdownIO: MarkdownIO
 
     /// Markers that delimit the auto-generated section.
     static let startMarker = "<!-- forge:rollup -->"
     static let endMarker = "<!-- /forge:rollup -->"
 
-    public init(config: ForgeConfig, forgeDir: String) {
+    public init(config: ForgeConfig, forgeDir: String, taskFilesRoot: String? = nil) {
         self.config = config
         self.forgeDir = forgeDir
+        self.taskFilesRoot = taskFilesRoot ?? forgeDir
         self.markdownIO = MarkdownIO()
     }
 
@@ -36,7 +39,7 @@ public final class RollupGenerator {
         for (areaID, projectNames) in config.projectAreas {
             guard !projectNames.isEmpty else { continue }
 
-            let areaPath = (forgeDir as NSString).appendingPathComponent("\(areaID).md")
+            let areaPath = (taskFilesRoot as NSString).appendingPathComponent("\(areaID).md")
             guard FileManager.default.fileExists(atPath: areaPath) else { continue }
 
             let entries = gatherProjectEntries(

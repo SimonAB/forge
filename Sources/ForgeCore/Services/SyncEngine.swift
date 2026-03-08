@@ -6,6 +6,8 @@ public final class SyncEngine: @unchecked Sendable {
 
     private let config: ForgeConfig
     private let forgeDir: String
+    /// Root directory for task files (inbox, area .md). When nil, forgeDir is used (backwards compatibility).
+    private let taskFilesRoot: String
     private let markdownIO: MarkdownIO
     private let remindersBridge: RemindersBridge
     private let calendarBridge: CalendarBridge
@@ -36,9 +38,11 @@ public final class SyncEngine: @unchecked Sendable {
     /// - Parameters:
     ///   - config: The loaded forge configuration.
     ///   - forgeDir: Explicit path to the Forge directory. Falls back to workspace-relative if nil.
-    public init(config: ForgeConfig, forgeDir: String? = nil) {
+    ///   - taskFilesRoot: Root for inbox and area markdown files. When nil, forgeDir is used.
+    public init(config: ForgeConfig, forgeDir: String? = nil, taskFilesRoot: String? = nil) {
         self.config = config
         self.forgeDir = forgeDir ?? (config.resolvedWorkspacePath as NSString).appendingPathComponent("Forge")
+        self.taskFilesRoot = taskFilesRoot ?? self.forgeDir
         self.markdownIO = MarkdownIO()
         self.store = EKEventStore()
         self.remindersBridge = RemindersBridge(
@@ -64,6 +68,8 @@ public final class SyncEngine: @unchecked Sendable {
     public func sync() async throws -> SyncReport {
         var report = SyncReport()
         var importedInboxSignatures: [ReminderContentSignature: String] = [:]
+
+        try? FileManager.default.createDirectory(atPath: taskFilesRoot, withIntermediateDirectories: true)
 
         try await remindersBridge.requestAccess()
         try await calendarBridge.requestAccess()
@@ -126,7 +132,7 @@ public final class SyncEngine: @unchecked Sendable {
         await applyFinderTags(sourced: sourced, areaFiles: areaFiles)
 
         if !config.projectAreas.isEmpty {
-            let rollup = RollupGenerator(config: config, forgeDir: forgeDir)
+            let rollup = RollupGenerator(config: config, forgeDir: forgeDir, taskFilesRoot: taskFilesRoot)
             if let rollupReport = try? rollup.generateAll() {
                 report.rollupAreas = rollupReport.areasUpdated
                 report.rollupTasks = rollupReport.tasksLinked
@@ -174,15 +180,15 @@ public final class SyncEngine: @unchecked Sendable {
         return result
     }
 
-    /// Scan area markdown files in the Forge directory with their frontmatter and body (for task parsing).
+    /// Scan area markdown files in the task files directory with their frontmatter and body (for task parsing).
     private func scanAreaFiles() -> [(path: String, name: String, frontmatter: Frontmatter?, body: String)] {
         let fm = FileManager.default
-        let excluded: Set<String> = ["config.yaml", "someday-maybe.md"]
-        guard let entries = try? fm.contentsOfDirectory(atPath: forgeDir) else { return [] }
+        let excluded: Set<String> = ["config.yaml", "someday-maybe.md", "inbox.md"]
+        guard let entries = try? fm.contentsOfDirectory(atPath: taskFilesRoot) else { return [] }
         var result: [(path: String, name: String, frontmatter: Frontmatter?, body: String)] = []
         for entry in entries.sorted() where entry.hasSuffix(".md") {
             guard !excluded.contains(entry) else { continue }
-            let filePath = (forgeDir as NSString).appendingPathComponent(entry)
+            let filePath = (taskFilesRoot as NSString).appendingPathComponent(entry)
             let content = (try? String(contentsOfFile: filePath, encoding: .utf8)) ?? ""
             let (fmParsed, body) = Frontmatter.parse(from: content)
             let name = (entry as NSString).deletingPathExtension.capitalized
@@ -511,7 +517,7 @@ public final class SyncEngine: @unchecked Sendable {
                     try? store.save(reminder, commit: false)
                     continue
                 }
-                let inboxPath = (forgeDir as NSString)
+                let inboxPath = (taskFilesRoot as NSString)
                     .appendingPathComponent("inbox.md")
                 let incomingRepeat = reminder.recurrenceRules?.first.flatMap {
                     remindersBridge.repeatRule(from: $0)
