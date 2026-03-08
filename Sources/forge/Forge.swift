@@ -27,6 +27,7 @@ struct Forge: AsyncParsableCommand {
             SomedayCommand.self,
             FocusCommand.self,
             EditTasksCommand.self,
+            LintCommand.self,
         ]
     )
 }
