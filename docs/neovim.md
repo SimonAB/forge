@@ -106,7 +106,7 @@ Available via the command line (`:ForgeXxx`) or from other plugins and scripts.
 | `:ForgeDone [id]` | Optional 6-char hex ID | Complete a task; auto-detects ID from cursor line |
 | `:ForgeDue [days]` | Optional lookahead in days | Show overdue and due tasks (default: 7 days) |
 | `:ForgeFocus [tag]` | Optional tag or `clear` | Set, show, or clear a focus session |
-| `:ForgeSetup` | — | Build and install Forge on this Mac (runs `setup.sh`) |
+| `:ForgeSetup` | — | Build and install Forge on this Mac (runs `build.sh`) |
 
 ---
 
@@ -122,7 +122,7 @@ includes a **Forge** section with four shortcuts:
 | `B` | Board | Runs `:ForgeBoard` |
 | `R` | Review | Runs `:ForgeReview` |
 
-When the `forge` CLI is not installed but `setup.sh` exists, the section shows
+When the `forge` CLI is not installed but `build.sh` exists, the section shows
 a single **"Set up Forge"** item bound to `I`.
 
 ---

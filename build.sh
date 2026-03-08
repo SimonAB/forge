@@ -1,6 +1,6 @@
 #!/bin/zsh
 #
-# Forge setup script — run this on each Mac to build and install forge.
+# Forge build script — run this on each Mac to build and install Forge.
 # The source code syncs via iCloud Drive; this script builds locally.
 #
 set -e
@@ -9,7 +9,7 @@ FORGE_DIR="$(cd "$(dirname "$0")" && pwd)"
 BUILD_DIR="$HOME/.forge-build"
 LAUNCH_AGENT="$HOME/Library/LaunchAgents/com.forge.menubar.plist"
 
-echo "Forge setup"
+echo "Forge build"
 echo "==========="
 echo "Source:  $FORGE_DIR"
 echo "Build:   $BUILD_DIR"
@@ -36,8 +36,11 @@ fi
 
 # 2. Build
 echo ""
-echo "Building forge..."
+echo "Building Forge (menubar app and board app first; CLI may take longer due to dependency plugins)..."
 cd "$FORGE_DIR"
+# Clean first so ForgeUI (board backgrounds, tints) and all targets are fully rebuilt
+swift package clean 2>&1 || true
+# Single full build so all products (forge, forge-menubar, forge-board) are applied to the output directory
 swift build -c debug 2>&1
 BIN_PATH=$(swift build -c debug --show-bin-path)
 
@@ -95,8 +98,6 @@ cat > "$CONTENTS/Info.plist" << 'PLIST'
     <string>APPL</string>
     <key>LSMinimumSystemVersion</key>
     <string>14.0</string>
-    <key>LSUIElement</key>
-    <true/>
     <key>NSCalendarsUsageDescription</key>
     <string>Forge syncs tasks with your calendar.</string>
     <key>NSRemindersUsageDescription</key>
