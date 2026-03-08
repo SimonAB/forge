@@ -19,7 +19,7 @@ your tasks visible across all your devices.
 
 ```bash
 # On a fresh Mac where Forge source has synced via iCloud Drive:
-zsh ~/Documents/Forge/setup.sh
+zsh ~/Documents/Forge/build.sh
 ```
 
 This builds the Swift project, installs the `forge` binary, creates
@@ -41,7 +41,7 @@ starts at login. See [setup details](docs/app.md#setup).
 ├── personal.md                 Area: Personal
 ├── spiritual.md                Area: Spiritual
 ├── horizons.md                 Area: Horizons
-├── setup.sh                    Per-Mac build & install script
+├── build.sh                  Per-Mac build & install script
 ├── generate_icon.py            App icon generator (requires Pillow)
 ├── import_omnifocus.py         One-time OmniFocus import helper
 ├── Sources/                    Swift source code
@@ -184,4 +184,4 @@ Repeat rules sync to Apple Reminders as native recurrence rules.
 
 Source code and markdown files sync automatically via **iCloud Drive**. The
 compiled `.build` directory is kept outside iCloud at `~/.forge-build` (symlinked
-into the source tree). Run `setup.sh` on each new Mac to build locally.
+into the source tree). Run `build.sh` on each new Mac to build locally.

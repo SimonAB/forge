@@ -8,7 +8,7 @@ providing quick capture, automatic sync, and at-a-glance status badges.
 Run the setup script on each Mac:
 
 ```bash
-zsh ~/Documents/Forge/setup.sh
+zsh ~/Documents/Forge/build.sh
 ```
 
 This performs the following steps:
@@ -41,8 +41,8 @@ If Pillow is not installed, the icon step is skipped and a default icon is used.
 ### Launching from Spotlight
 
 Forge.app is installed in `/Applications`, so it is discoverable via Spotlight
-(Cmd+Space, type "Forge"). It runs as an accessory app (no Dock icon), with
-only a menu bar icon.
+(Cmd+Space, type "Forge"). It appears in the Dock and in the application
+switcher (Cmd+Tab), and also shows a menu bar icon.
 
 ---
 
@@ -69,7 +69,8 @@ indicates urgent items:
 | **Quick Capture...** | Cmd+Shift+N | Opens a floating text field to capture a task to the inbox |
 | **Sync Now** | Cmd+S | Triggers an immediate sync cycle |
 | *Last sync: X ago* | — | Informational — shows time since last sync |
-| **Open Board in Terminal** | Cmd+B | Runs `forge board --list` in your terminal |
+| **Board** | Cmd+B | Opens the native Kanban board window |
+| **Open Board in Terminal** | — | Runs `forge board` in your terminal |
 | **Weekly Review in Terminal** | Cmd+R | Runs `forge review` in your terminal |
 | **Quit Forge** | Cmd+Q | Stops the sync timer and exits |
 
@@ -187,7 +188,7 @@ The Forge source directory (`~/Documents/Forge/`) syncs via iCloud Drive. On
 each new Mac:
 
 1. Wait for iCloud to finish downloading.
-2. Run `zsh ~/Documents/Forge/setup.sh`.
+2. Run `zsh ~/Documents/Forge/build.sh`.
 3. The build happens locally; markdown files and configuration are shared.
 
 The Launch Agent ensures Forge.app starts at every login.
