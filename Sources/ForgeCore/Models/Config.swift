@@ -58,6 +58,49 @@ public enum BoardFilterPreferences {
     }
 }
 
+// MARK: - Default text editor preference (UserDefaults)
+
+/// UserDefaults-backed default text editor for opening config and other files.
+/// Use "default" or nil for system default (Open With). "Vim (in default terminal)" opens in terminal with vim.
+public enum EditorPreferences {
+    public static let userDefaultsKey = "ForgePreferredTextEditor"
+
+    /// Stored value: nil or "default" = system default; otherwise app name or "Vim (in default terminal)".
+    public static func loadPreferredEditor() -> String? {
+        UserDefaults.standard.string(forKey: userDefaultsKey)
+    }
+
+    public static func savePreferredEditor(_ identifier: String?) {
+        if let id = identifier, !id.isEmpty, id != "default" {
+            UserDefaults.standard.set(id, forKey: userDefaultsKey)
+        } else {
+            UserDefaults.standard.removeObject(forKey: userDefaultsKey)
+        }
+    }
+
+    /// Display titles for the preferences picker. First = system default.
+    public static let knownEditors = [
+        "Default (system)",
+        "Cursor",
+        "Visual Studio Code",
+        "Vim (in default terminal)",
+        "TextEdit",
+        "Sublime Text",
+    ]
+
+    /// Stored value for the given display title. Used when saving selection.
+    public static func identifier(forDisplayTitle title: String) -> String? {
+        if title == "Default (system)" { return nil }
+        return title
+    }
+
+    /// Display title for the given stored value. Used when loading selection.
+    public static func displayTitle(forIdentifier identifier: String?) -> String {
+        guard let id = identifier, !id.isEmpty, id != "default" else { return "Default (system)" }
+        return knownEditors.contains(id) ? id : id
+    }
+}
+
 // MARK: - GTD
 
 /// GTD-specific configuration.

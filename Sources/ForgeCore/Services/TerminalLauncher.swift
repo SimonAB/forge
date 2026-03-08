@@ -9,10 +9,20 @@ public struct TerminalLauncher: Sendable {
     ]
 
     private let terminalApp: String
+    private let openURL: (@Sendable (URL) -> Void)?
 
-    public init(config: ForgeConfig) {
-        if let preferred = config.terminal, preferred.lowercased() != "auto" {
-            self.terminalApp = Self.normaliseTerminalName(preferred)
+    public init(config: ForgeConfig, terminalOverride: String? = nil, openURL: (@Sendable (URL) -> Void)? = nil) {
+        self.openURL = openURL
+        let preferred: String?
+        if let overrideName = terminalOverride, !overrideName.isEmpty, overrideName.lowercased() != "auto" {
+            preferred = Self.normaliseTerminalName(overrideName)
+        } else if let fromConfig = config.terminal, fromConfig.lowercased() != "auto" {
+            preferred = Self.normaliseTerminalName(fromConfig)
+        } else {
+            preferred = nil
+        }
+        if let p = preferred {
+            self.terminalApp = p
         } else {
             self.terminalApp = Self.detectTerminal()
         }
@@ -100,43 +110,58 @@ public struct TerminalLauncher: Sendable {
         process.arguments = ["/opt/homebrew/bin/zsh", scriptURL.path]
         process.qualityOfService = .userInitiated
         try? process.run()
-        Self.scheduleScriptDeletion(scriptURL)
+        Self.scheduleScriptDeletion(scriptURL, delay: 60)
     }
 
     private func launchITerm(scriptURL: URL) {
-        let path = scriptURL.path.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"")
+        let path = scriptURL.path.replacingOccurrences(of: "'", with: "'\\''")
         let script = """
-        tell application "iTerm"
+        tell application id "com.googlecode.iterm2"
             activate
-            create window with default profile command "/opt/homebrew/bin/zsh \\"\(path)\\""
+            create window with default profile command "/opt/homebrew/bin/zsh '\(path)'"
         end tell
         """
         runAppleScript(script)
-        Self.scheduleScriptDeletion(scriptURL)
+        Self.scheduleScriptDeletion(scriptURL, delay: 60)
     }
 
     private func launchWarp(scriptURL: URL) {
-        let path = scriptURL.path.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"")
-        let script = """
-        tell application "Warp"
-            activate
-            do script "/opt/homebrew/bin/zsh \\"\(path)\\""
-        end tell
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let launchDir = (home as NSString).appendingPathComponent(".warp/launch_configurations")
+        guard (try? FileManager.default.createDirectory(atPath: launchDir, withIntermediateDirectories: true)) != nil else { return }
+        let configName = "forge-\(UUID().uuidString.prefix(8))"
+        let yamlURL = URL(fileURLWithPath: (launchDir as NSString).appendingPathComponent("\(configName).yaml"))
+        let scriptPath = scriptURL.path
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "\"", with: "\\\"")
+        let yaml = """
+        ---
+        name: \(configName)
+        windows:
+          - tabs:
+              - layout:
+                  cwd: "\(home.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\""))"
+                  commands:
+                    - exec: "/opt/homebrew/bin/zsh \\"\(scriptPath)\\""
         """
-        runAppleScript(script)
-        Self.scheduleScriptDeletion(scriptURL)
+        guard (try? yaml.write(to: yamlURL, atomically: true, encoding: .utf8)) != nil else { return }
+        if let url = URL(string: "warp://launch/\(configName.addingPercentEncoding(withAllowedCharacters: .alphanumerics.union(CharacterSet(charactersIn: "-"))) ?? configName)") {
+            openURL?(url)
+        }
+        Self.scheduleScriptDeletion(scriptURL, delay: 60)
+        Self.scheduleScriptDeletion(yamlURL, delay: 60)
     }
 
     private func launchTerminalApp(scriptURL: URL) {
-        let path = scriptURL.path.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"")
+        let path = scriptURL.path.replacingOccurrences(of: "'", with: "'\\''")
         let script = """
         tell application "Terminal"
             activate
-            do script "/opt/homebrew/bin/zsh \\"\(path)\\""
+            do script "/opt/homebrew/bin/zsh '\(path)'"
         end tell
         """
         runAppleScript(script)
-        Self.scheduleScriptDeletion(scriptURL)
+        Self.scheduleScriptDeletion(scriptURL, delay: 60)
     }
 
     private func runAppleScript(_ source: String) {
