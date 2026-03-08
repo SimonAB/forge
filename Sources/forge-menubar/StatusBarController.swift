@@ -1,5 +1,6 @@
 import AppKit
 import ForgeCore
+import ForgeUI
 
 /// Manages the menu bar status item, background sync timer, and menu actions.
 @MainActor
@@ -10,6 +11,7 @@ final class StatusBarController: NSObject {
     private var config: ForgeConfig?
     private var forgeDir: String?
     private var capturePanel: CapturePanel?
+    private var boardWindowController: BoardWindowController?
 
     private var overdueCount = 0
     private var dueTodayCount = 0
@@ -30,6 +32,9 @@ final class StatusBarController: NSObject {
         setupStatusItem()
         refreshCounts()
         startSyncTimer()
+        if config != nil {
+            openBoardWindow()
+        }
     }
 
     // MARK: - Configuration
@@ -157,14 +162,24 @@ final class StatusBarController: NSObject {
 
         menu.addItem(NSMenuItem.separator())
 
-        let boardItem = NSMenuItem(
+        if config != nil {
+            let boardItem = NSMenuItem(
+                title: "Board",
+                action: #selector(openBoardWindow),
+                keyEquivalent: "b"
+            )
+            boardItem.keyEquivalentModifierMask = [.command]
+            boardItem.target = self
+            menu.addItem(boardItem)
+        }
+
+        let boardTerminalItem = NSMenuItem(
             title: "Open Board in Terminal",
-            action: #selector(openBoard),
-            keyEquivalent: "b"
+            action: #selector(openBoardInTerminal),
+            keyEquivalent: ""
         )
-        boardItem.keyEquivalentModifierMask = [.command]
-        boardItem.target = self
-        menu.addItem(boardItem)
+        boardTerminalItem.target = self
+        menu.addItem(boardTerminalItem)
 
         let reviewItem = NSMenuItem(
             title: "Weekly Review in Terminal",
@@ -283,6 +298,11 @@ final class StatusBarController: NSObject {
         capturePanel?.show()
     }
 
+    /// Exposed for main menu "New Quick Capture" (⇧⌘N).
+    @objc func showQuickCapture() {
+        openCapture()
+    }
+
     private func captureToInbox(text: String) {
         guard let config = config else { return }
         let resolvedForgeDir = forgeDir ?? (config.resolvedWorkspacePath as NSString).appendingPathComponent("Forge")
@@ -307,7 +327,15 @@ final class StatusBarController: NSObject {
         launcher.run("forge due", workingDirectory: config.resolvedWorkspacePath)
     }
 
-    @objc private func openBoard() {
+    @objc private func openBoardWindow() {
+        guard let config = config else { return }
+        if boardWindowController == nil {
+            boardWindowController = BoardWindowController(config: config)
+        }
+        boardWindowController?.showWindow()
+    }
+
+    @objc private func openBoardInTerminal() {
         guard let config = config else { return }
         NSApp.activate(ignoringOtherApps: true)
         let launcher = TerminalLauncher(config: config)

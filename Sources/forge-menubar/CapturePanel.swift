@@ -2,6 +2,7 @@ import AppKit
 
 /// A floating panel for quick task capture. Appears centred on screen,
 /// accepts a single line of text, and dismisses on Enter or Escape.
+@MainActor
 final class CapturePanel {
 
     private var window: NSPanel?
@@ -72,6 +73,7 @@ final class CapturePanel {
 }
 
 /// Custom text field that handles Escape to dismiss the capture panel.
+@MainActor
 final class CaptureTextField: NSTextField {
     weak var capturePanel: CapturePanel?
 
