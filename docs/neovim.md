@@ -134,6 +134,16 @@ When editing a Forge markdown file, place your cursor on a task line and press
 comment, runs `forge done XXXXXX`, and reloads the buffer so the checkbox
 updates to `[x]`.
 
+**Recommended:** run `forge done` with the current file path so the task is
+found even if the project has no Finder tag or isn’t in the scanned list:
+
+```bash
+forge done XXXXXX --file /path/to/current/TASKS.md
+```
+
+In Lua you can pass the buffer path with `vim.fn.expand('%:p')`. That avoids
+reliance on config, project roots, and `project_tag`.
+
 If no ID is found on the current line, you are prompted to enter one manually.
 
 ---
@@ -148,3 +158,33 @@ If no ID is found on the current line, you are prompted to enter one manually.
 6. Press `<leader>Fc` to capture a new thought without leaving your editor.
 7. Press `<leader>Fs` to sync changes with Reminders and Calendar.
 8. Press `<leader>Fr` at the end of the week for a guided review.
+
+---
+
+## Troubleshooting `<leader>Fd` (complete task)
+
+If the task doesn’t complete or the buffer reverts after `<leader>Fd`:
+
+1. **Use the right `forge` binary**
+   Neovim runs whatever `forge` is first on `$PATH`. If you build from source, install that binary so it’s the one used (e.g. copy `.build/debug/forge` to `~/bin` or run `./build.sh` if you have one). Check with:
+   ```bash
+   which forge
+   forge version
+   ```
+   Then run `forge done <task-id>` manually from a terminal in the **same directory as the TASKS.md file** (or a parent containing `Forge/config.yaml`). If that works, the CLI is fine and the issue is how/when the plugin runs it.
+
+2. **Working directory**
+   `forge done` looks for config by walking up from the current working directory. The plugin should run the command with the **buffer’s directory** as cwd (e.g. the directory of the open TASKS.md). If your plugin runs `forge done` from a fixed directory (e.g. `~/Documents/Forge`), it may find config but then search for the task only in project roots; the task might live in a different path. In that case, update the plugin so it runs the command with `vim.fn.expand('%:p:h')` (or equivalent) as the working directory.
+
+3. **Save before completing**
+   The plugin runs `forge done`, which **reads the file from disk**, updates it, and writes it back. If you have unsaved changes, either save first (`:w`) or ensure the plugin writes the buffer to disk before calling `forge done`. After that, reloading the buffer will show the completed state.
+
+4. **Task ID on the line**
+   The plugin must pass the 6-character ID from `<!-- id:XXXXXX -->` on the current line. If the line has no ID, you’ll be prompted; if the ID is wrong or from another file, `forge done` won’t find the task. Put the cursor on the task line (the one with the checkbox and the `<!-- id:... -->` comment) when pressing `<leader>Fd`.
+
+5. **Use `--file` so the project list doesn’t matter**
+   If your config has `project_tag` set (e.g. `"🔥 Forge"`), only directories with that Finder tag are scanned. If the TASKS.md you’re editing is in an untagged project (or nested), `forge done 4f469e` won’t look in that file. Fix: have the plugin pass the buffer path so the CLI doesn’t rely on the scan:
+   ```bash
+   forge done 4f469e --file /path/to/your/project/TASKS.md
+   ```
+   Then rebuild Forge and update the plugin to run that form (e.g. `forge done %s --file %s` with the ID and `vim.fn.expand('%:p')`).

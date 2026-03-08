@@ -173,6 +173,8 @@ public struct MarkdownIO: Sendable {
 
     /// Mark a task as completed in a TASKS.md file by its ID.
     /// Checks the checkbox and adds @done(date). Moves to Completed section.
+    /// Matches both unchecked (- [ ]) and already-checked (- [x]) lines so that
+    /// editor-toggled tasks are still moved to Completed and get @done when forge done runs.
     /// For repeating tasks, spawns a new instance with the next due date.
     /// Updates `date_modified` in frontmatter.
     public func completeTask(withID taskID: String, inFileAt path: String) throws -> Bool {
@@ -190,15 +192,22 @@ public struct MarkdownIO: Sendable {
 
         while i < lines.count {
             let line = lines[i]
-            if line.contains(idMarker) && line.contains("- [ ]") {
+            let isUnchecked = line.contains("- [ ]")
+            let isChecked = line.contains("- [x]") || line.contains("- [X]")
+            if line.contains(idMarker) && (isUnchecked || isChecked) {
                 matchedTask = parseTaskLine(line, section: .nextActions, projectName: nil)
 
-                var modified = line.replacingOccurrences(of: "- [ ]", with: "- [x]")
+                var modified = line
+                if isUnchecked {
+                    modified = modified.replacingOccurrences(of: "- [ ]", with: "- [x]")
+                }
                 let today = Self.dateFormatter.string(from: Date())
-                modified = modified.replacingOccurrences(
-                    of: idMarker,
-                    with: "@done(\(today)) \(idMarker)"
-                )
+                if !modified.contains("@done(") {
+                    modified = modified.replacingOccurrences(
+                        of: idMarker,
+                        with: "@done(\(today)) \(idMarker)"
+                    )
+                }
                 var block = modified
                 i += 1
                 while i < lines.count {
