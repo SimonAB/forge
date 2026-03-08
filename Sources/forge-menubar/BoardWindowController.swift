@@ -13,8 +13,10 @@ final class BoardWindowController: NSObject, NSWindowDelegate {
 
     private var window: NSWindow?
     private let viewModel: BoardViewModel
+    private let forgeDir: String?
 
-    init(config: ForgeConfig) {
+    init(config: ForgeConfig, forgeDir: String? = nil) {
+        self.forgeDir = forgeDir
         let scanner = WorkspaceScanner(config: config)
         let tagStore = FinderTagStore()
 
@@ -70,6 +72,12 @@ final class BoardWindowController: NSObject, NSWindowDelegate {
             }
         }
 
+        var openTaskFilesFolder: (@Sendable () -> Void)?
+        if let fd = forgeDir {
+            let c = config
+            openTaskFilesFolder = { Self.openTaskFilesFolder(forgeDir: fd, config: c) }
+        }
+
         let rootView = BoardView(viewModel: viewModel)
             .environment(\.projectContextMenuActions, contextMenuActions)
             .environment(\.projectRevealAction) { project in
@@ -77,6 +85,7 @@ final class BoardWindowController: NSObject, NSWindowDelegate {
             }
             .environment(\.runForgeInTerminal, runForgeInTerminal)
             .environment(\.openFileWithDefaultEditor, openFileWithDefaultEditor)
+            .environment(\.openTaskFilesFolder, openTaskFilesFolder)
 
         let hosting = NSHostingController(rootView: rootView)
         let window = NSWindow(contentViewController: hosting)
@@ -151,6 +160,34 @@ final class BoardWindowController: NSObject, NSWindowDelegate {
             try? process.run()
         default:
             NSWorkspace.shared.open(url)
+        }
+    }
+
+    /// Opens the task files folder (Forge/tasks) with the user's default editor or Finder.
+    nonisolated private static func openTaskFilesFolder(forgeDir: String, config: ForgeConfig) {
+        let paths = ForgePaths(forgeDir: forgeDir)
+        try? paths.ensureTaskFilesDirectoryExists()
+        let taskFilesRoot = (paths.taskFilesRoot as NSString).standardizingPath
+        let folderURL = URL(fileURLWithPath: taskFilesRoot).standardizedFileURL
+        let editor = EditorPreferences.loadPreferredEditor()
+        if editor == nil || editor == "default" || editor?.isEmpty == true {
+            NSWorkspace.shared.open(folderURL)
+            return
+        }
+        let path = taskFilesRoot
+        switch editor! {
+        case "Vim (in default terminal)":
+            let launcher = TerminalLauncher(config: config, terminalOverride: nil, openURL: { NSWorkspace.shared.open($0) })
+            let escaped = path.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"")
+            launcher.run("zsh -i -c 'vim \"\(escaped)\"'", workingDirectory: path)
+        case "Cursor", "Visual Studio Code", "TextEdit", "Sublime Text":
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+            process.arguments = ["-a", editor!, path]
+            process.qualityOfService = .userInitiated
+            try? process.run()
+        default:
+            NSWorkspace.shared.open(folderURL)
         }
     }
 }
