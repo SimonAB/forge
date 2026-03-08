@@ -19,6 +19,12 @@ public final class BoardViewModel {
     /// When set, only projects that have this meta tag (context/people) are shown. Nil = show all.
     public var metaTagFilter: String? = nil
 
+    /// When set, only projects whose path contains this domain segment (e.g. "Work", "Home", "Sanctum") are shown. Nil = show all.
+    public var pathSegmentFilter: String? = nil
+
+    /// When non-empty, only projects matching this regex (against name, path, tags) are shown. Case-insensitive.
+    public var searchFilter: String? = nil
+
     /// When non-nil and non-empty, only these meta tags appear in the board filter picker; otherwise all from config.
     private let filterMetaTags: [String]?
 
@@ -113,9 +119,43 @@ public final class BoardViewModel {
         return result
     }
 
-    /// Projects filtered by metaTagFilter (when set).
+    /// Projects filtered by metaTagFilter, pathSegmentFilter, and searchFilter (regex) when set.
     private var filteredProjects: [Project] {
-        guard let tag = metaTagFilter, !tag.isEmpty else { return projects }
-        return projects.filter { $0.metaTags.contains(tag) }
+        var list = projects
+        if let segment = pathSegmentFilter, !segment.isEmpty {
+            list = list.filter { $0.path.contains(segment) }
+        }
+        if let tag = metaTagFilter, !tag.isEmpty {
+            list = list.filter { $0.metaTags.contains(tag) }
+        }
+        if let query = searchFilter, !query.isEmpty {
+            list = list.filter { project in
+                Self.matchesSearch(query: query, project: project)
+            }
+        }
+        return list
+    }
+
+    /// Returns true if the project matches the search query (regex or literal substring). Case-insensitive.
+    private static func matchesSearch(query: String, project: Project) -> Bool {
+        let regex: NSRegularExpression?
+        do {
+            regex = try NSRegularExpression(pattern: query, options: .caseInsensitive)
+        } catch {
+            // Invalid regex: fall back to literal substring
+            let lower = query.lowercased()
+            return project.name.lowercased().contains(lower)
+                || project.path.lowercased().contains(lower)
+                || project.metaTags.contains { $0.lowercased().contains(lower) }
+                || project.tags.contains { $0.lowercased().contains(lower) }
+        }
+        guard let regex = regex else { return false }
+        func match(_ s: String) -> Bool {
+            let range = NSRange(s.startIndex..<s.endIndex, in: s)
+            return regex.firstMatch(in: s, range: range) != nil
+        }
+        return match(project.name) || match(project.path)
+            || project.metaTags.contains { match($0) }
+            || project.tags.contains { match($0) }
     }
 }
