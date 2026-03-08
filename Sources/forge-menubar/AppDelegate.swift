@@ -124,7 +124,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func showHelp(_ sender: Any?) {
-        guard let url = URL(string: "https://github.com/your-repo/forge") else { return }
+        guard let url = URL(string: "https://github.com/forge-app/forge") else { return }
         NSWorkspace.shared.open(url)
     }
 }
