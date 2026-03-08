@@ -21,13 +21,14 @@ struct ColumnView: View {
     let column: ColumnConfig
     let projects: [Project]
     @Bindable var viewModel: BoardViewModel
+    var columnWidth: CGFloat = 220
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             columnHeader
             projectList
         }
-        .frame(minWidth: 180, maxWidth: 220)
+        .frame(width: columnWidth)
         .padding(10)
         .background(columnColor(for: column.colour).opacity(0.12))
         .background(.regularMaterial)

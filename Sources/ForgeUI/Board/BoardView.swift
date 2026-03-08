@@ -29,17 +29,26 @@ public struct BoardView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                ScrollView(.horizontal, showsIndicators: true) {
-                    HStack(alignment: .top, spacing: 12) {
-                        ForEach(Array(viewModel.groupedColumns.enumerated()), id: \.offset) { _, group in
-                            ColumnView(
-                                column: group.column,
-                                projects: group.projects,
-                                viewModel: viewModel
-                            )
+                GeometryReader { geometry in
+                    let columnCount = max(1, viewModel.groupedColumns.count)
+                    let padding: CGFloat = 12
+                    let spacing: CGFloat = 12
+                    let totalGaps = padding * 2 + spacing * CGFloat(columnCount - 1)
+                    let columnWidth = min(320, max(180, (geometry.size.width - totalGaps) / CGFloat(columnCount)))
+                    ScrollView(.horizontal, showsIndicators: true) {
+                        HStack(alignment: .top, spacing: spacing) {
+                            ForEach(Array(viewModel.groupedColumns.enumerated()), id: \.offset) { _, group in
+                                ColumnView(
+                                    column: group.column,
+                                    projects: group.projects,
+                                    viewModel: viewModel,
+                                    columnWidth: columnWidth
+                                )
+                            }
                         }
+                        .frame(minWidth: geometry.size.width)
+                        .padding(padding)
                     }
-                    .padding()
                 }
             }
         }
