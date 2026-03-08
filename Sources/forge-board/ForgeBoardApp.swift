@@ -8,32 +8,49 @@ import AppKit
 
 @main
 struct ForgeBoardApp: App {
-    private let config = Self.loadConfig()
+    @State private var config: ForgeConfig?
+    @State private var configLoaded = false
+
+    init() {
+        _config = State(initialValue: nil)
+        _configLoaded = State(initialValue: false)
+    }
 
     var body: some Scene {
         WindowGroup("Forge — Board") {
-            if let config = config {
-                BoardRootView(config: config)
-            } else {
-                NoConfigView()
+            Group {
+                if !configLoaded {
+                    LoadingConfigView()
+                } else if let config = config {
+                    BoardRootView(config: config)
+                } else {
+                    NoConfigView()
+                }
+            }
+            .task {
+                guard !configLoaded else { return }
+                config = await Self.loadConfig()
+                configLoaded = true
             }
         }
         .windowStyle(.titleBar)
         .defaultSize(width: 900, height: 500)
     }
 
-    private static func loadConfig() -> ForgeConfig? {
+    private static func loadConfig() async -> ForgeConfig? {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         let candidates = [
             (home as NSString).appendingPathComponent("Documents/Forge/config.yaml"),
             (home as NSString).appendingPathComponent("Documents/Work/Projects/Forge/config.yaml"),
         ]
-        for path in candidates {
-            if FileManager.default.fileExists(atPath: path), let config = try? ForgeConfig.load(from: path) {
-                return config
+        return await Task.detached(priority: .userInitiated) {
+            for path in candidates {
+                if FileManager.default.fileExists(atPath: path), let config = try? ForgeConfig.load(from: path) {
+                    return config
+                }
             }
-        }
-        return nil
+            return nil
+        }.value
     }
 }
 
@@ -145,6 +162,19 @@ private struct BoardRootView: View {
 }
 
 // MARK: - No config state
+
+private struct LoadingConfigView: View {
+    var body: some View {
+        VStack(spacing: 16) {
+            ProgressView()
+                .scaleEffect(1.2)
+            Text("Loading…")
+                .font(.headline)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
 
 private struct NoConfigView: View {
     var body: some View {

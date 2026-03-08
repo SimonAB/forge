@@ -18,6 +18,9 @@ final class StatusBarController: NSObject {
     private var inboxCount = 0
     private var lastSyncDate: Date?
 
+    /// Cache of (mtime, overdue, dueToday) per task file path to avoid re-parsing unchanged files.
+    private var countsCache: [String: (mtime: Date, overdue: Int, dueToday: Int)] = [:]
+
     /// Sync interval in seconds (default: 5 minutes).
     private let syncInterval: TimeInterval = 300
 
@@ -243,9 +246,11 @@ final class StatusBarController: NSObject {
     private func refreshCounts() {
         let config = self.config
         let forgeDir = self.forgeDir
+        var cache = self.countsCache
         Task {
-            let (overdue, dueToday, inbox) = Self.computeCounts(config: config, forgeDir: forgeDir)
+            let (overdue, dueToday, inbox) = Self.computeCounts(config: config, forgeDir: forgeDir, cache: &cache)
             await MainActor.run {
+                self.countsCache = cache
                 self.overdueCount = overdue
                 self.dueTodayCount = dueToday
                 self.inboxCount = inbox
@@ -255,21 +260,49 @@ final class StatusBarController: NSObject {
         }
     }
 
-    /// Runs off the main actor to avoid blocking the menu when scanning ~/Documents.
-    private static func computeCounts(config: ForgeConfig?, forgeDir: String?) -> (Int, Int, Int) {
+    /// Runs off the main actor to avoid blocking the menu. When config is present, scopes to workspace only.
+    /// Uses cache to skip re-parsing task files whose mtime hasn't changed.
+    private static func computeCounts(
+        config: ForgeConfig?,
+        forgeDir: String?,
+        cache: inout [String: (mtime: Date, overdue: Int, dueToday: Int)]
+    ) -> (Int, Int, Int) {
         let markdownIO = MarkdownIO()
         let fm = FileManager.default
+
+        let taskFiles: [TaskFileFinder.TaskFile]
+        if let config = config {
+            taskFiles = TaskFileFinder.findAll(under: config.resolvedWorkspacePath)
+        } else {
+            taskFiles = TaskFileFinder.findAllUnderDocuments()
+        }
 
         var overdue = 0
         var dueToday = 0
 
-        let taskFiles = TaskFileFinder.findAllUnderDocuments()
         for file in taskFiles {
+            let mtime: Date
+            do {
+                let attrs = try fm.attributesOfItem(atPath: file.path)
+                mtime = (attrs[.modificationDate] as? Date) ?? .distantPast
+            } catch {
+                mtime = .distantPast
+            }
+            if let cached = cache[file.path], cached.mtime == mtime {
+                overdue += cached.overdue
+                dueToday += cached.dueToday
+                continue
+            }
+            var fileOverdue = 0
+            var fileDueToday = 0
             let tasks = (try? markdownIO.parseTasks(at: file.path)) ?? []
             for task in tasks where !task.isCompleted {
-                if task.isOverdue { overdue += 1 }
-                if task.isDueToday { dueToday += 1 }
+                if task.isOverdue { fileOverdue += 1 }
+                if task.isDueToday { fileDueToday += 1 }
             }
+            cache[file.path] = (mtime, fileOverdue, fileDueToday)
+            overdue += fileOverdue
+            dueToday += fileDueToday
         }
 
         var inboxCount = 0

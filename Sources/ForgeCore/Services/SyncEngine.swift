@@ -72,7 +72,7 @@ public final class SyncEngine: @unchecked Sendable {
         let allTasks = sourced.map(\.task)
 
         let reminders = try await remindersBridge.fetchReminders(from: forgeLists)
-        let events = calendarBridge.fetchEvents(from: calendar)
+        let events = await calendarBridge.fetchEvents(from: calendar)
 
         var remindersByID = buildReminderIndex(reminders)
         let eventsByID = buildEventIndex(events)

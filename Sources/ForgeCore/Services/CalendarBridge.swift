@@ -55,6 +55,25 @@ public final class CalendarBridge: @unchecked Sendable {
         return store.events(matching: predicate)
     }
 
+    /// Async version: fetch events without blocking the calling thread.
+    public func fetchEvents(
+        from calendar: EKCalendar,
+        startDate: Date? = nil,
+        endDate: Date? = nil
+    ) async -> [EKEvent] {
+        let start = startDate ?? Calendar.current.date(byAdding: .day, value: -30, to: Date())!
+        let end = endDate ?? Calendar.current.date(byAdding: .year, value: 1, to: Date())!
+        let predicate = store.predicateForEvents(
+            withStart: start, end: end, calendars: [calendar]
+        )
+        return await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async { [store] in
+                let events = store.events(matching: predicate)
+                continuation.resume(returning: events)
+            }
+        }
+    }
+
     /// Extract the forge task ID from an event's notes field.
     public func extractForgeID(from event: EKEvent) -> (project: String, taskID: String)? {
         guard let notes = event.notes, notes.contains("forge:") else { return nil }
