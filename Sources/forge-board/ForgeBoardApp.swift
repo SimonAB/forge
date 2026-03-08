@@ -49,10 +49,52 @@ private struct BoardRootView: View {
     }
 
     var body: some View {
-        BoardView(viewModel: viewModel)
+        let config = viewModel.config
+        let runForge: @Sendable (String, String?) -> Void = { command, workingDir in
+            let launcher = TerminalLauncher(config: config, terminalOverride: nil, openURL: { NSWorkspace.shared.open($0) })
+            launcher.run(command, workingDirectory: workingDir)
+        }
+        #if canImport(AppKit)
+        let openWithEditor: @Sendable (URL) -> Void = { url in
+            Task { @MainActor in
+                Self.openFileWithEditor(url: url, config: config)
+            }
+        }
+        #endif
+        return BoardView(viewModel: viewModel)
             .environment(\.projectContextMenuActions, contextMenuActions(for: viewModel))
             .environment(\.projectRevealAction, revealAction)
+            .environment(\.runForgeInTerminal, runForge)
+            #if canImport(AppKit)
+            .environment(\.openFileWithDefaultEditor, openWithEditor)
+            #endif
     }
+
+    #if canImport(AppKit)
+    private static func openFileWithEditor(url: URL, config: ForgeConfig) {
+        let path = url.path
+        let editor = EditorPreferences.loadPreferredEditor()
+        if editor == nil || editor == "default" || editor?.isEmpty == true {
+            NSWorkspace.shared.open(url)
+            return
+        }
+        switch editor! {
+        case "Vim (in default terminal)":
+            let dir = (path as NSString).deletingLastPathComponent
+            let launcher = TerminalLauncher(config: config, terminalOverride: nil, openURL: { NSWorkspace.shared.open($0) })
+            let escaped = path.replacingOccurrences(of: "\"", with: "\\\"")
+            launcher.run("zsh -i -c 'vim \"\(escaped)\"'", workingDirectory: dir)
+        case "Cursor", "Visual Studio Code", "TextEdit", "Sublime Text":
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+            process.arguments = ["-a", editor!, path]
+            process.qualityOfService = .userInitiated
+            try? process.run()
+        default:
+            NSWorkspace.shared.open(url)
+        }
+    }
+    #endif
 
     private static func makeViewModel(_ config: ForgeConfig) -> BoardViewModel {
         let scanner = WorkspaceScanner(config: config)
@@ -90,7 +132,7 @@ private struct BoardRootView: View {
                     #endif
                 },
                 ProjectContextMenuAction(title: "Open in Terminal") { p in
-                    let launcher = TerminalLauncher(config: config)
+                    let launcher = TerminalLauncher(config: config, terminalOverride: nil, openURL: { NSWorkspace.shared.open($0) })
                     launcher.run("exec /opt/homebrew/bin/zsh -i", workingDirectory: p.path)
                 },
             ]
