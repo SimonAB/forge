@@ -52,10 +52,22 @@ final class BoardWindowController: NSObject, NSWindowDelegate {
                     NSWorkspace.shared.selectFile(p.path, inFileViewerRootedAtPath: "")
                 },
                 ProjectContextMenuAction(title: "Open in Terminal") { p in
-                    let launcher = TerminalLauncher(config: config)
+                    let launcher = TerminalLauncher(config: config, terminalOverride: nil, openURL: { NSWorkspace.shared.open($0) })
                     launcher.run("exec /opt/homebrew/bin/zsh -i", workingDirectory: p.path)
                 },
             ]
+        }
+
+        let config = viewModel.config
+        let runForgeInTerminal: @Sendable (String, String?) -> Void = { command, workingDir in
+            let launcher = TerminalLauncher(config: config, terminalOverride: nil, openURL: { NSWorkspace.shared.open($0) })
+            launcher.run(command, workingDirectory: workingDir)
+        }
+
+        let openFileWithDefaultEditor: @Sendable (URL) -> Void = { url in
+            Task { @MainActor in
+                Self.openFileWithEditor(url: url, config: config)
+            }
         }
 
         let rootView = BoardView(viewModel: viewModel)
@@ -63,6 +75,8 @@ final class BoardWindowController: NSObject, NSWindowDelegate {
             .environment(\.projectRevealAction) { project in
                 NSWorkspace.shared.selectFile(project.path, inFileViewerRootedAtPath: "")
             }
+            .environment(\.runForgeInTerminal, runForgeInTerminal)
+            .environment(\.openFileWithDefaultEditor, openFileWithDefaultEditor)
 
         let hosting = NSHostingController(rootView: rootView)
         let window = NSWindow(contentViewController: hosting)
@@ -105,5 +119,34 @@ final class BoardWindowController: NSObject, NSWindowDelegate {
 
     func windowWillClose(_ notification: Notification) {
         saveWindowFrame()
+    }
+
+    /// Opens a file with the user's default editor preference (EditorPreferences). Used for TASKS.md on cards.
+    private static func openFileWithEditor(url: URL, config: ForgeConfig?) {
+        let path = url.path
+        let editor = EditorPreferences.loadPreferredEditor()
+        if editor == nil || editor == "default" || editor?.isEmpty == true {
+            NSWorkspace.shared.open(url)
+            return
+        }
+        switch editor! {
+        case "Vim (in default terminal)":
+            guard let config = config else {
+                NSWorkspace.shared.open(url)
+                return
+            }
+            let dir = (path as NSString).deletingLastPathComponent
+            let launcher = TerminalLauncher(config: config, terminalOverride: nil, openURL: { NSWorkspace.shared.open($0) })
+            let escaped = path.replacingOccurrences(of: "\"", with: "\\\"")
+            launcher.run("zsh -i -c 'vim \"\(escaped)\"'", workingDirectory: dir)
+        case "Cursor", "Visual Studio Code", "TextEdit", "Sublime Text":
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+            process.arguments = ["-a", editor!, path]
+            process.qualityOfService = .userInitiated
+            try? process.run()
+        default:
+            NSWorkspace.shared.open(url)
+        }
     }
 }
