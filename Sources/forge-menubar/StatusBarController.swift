@@ -272,7 +272,12 @@ final class StatusBarController: NSObject {
 
         let taskFiles: [TaskFileFinder.TaskFile]
         if let config = config {
-            taskFiles = TaskFileFinder.findAll(under: config.resolvedWorkspacePath)
+            var seenPaths = Set<String>()
+            taskFiles = config.resolvedProjectRoots.flatMap { root in
+                TaskFileFinder.findAll(under: root).filter { file in
+                    seenPaths.insert(file.path).inserted
+                }
+            }
         } else {
             taskFiles = TaskFileFinder.findAllUnderDocuments()
         }
@@ -303,6 +308,40 @@ final class StatusBarController: NSObject {
             cache[file.path] = (mtime, fileOverdue, fileDueToday)
             overdue += fileOverdue
             dueToday += fileDueToday
+        }
+
+        // Include area files (markdown in Forge directory), same as `forge due`.
+        if let config = config {
+            let resolvedForgeDir = forgeDir ?? (config.resolvedWorkspacePath as NSString).appendingPathComponent("Forge")
+            let excludedAreaFiles: Set<String> = ["config.yaml", "someday-maybe.md"]
+            if let entries = try? fm.contentsOfDirectory(atPath: resolvedForgeDir) {
+                for entry in entries where entry.hasSuffix(".md") && !excludedAreaFiles.contains(entry) {
+                    let path = (resolvedForgeDir as NSString).appendingPathComponent(entry)
+                    let mtime: Date
+                    do {
+                        let attrs = try fm.attributesOfItem(atPath: path)
+                        mtime = (attrs[.modificationDate] as? Date) ?? .distantPast
+                    } catch {
+                        mtime = .distantPast
+                    }
+                    if let cached = cache[path], cached.mtime == mtime {
+                        overdue += cached.overdue
+                        dueToday += cached.dueToday
+                        continue
+                    }
+                    var fileOverdue = 0
+                    var fileDueToday = 0
+                    let content = (try? String(contentsOfFile: path, encoding: .utf8)) ?? ""
+                    let tasks = markdownIO.parseTasks(from: content)
+                    for task in tasks where !task.isCompleted {
+                        if task.isOverdue { fileOverdue += 1 }
+                        if task.isDueToday { fileDueToday += 1 }
+                    }
+                    cache[path] = (mtime, fileOverdue, fileDueToday)
+                    overdue += fileOverdue
+                    dueToday += fileDueToday
+                }
+            }
         }
 
         var inboxCount = 0

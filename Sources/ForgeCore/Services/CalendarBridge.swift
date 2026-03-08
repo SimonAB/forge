@@ -66,9 +66,18 @@ public final class CalendarBridge: @unchecked Sendable {
         let predicate = store.predicateForEvents(
             withStart: start, end: end, calendars: [calendar]
         )
+        final class FetchBox: @unchecked Sendable {
+            let store: EKEventStore
+            let predicate: NSPredicate
+            init(store: EKEventStore, predicate: NSPredicate) {
+                self.store = store
+                self.predicate = predicate
+            }
+        }
+        let box = FetchBox(store: store, predicate: predicate)
         return await withCheckedContinuation { continuation in
-            DispatchQueue.global(qos: .userInitiated).async { [store] in
-                let events = store.events(matching: predicate)
+            DispatchQueue.global(qos: .userInitiated).async {
+                let events = box.store.events(matching: box.predicate)
                 continuation.resume(returning: events)
             }
         }
