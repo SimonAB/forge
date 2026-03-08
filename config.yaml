@@ -36,7 +36,7 @@ board:
     tag: "Paused \u23F8\uFE0F"
     colour: 1   # Grey
   meta_tags:
-  - "Mine \u2692\uFE0F"
+  - "URGENT \u26A0\uFE0F"
   - "Collab \U0001F91D"
   - "Student \U0001F393"
   tag_aliases:
@@ -117,4 +117,3 @@ project_areas:
   - Writing tips
   teaching: []
 terminal: auto
-

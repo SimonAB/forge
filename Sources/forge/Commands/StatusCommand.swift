@@ -41,9 +41,10 @@ struct StatusCommand: ParsableCommand {
 
         print("\(bold)\(projects.count)\(reset) projects total, \(bold)\(activeCount)\(reset) active")
 
-        let mineCount = projects.filter { $0.metaTags.contains("Mine ⚒️") }.count
-        if mineCount > 0 {
-            print("\(mineCount) led by you (Mine ⚒️)")
+        let urgentTags: Set<String> = ["URGENT ⚠️"]
+        let urgentCount = projects.filter { p in p.metaTags.contains(where: { urgentTags.contains($0) }) }.count
+        if urgentCount > 0 {
+            print("\(urgentCount) urgent")
         }
         print()
     }
