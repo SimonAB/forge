@@ -1,8 +1,9 @@
 # Build artefacts
 .build
-.build 3
+.build*
 
 # Swift Package Manager
+.swiftpm/
 .swiftpm/xcode/xcuserdata/
 
 # macOS
@@ -12,3 +13,6 @@
 # Xcode (if used)
 DerivedData/
 *.xcworkspace/xcuserdata/
+
+# Task files (workspace-specific)
+tasks/
