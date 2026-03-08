@@ -9,6 +9,9 @@ FORGE_DIR="$(cd "$(dirname "$0")" && pwd)"
 BUILD_DIR="$HOME/.forge-build"
 LAUNCH_AGENT="$HOME/Library/LaunchAgents/com.forge.menubar.plist"
 
+# Single source of truth for version (must match Sources/ForgeCore/Version.swift)
+FORGE_VERSION=$(grep -o 'version = "[^"]*"' "$FORGE_DIR/Sources/ForgeCore/Version.swift" | cut -d'"' -f2)
+
 echo "Forge build"
 echo "==========="
 echo "Source:  $FORGE_DIR"
@@ -75,7 +78,7 @@ mkdir -p "$MACOS" "$RESOURCES"
 
 cp "$BIN_PATH/forge-menubar" "$MACOS/Forge"
 
-cat > "$CONTENTS/Info.plist" << 'PLIST'
+cat > "$CONTENTS/Info.plist" << PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -87,9 +90,9 @@ cat > "$CONTENTS/Info.plist" << 'PLIST'
     <key>CFBundleIdentifier</key>
     <string>com.forge.menubar</string>
     <key>CFBundleVersion</key>
-    <string>0.4.0</string>
+    <string>${FORGE_VERSION}</string>
     <key>CFBundleShortVersionString</key>
-    <string>0.4.0</string>
+    <string>${FORGE_VERSION}</string>
     <key>CFBundleExecutable</key>
     <string>Forge</string>
     <key>CFBundleIconFile</key>
@@ -102,6 +105,8 @@ cat > "$CONTENTS/Info.plist" << 'PLIST'
     <string>Forge syncs tasks with your calendar.</string>
     <key>NSRemindersUsageDescription</key>
     <string>Forge syncs tasks with Reminders.</string>
+    <key>NSAppleEventsUsageDescription</key>
+    <string>Forge runs commands in your chosen terminal and shows task notifications.</string>
 </dict>
 </plist>
 PLIST

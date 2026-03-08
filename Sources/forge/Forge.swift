@@ -1,11 +1,12 @@
 import ArgumentParser
+import ForgeCore
 
 @main
 struct Forge: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "forge",
         abstract: "Local kanban + GTD project manager with iCloud integration.",
-        version: "0.4.0",
+        version: ForgeVersion.version,
         subcommands: [
             InitCommand.self,
             BoardCommand.self,
