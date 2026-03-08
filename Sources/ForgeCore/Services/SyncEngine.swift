@@ -67,7 +67,8 @@ public final class SyncEngine: @unchecked Sendable {
         let forgeLists = remindersBridge.allForgeListCalendars()
         let calendar = try calendarBridge.findOrCreateCalendar()
 
-        let sourced = try await collectAllTasks()
+        let areaFiles = scanAreaFiles()
+        let sourced = try await collectAllTasks(areaFiles: areaFiles)
         let allTasks = sourced.map(\.task)
 
         let reminders = try await remindersBridge.fetchReminders(from: forgeLists)
@@ -104,7 +105,7 @@ public final class SyncEngine: @unchecked Sendable {
             sourceByID: sourceByID, report: &report
         )
 
-        await applyFinderTags(sourced: sourced)
+        await applyFinderTags(sourced: sourced, areaFiles: areaFiles)
 
         if !config.projectAreas.isEmpty {
             let rollup = RollupGenerator(config: config, forgeDir: forgeDir)
@@ -122,7 +123,7 @@ public final class SyncEngine: @unchecked Sendable {
 
     // MARK: - Collect Tasks
 
-    private func collectAllTasks() async throws -> [SourcedTask] {
+    private func collectAllTasks(areaFiles: [(path: String, name: String, frontmatter: Frontmatter?, body: String)]) async throws -> [SourcedTask] {
         var result: [SourcedTask] = []
 
         let scanner = WorkspaceScanner(config: config)
@@ -141,12 +142,9 @@ public final class SyncEngine: @unchecked Sendable {
             }
         }
 
-        let areaFiles = scanAreaFiles()
         for area in areaFiles {
-            let content = (try? String(contentsOfFile: area.path, encoding: .utf8)) ?? ""
-            let (frontmatter, body) = Frontmatter.parse(from: content)
-            let tags = frontmatter?.tags ?? []
-            let tasks = markdownIO.parseTasks(from: body, projectName: area.name)
+            let tags = area.frontmatter?.tags ?? []
+            let tasks = markdownIO.parseTasks(from: area.body, projectName: area.name)
             for task in tasks {
                 result.append(SourcedTask(
                     task: task, filePath: area.path,
@@ -158,19 +156,19 @@ public final class SyncEngine: @unchecked Sendable {
         return result
     }
 
-    /// Scan area markdown files in the Forge directory with their frontmatter.
-    private func scanAreaFiles() -> [(path: String, name: String, frontmatter: Frontmatter?)] {
+    /// Scan area markdown files in the Forge directory with their frontmatter and body (for task parsing).
+    private func scanAreaFiles() -> [(path: String, name: String, frontmatter: Frontmatter?, body: String)] {
         let fm = FileManager.default
         let excluded: Set<String> = ["config.yaml", "someday-maybe.md"]
         guard let entries = try? fm.contentsOfDirectory(atPath: forgeDir) else { return [] }
-        var result: [(path: String, name: String, frontmatter: Frontmatter?)] = []
+        var result: [(path: String, name: String, frontmatter: Frontmatter?, body: String)] = []
         for entry in entries.sorted() where entry.hasSuffix(".md") {
             guard !excluded.contains(entry) else { continue }
             let filePath = (forgeDir as NSString).appendingPathComponent(entry)
             let content = (try? String(contentsOfFile: filePath, encoding: .utf8)) ?? ""
-            let (fm, _) = Frontmatter.parse(from: content)
+            let (fmParsed, body) = Frontmatter.parse(from: content)
             let name = (entry as NSString).deletingPathExtension.capitalized
-            result.append((filePath, name, fm))
+            result.append((filePath, name, fmParsed, body))
         }
         return result
     }
@@ -328,7 +326,7 @@ public final class SyncEngine: @unchecked Sendable {
 
     /// Apply frontmatter tags as Finder tags on area markdown files.
     /// Also ensures each project directory has its kanban column tag (so Finder reflects the board).
-    private func applyFinderTags(sourced: [SourcedTask]) async {
+    private func applyFinderTags(sourced: [SourcedTask], areaFiles: [(path: String, name: String, frontmatter: Frontmatter?, body: String)]) async {
         let tagStore = FinderTagStore()
         var processed = Set<String>()
 
@@ -347,7 +345,6 @@ public final class SyncEngine: @unchecked Sendable {
             }
         }
 
-        let areaFiles = scanAreaFiles()
         for area in areaFiles {
             guard !processed.contains(area.path) else { continue }
             guard let tags = area.frontmatter?.tags, !tags.isEmpty else { continue }
