@@ -116,6 +116,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let captureSelectionSpec = ShortcutPreferences.spec(for: .captureSelection)
         addItem(to: fileMenu, title: "New Quick Capture…", action: #selector(showQuickCapture(_:)), keyEquivalent: quickCaptureSpec.keyEquivalent, modifiers: quickCaptureSpec.modifierFlags)
         addItem(to: fileMenu, title: "Capture Selection to Inbox", action: #selector(captureSelectionToInbox(_:)), keyEquivalent: captureSelectionSpec.keyEquivalent, modifiers: captureSelectionSpec.modifierFlags)
+        addItem(to: fileMenu, title: "Edit task files…", action: #selector(editTaskFiles(_:)), keyEquivalent: "e", modifiers: [.command, .shift])
 
         // Edit
         let editMenu = NSMenu(title: "Edit")
@@ -192,6 +193,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func captureSelectionToInbox(_ sender: Any?) {
         statusBar.captureSelectionToInbox()
+    }
+
+    @objc private func editTaskFiles(_ sender: Any?) {
+        statusBar.openTaskFilesFolder()
     }
 
     @objc private func showHelp(_ sender: Any?) {

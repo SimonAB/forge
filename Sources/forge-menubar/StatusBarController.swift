@@ -206,6 +206,15 @@ final class StatusBarController: NSObject {
         boardTerminalItem.target = self
         menu.addItem(boardTerminalItem)
 
+        let editTasksItem = NSMenuItem(
+            title: "Edit task files…",
+            action: #selector(openTaskFilesFolder),
+            keyEquivalent: ""
+        )
+        editTasksItem.target = self
+        editTasksItem.toolTip = "Open inbox, area files, and someday list in your default editor"
+        menu.addItem(editTasksItem)
+
         let reviewSpec = ShortcutPreferences.spec(for: .weeklyReview)
         let reviewItem = NSMenuItem(
             title: "Weekly Review in Terminal",
@@ -247,7 +256,9 @@ final class StatusBarController: NSObject {
 
         Task { @MainActor in
             do {
-                let engine = SyncEngine(config: config, forgeDir: self.forgeDir)
+                guard let forgeDir = self.forgeDir else { return }
+                let paths = ForgePaths(forgeDir: forgeDir)
+                let engine = SyncEngine(config: config, forgeDir: forgeDir, taskFilesRoot: paths.taskFilesRoot)
                 let report = try await engine.sync()
                 lastSyncDate = Date()
                 refreshCounts()
@@ -333,13 +344,13 @@ final class StatusBarController: NSObject {
             dueToday += fileDueToday
         }
 
-        // Include area files (markdown in Forge directory), same as `forge due`.
-        if let config = config {
-            let resolvedForgeDir = forgeDir ?? (config.resolvedWorkspacePath as NSString).appendingPathComponent("Forge")
-            let excludedAreaFiles: Set<String> = ["config.yaml", "someday-maybe.md"]
-            if let entries = try? fm.contentsOfDirectory(atPath: resolvedForgeDir) {
+        // Include area files (markdown in task files root), same as `forge due`.
+        if let _ = config, let forgeDir = forgeDir {
+            let taskRoot = ForgePaths(forgeDir: forgeDir).taskFilesRoot
+            let excludedAreaFiles: Set<String> = ["config.yaml", "someday-maybe.md", "inbox.md"]
+            if let entries = try? fm.contentsOfDirectory(atPath: taskRoot) {
                 for entry in entries where entry.hasSuffix(".md") && !excludedAreaFiles.contains(entry) {
-                    let path = (resolvedForgeDir as NSString).appendingPathComponent(entry)
+                    let path = (taskRoot as NSString).appendingPathComponent(entry)
                     let mtime: Date
                     do {
                         let attrs = try fm.attributesOfItem(atPath: path)
@@ -368,9 +379,8 @@ final class StatusBarController: NSObject {
         }
 
         var inboxCount = 0
-        if let config = config {
-            let resolvedForgeDir = forgeDir ?? (config.resolvedWorkspacePath as NSString).appendingPathComponent("Forge")
-            let inboxPath = (resolvedForgeDir as NSString).appendingPathComponent("inbox.md")
+        if let _ = config, let forgeDir = forgeDir {
+            let inboxPath = ForgePaths(forgeDir: forgeDir).inboxPath
             if fm.fileExists(atPath: inboxPath) {
                 let inboxTasks = markdownIO.parseTasks(
                     from: (try? String(contentsOfFile: inboxPath, encoding: .utf8)) ?? ""
@@ -415,9 +425,9 @@ final class StatusBarController: NSObject {
     }
 
     private func captureToInbox(text: String) {
-        guard let config = config else { return }
-        let resolvedForgeDir = forgeDir ?? (config.resolvedWorkspacePath as NSString).appendingPathComponent("Forge")
-        let inboxPath = (resolvedForgeDir as NSString).appendingPathComponent("inbox.md")
+        guard let _ = config, let forgeDir = forgeDir else { return }
+        try? ForgePaths(forgeDir: forgeDir).ensureTaskFilesDirectoryExists()
+        let inboxPath = ForgePaths(forgeDir: forgeDir).inboxPath
         let markdownIO = MarkdownIO()
         let task = ForgeTask(id: ForgeTask.newID(), text: text, section: .nextActions)
         try? markdownIO.appendTask(task, toFileAt: inboxPath)
@@ -441,9 +451,36 @@ final class StatusBarController: NSObject {
     @objc private func openBoardWindow() {
         guard let config = config else { return }
         if boardWindowController == nil {
-            boardWindowController = BoardWindowController(config: config)
+            boardWindowController = BoardWindowController(config: config, forgeDir: forgeDir)
         }
         boardWindowController?.showWindow()
+    }
+
+    @objc func openTaskFilesFolder() {
+        guard let config = config, let forgeDir = forgeDir else { return }
+        let paths = ForgePaths(forgeDir: forgeDir)
+        try? paths.ensureTaskFilesDirectoryExists()
+        let taskFilesRoot = (paths.taskFilesRoot as NSString).standardizingPath
+        let folderURL = URL(fileURLWithPath: taskFilesRoot).standardizedFileURL
+        let editor = EditorPreferences.loadPreferredEditor()
+        if editor == nil || editor == "default" || editor?.isEmpty == true {
+            NSWorkspace.shared.open(folderURL)
+            return
+        }
+        switch editor! {
+        case "Vim (in default terminal)":
+            let launcher = TerminalLauncher(config: config, terminalOverride: nil, openURL: { NSWorkspace.shared.open($0) })
+            let escaped = taskFilesRoot.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"")
+            launcher.run("zsh -i -c 'vim \"\(escaped)\"'", workingDirectory: taskFilesRoot)
+        case "Cursor", "Visual Studio Code", "TextEdit", "Sublime Text":
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+            process.arguments = ["-a", editor!, taskFilesRoot]
+            process.qualityOfService = .userInitiated
+            try? process.run()
+        default:
+            NSWorkspace.shared.open(folderURL)
+        }
     }
 
     @objc private func openBoardInTerminal() {

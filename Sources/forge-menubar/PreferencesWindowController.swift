@@ -147,9 +147,17 @@ private final class PreferencesGeneralView: NSView {
         openConfigButton.translatesAutoresizingMaskIntoConstraints = false
         openConfigButton.isEnabled = configPath != nil
         addSubview(openConfigButton)
+        let editTasksButton = NSButton(title: "Edit task files", target: self, action: #selector(editTaskFilesTapped(_:)))
+        editTasksButton.bezelStyle = .rounded
+        editTasksButton.translatesAutoresizingMaskIntoConstraints = false
+        editTasksButton.isEnabled = configPath != nil
+        editTasksButton.toolTip = "Open inbox, area files, and someday list in your default editor"
+        addSubview(editTasksButton)
         NSLayoutConstraint.activate([
             openConfigButton.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
             openConfigButton.topAnchor.constraint(equalTo: sub.bottomAnchor, constant: 16),
+            editTasksButton.leadingAnchor.constraint(equalTo: openConfigButton.trailingAnchor, constant: 12),
+            editTasksButton.centerYAnchor.constraint(equalTo: openConfigButton.centerYAnchor),
         ])
 
         let editorLabel = NSTextField(labelWithString: "Default text editor (for Open config, etc.):")
@@ -187,6 +195,37 @@ private final class PreferencesGeneralView: NSView {
         let url = URL(fileURLWithPath: path)
         let editor = EditorPreferences.loadPreferredEditor()
         openFile(url: url, withEditor: editor)
+    }
+
+    @objc private func editTaskFilesTapped(_ sender: NSButton) {
+        guard let path = configPath, let config = config else { return }
+        let forgeDir = (path as NSString).deletingLastPathComponent
+        let taskFilesRoot = ForgePaths(forgeDir: forgeDir).taskFilesRoot
+        let url = URL(fileURLWithPath: taskFilesRoot)
+        let editor = EditorPreferences.loadPreferredEditor()
+        openFolder(url: url, path: taskFilesRoot, withEditor: editor, config: config)
+    }
+
+    /// Opens a folder with the chosen default editor (Finder, named app, or vim in terminal).
+    private func openFolder(url: URL, path: String, withEditor editorIdentifier: String?, config: ForgeConfig) {
+        if editorIdentifier == nil || editorIdentifier == "default" || editorIdentifier?.isEmpty == true {
+            NSWorkspace.shared.open(url)
+            return
+        }
+        switch editorIdentifier! {
+        case "Vim (in default terminal)":
+            let launcher = TerminalLauncher(config: config, terminalOverride: nil, openURL: { NSWorkspace.shared.open($0) })
+            let escaped = path.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"")
+            launcher.run("zsh -i -c 'vim \"\(escaped)\"'", workingDirectory: path)
+        case "Cursor", "Visual Studio Code", "TextEdit", "Sublime Text":
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+            process.arguments = ["-a", editorIdentifier!, path]
+            process.qualityOfService = .userInitiated
+            try? process.run()
+        default:
+            NSWorkspace.shared.open(url)
+        }
     }
 
     /// Opens a file with the chosen default editor (system app, named app, or vim in terminal).
