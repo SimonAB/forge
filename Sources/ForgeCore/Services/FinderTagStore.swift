@@ -6,6 +6,9 @@ public struct FinderTagStore: Sendable {
 
     private static let tagXattrName = "com.apple.metadata:_kMDItemUserTags"
 
+    /// Default timeout when reading tags for paths that may be undownloaded (e.g. iCloud placeholders).
+    public static let defaultAvailabilityTimeout: TimeInterval = 2.0
+
     public init() {}
 
     /// Read all Finder tag names from a file or directory at the given path.
@@ -13,6 +16,26 @@ public struct FinderTagStore: Sendable {
         let url = URL(fileURLWithPath: path)
         let values = try url.resourceValues(forKeys: [.tagNamesKey])
         return values.tagNames ?? []
+    }
+
+    /// Read tags only if the path responds within the timeout; returns nil on timeout or error.
+    /// Use when scanning paths that may be undownloaded (e.g. iCloud placeholders) to avoid stalling.
+    public func readTagsIfAvailable(at path: String, timeout: TimeInterval = defaultAvailabilityTimeout) -> [String]? {
+        final class ResultBox: @unchecked Sendable {
+            var tags: [String]?
+        }
+        let box = ResultBox()
+        let semaphore = DispatchSemaphore(value: 0)
+        let url = URL(fileURLWithPath: path)
+        DispatchQueue.global(qos: .utility).async {
+            let values = try? url.resourceValues(forKeys: [.tagNamesKey])
+            box.tags = values?.tagNames ?? []
+            semaphore.signal()
+        }
+        guard semaphore.wait(timeout: .now() + timeout) == .success else {
+            return nil
+        }
+        return box.tags ?? []
     }
 
     /// Write Finder tags to a file or directory, replacing all existing tags.
@@ -59,11 +82,18 @@ public struct FinderTagStore: Sendable {
 
     /// Apply tag aliases: replace any aliased tags with their canonical form.
     /// Returns the list of replacements made as (old, new) pairs.
+    /// When `timeout` is set, uses a non-blocking read; returns empty on timeout (e.g. undownloaded cloud path).
     @discardableResult
     public func applyAliases(
-        _ aliases: [String: String], at path: String
+        _ aliases: [String: String], at path: String, timeout: TimeInterval? = nil
     ) throws -> [(old: String, new: String)] {
-        var tags = try readTags(at: path)
+        var tags: [String]
+        if let t = timeout {
+            guard let available = readTagsIfAvailable(at: path, timeout: t) else { return [] }
+            tags = available
+        } else {
+            tags = try readTags(at: path)
+        }
         var replacements: [(old: String, new: String)] = []
 
         for (index, tag) in tags.enumerated() {

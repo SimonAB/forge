@@ -30,7 +30,7 @@ public struct WorkspaceScanner: Sendable {
                     continue
                 }
 
-                let tags = (try? tagStore.readTags(at: fullPath)) ?? []
+                let tags = tagStore.readTagsIfAvailable(at: fullPath) ?? []
                 if let requiredTag = config.projectTag, !tags.contains(requiredTag) {
                     continue
                 }

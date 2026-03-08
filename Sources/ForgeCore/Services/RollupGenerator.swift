@@ -106,7 +106,7 @@ public final class RollupGenerator {
 
     private func resolveColumn(for projectPath: String) -> String? {
         let tagStore = FinderTagStore()
-        guard let tags = try? tagStore.readTags(at: projectPath) else { return nil }
+        guard let tags = tagStore.readTagsIfAvailable(at: projectPath) else { return nil }
         for tag in tags {
             if let col = config.column(forTag: tag) {
                 return col.name

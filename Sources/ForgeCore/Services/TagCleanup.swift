@@ -7,6 +7,8 @@ public struct TagCleanup: Sendable {
     private let tagStore: FinderTagStore
     private let config: ForgeConfig
 
+    private static let availabilityTimeout = FinderTagStore.defaultAvailabilityTimeout
+
     public init(config: ForgeConfig, tagStore: FinderTagStore = FinderTagStore()) {
         self.config = config
         self.tagStore = tagStore
@@ -52,22 +54,23 @@ public struct TagCleanup: Sendable {
             }
 
             if let requiredTag = config.projectTag {
-                let tags = (try? tagStore.readTags(at: fullPath)) ?? []
+                let tags = tagStore.readTagsIfAvailable(at: fullPath) ?? []
                 guard tags.contains(requiredTag) else { continue }
             }
 
-            actions.append(contentsOf: try cleanupAliasesAtSinglePath(fullPath, name: item))
+            actions.append(contentsOf: try cleanupAliasesAtSinglePath(fullPath, name: item, timeout: Self.availabilityTimeout))
         }
 
         return actions
     }
 
     /// Apply tag aliases and duplicate check to a single directory (used when cleaning recursively discovered projects).
-    public func cleanupAliasesAtSinglePath(_ fullPath: String, name: String? = nil) throws -> [CleanupAction] {
+    /// When `timeout` is set, skips the path if tags cannot be read within that time (e.g. undownloaded cloud path).
+    public func cleanupAliasesAtSinglePath(_ fullPath: String, name: String? = nil, timeout: TimeInterval? = nil) throws -> [CleanupAction] {
         var actions: [CleanupAction] = []
         let projectName = name ?? (fullPath as NSString).lastPathComponent
 
-        let replacements = try tagStore.applyAliases(config.board.tagAliases, at: fullPath)
+        let replacements = try tagStore.applyAliases(config.board.tagAliases, at: fullPath, timeout: timeout)
         for (old, new) in replacements {
             actions.append(CleanupAction(
                 projectName: projectName, projectPath: fullPath,
@@ -75,7 +78,13 @@ public struct TagCleanup: Sendable {
             ))
         }
 
-        let tags = try tagStore.readTags(at: fullPath)
+        let tags: [String]
+        if let t = timeout {
+            guard let available = tagStore.readTagsIfAvailable(at: fullPath, timeout: t) else { return actions }
+            tags = available
+        } else {
+            tags = try tagStore.readTags(at: fullPath)
+        }
         let workflowTags = tags.filter { tag in
             config.board.columns.contains { $0.tag == tag }
         }

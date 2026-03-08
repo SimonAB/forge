@@ -339,7 +339,7 @@ public final class SyncEngine: @unchecked Sendable {
             let desired = Set(st.areaTags)
             guard !desired.isEmpty else { continue }
 
-            let existing = Set((try? tagStore.readTags(at: st.filePath)) ?? [])
+            let existing = Set(tagStore.readTagsIfAvailable(at: st.filePath) ?? [])
             let toAdd = desired.subtracting(existing)
 
             for tag in toAdd {
@@ -352,7 +352,7 @@ public final class SyncEngine: @unchecked Sendable {
             guard !processed.contains(area.path) else { continue }
             guard let tags = area.frontmatter?.tags, !tags.isEmpty else { continue }
 
-            let existing = Set((try? tagStore.readTags(at: area.path)) ?? [])
+            let existing = Set(tagStore.readTagsIfAvailable(at: area.path) ?? [])
             for tag in tags where !existing.contains(tag) {
                 try? tagStore.addTag(tag, at: area.path)
             }
@@ -362,7 +362,7 @@ public final class SyncEngine: @unchecked Sendable {
         guard let projects = try? scanner.scanProjects() else { return }
         for project in projects {
             guard let columnTag = project.workflowTag else { continue }
-            let existing = Set((try? tagStore.readTags(at: project.path)) ?? [])
+            let existing = Set(tagStore.readTagsIfAvailable(at: project.path) ?? [])
             if !existing.contains(columnTag) {
                 try? tagStore.addTag(columnTag, at: project.path)
             }
