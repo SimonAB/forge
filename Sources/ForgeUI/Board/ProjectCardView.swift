@@ -8,6 +8,7 @@ struct ProjectCardView: View {
     @Environment(\.projectContextMenuActions) private var contextMenuActions
     @Environment(\.projectRevealAction) private var revealAction
     @Environment(\.openFileWithDefaultEditor) private var openFileWithDefaultEditor
+    @State private var isHovering = false
 
     var body: some View {
         HStack(alignment: .center, spacing: 6) {
@@ -56,6 +57,11 @@ struct ProjectCardView: View {
         .padding(8)
         .background(Color.primary.opacity(0.04))
         .clipShape(RoundedRectangle(cornerRadius: 6))
+        .overlay(
+            RoundedRectangle(cornerRadius: 6)
+                .strokeBorder(isHovering ? Color.primary.opacity(0.12) : .clear, lineWidth: 1)
+        )
+        .onHover { isHovering = $0 }
         .draggable(project.path)
         .contentShape(Rectangle())
         .contextMenu {
