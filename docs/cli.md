@@ -29,6 +29,7 @@ forge <command> [options]
 | `forge due` | Show overdue and upcoming due tasks |
 | `forge focus` | Enter or clear a focus session |
 | `forge init` | Initialise a new Forge workspace |
+| `forge lint` | Lint and fix task markdown files for best practices |
 
 ---
 
@@ -610,6 +611,45 @@ mode, since EventKit does not distinguish "defer again" from "fixed".
 - [ ] Submit fortnightly report @due(2026-03-14) @repeat(every 2w) @ctx(email) <!-- id:rp01ab -->
 - [ ] Change water filter @due(2026-06-01) @repeat(3m) <!-- id:rp02cd -->
 ```
+
+---
+
+## forge lint
+
+Lint task markdown files for best practices and optionally apply fixes. **Uses the
+same project set as the kanban:** direct children of each `project_roots` entry,
+filtered by `project_tag` when set. So every TASKS.md in a project folder the board
+watches is included, plus area files in the task root (e.g. Forge/tasks). Without
+path arguments, all of those are linted; you can pass explicit paths to add or
+restrict to specific files or directories.
+
+```
+forge lint [paths ...] [--fix] [--severity error|warning]
+```
+
+| Option | Description |
+|--------|--------------|
+| `--fix` | Apply fixes: add missing task IDs, normalise `- [X]` to `- [x]`, ensure trailing newline |
+| `--severity` | Report only this severity or higher: `error` or `warning` |
+
+If one or more `paths` are given (file or directory), only those are linted:
+directories are searched recursively for `TASKS.md`; `.md` files are linted
+directly. This ensures a given file is included even when config-based discovery
+misses it (e.g. `forge lint /path/to/Teaching/2025-2026/PGT/TASKS.md --fix`).
+
+**Rules checked:**
+
+- **missing_id** — Every task line should end with `<!-- id:xxxxxx -->` (6-character ID).
+- **id_format** — Task IDs should be exactly 6 characters.
+- **duplicate_id** — Same ID must not appear on more than one task in a file.
+- **checkbox_casing** — Use lowercase `- [x]` for completed tasks.
+- **section_casing** — Use canonical headers: `## Next Actions`, `## Waiting For`, `## Completed`, `## Notes`.
+- **section_order** — Sections should appear in that order.
+- **unknown_section** — Section headers should be one of the four standard task sections.
+- **date_format** — Date tags (`@due`, `@defer`, `@since`, `@done`) should use `YYYY-MM-DD`.
+- **trailing_newline** — File should end with a newline.
+
+With `--fix`, the linter rewrites files to add missing IDs (via the same logic as sync), normalise checkbox casing, and add a trailing newline where missing. Section order and header wording are not auto-corrected.
 
 ---
 
