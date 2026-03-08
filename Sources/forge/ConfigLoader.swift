@@ -4,12 +4,35 @@ import ForgeCore
 /// Shared helper to locate and load the forge configuration.
 enum ConfigLoader {
 
+    /// Subfolder under the Forge directory where task files (inbox, area files, someday) live.
+    static let tasksSubfolderName = ForgePaths.tasksSubfolderName
+
     /// The resolved path to the Forge directory, set after config is loaded.
     nonisolated(unsafe) private(set) static var resolvedForgeDir: String?
 
-    /// Files that are not treated as GTD area files.
+    /// Path to the task files directory (Forge/tasks). This is always the root for task files.
+    static func tasksDirectory(forgeDir: String) -> String {
+        ForgePaths(forgeDir: forgeDir).tasksDirectory
+    }
+
+    /// Root directory for task files: always Forge/tasks.
+    static func taskFilesRoot(forgeDir: String) -> String {
+        ForgePaths(forgeDir: forgeDir).taskFilesRoot
+    }
+
+    /// Path to inbox.md (in task files root).
+    static func inboxPath(forgeDir: String) -> String {
+        ForgePaths(forgeDir: forgeDir).inboxPath
+    }
+
+    /// Path to someday-maybe.md (in task files root).
+    static func somedayPath(forgeDir: String) -> String {
+        ForgePaths(forgeDir: forgeDir).somedayPath
+    }
+
+    /// Files that are not treated as GTD area files (inbox, someday, config when in root).
     private static let excludedFiles: Set<String> = [
-        "config.yaml", "someday-maybe.md",
+        "config.yaml", "someday-maybe.md", "inbox.md",
     ]
 
     /// Search upward from the current directory for a Forge/config.yaml file.
@@ -42,22 +65,39 @@ enum ConfigLoader {
         let frontmatter: Frontmatter?
     }
 
-    /// Discover area markdown files dynamically by scanning the Forge directory.
+    /// Discover area markdown files dynamically by scanning the task files directory.
     ///
-    /// Any `.md` file in the directory is treated as an area file, except for
-    /// those listed in `excludedFiles`.
+    /// Uses `taskFilesRoot(forgeDir:)` (Forge/tasks). Any `.md` file is treated as an area file except those in `excludedFiles`.
     static func areaTaskFiles(forgeDir: String) -> [(path: String, name: String)] {
-        return scanAreaFiles(forgeDir: forgeDir).map { ($0.path, $0.name) }
+        let root = taskFilesRoot(forgeDir: forgeDir)
+        return scanAreaFiles(in: root).map { ($0.path, $0.name) }
     }
 
-    /// Scan area files and parse their frontmatter.
-    static func scanAreaFiles(forgeDir: String) -> [AreaFile] {
+    /// All markdown files in the task files directory (Forge/tasks), including inbox and someday-maybe.
+    /// Use when completing or searching for tasks by ID so every task file is considered.
+    static func allTaskFilesInTaskRoot(forgeDir: String) -> [(path: String, name: String)] {
+        let root = taskFilesRoot(forgeDir: forgeDir)
         let fm = FileManager.default
-        guard let entries = try? fm.contentsOfDirectory(atPath: forgeDir) else { return [] }
+        guard let entries = try? fm.contentsOfDirectory(atPath: root) else { return [] }
+        return entries
+            .filter { $0.hasSuffix(".md") }
+            .sorted()
+            .map { entry in
+                let path = (root as NSString).appendingPathComponent(entry)
+                let name = (entry as NSString).deletingPathExtension.capitalized
+                return (path, name)
+            }
+    }
+
+    /// Scan area files in the given directory and parse their frontmatter.
+    /// - Parameter dir: Directory containing area .md files (e.g. Forge/tasks or Forge).
+    static func scanAreaFiles(in dir: String) -> [AreaFile] {
+        let fm = FileManager.default
+        guard let entries = try? fm.contentsOfDirectory(atPath: dir) else { return [] }
         var result: [AreaFile] = []
         for entry in entries.sorted() where entry.hasSuffix(".md") {
             guard !excludedFiles.contains(entry) else { continue }
-            let filePath = (forgeDir as NSString).appendingPathComponent(entry)
+            let filePath = (dir as NSString).appendingPathComponent(entry)
             let name = (entry as NSString).deletingPathExtension.capitalized
             let content = (try? String(contentsOfFile: filePath, encoding: .utf8)) ?? ""
             let (frontmatter, _) = Frontmatter.parse(from: content)
@@ -66,9 +106,15 @@ enum ConfigLoader {
         return result
     }
 
+    /// Convenience: scan area files in the task files root (Forge/tasks) for the given Forge directory.
+    static func scanAreaFiles(forgeDir: String) -> [AreaFile] {
+        scanAreaFiles(in: taskFilesRoot(forgeDir: forgeDir))
+    }
+
     /// Filter area files to those matching a focus tag.
     static func areaFiles(forgeDir: String, focusTag: String?) -> [AreaFile] {
-        let all = scanAreaFiles(forgeDir: forgeDir)
+        let root = taskFilesRoot(forgeDir: forgeDir)
+        let all = scanAreaFiles(in: root)
         guard let tag = focusTag?.lowercased() else { return all }
         return all.filter { area in
             guard let fm = area.frontmatter else { return false }
