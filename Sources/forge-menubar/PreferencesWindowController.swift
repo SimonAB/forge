@@ -34,7 +34,7 @@ final class PreferencesWindowController: NSWindowController {
 
         let generalItem = NSTabViewItem(identifier: "general")
         generalItem.label = "General"
-        generalItem.view = PreferencesGeneralView()
+        generalItem.view = PreferencesGeneralView(configPath: configPath, config: config)
         tabView.addTabViewItem(generalItem)
 
         let boardItem = NSTabViewItem(identifier: "board")
@@ -110,9 +110,15 @@ final class PreferencesWindowController: NSWindowController {
 // MARK: - General panel
 
 private final class PreferencesGeneralView: NSView {
+    private var editorPopUp: NSPopUpButton?
+    private let configPath: String?
+    private let config: ForgeConfig?
+
     override var isFlipped: Bool { true }
 
-    init() {
+    init(configPath: String?, config: ForgeConfig?) {
+        self.configPath = configPath
+        self.config = config
         super.init(frame: .zero)
         let label = NSTextField(labelWithString: "General")
         label.font = .systemFont(ofSize: 13, weight: .semibold)
@@ -129,6 +135,105 @@ private final class PreferencesGeneralView: NSView {
             sub.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
             sub.topAnchor.constraint(equalTo: label.bottomAnchor, constant: 8),
         ])
+
+        let openConfigButton = NSButton(title: "Open config", target: self, action: #selector(openConfigTapped(_:)))
+        openConfigButton.bezelStyle = .rounded
+        openConfigButton.translatesAutoresizingMaskIntoConstraints = false
+        openConfigButton.isEnabled = configPath != nil
+        addSubview(openConfigButton)
+        NSLayoutConstraint.activate([
+            openConfigButton.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            openConfigButton.topAnchor.constraint(equalTo: sub.bottomAnchor, constant: 16),
+        ])
+
+        let editorLabel = NSTextField(labelWithString: "Default text editor (for Open config, etc.):")
+        editorLabel.font = .systemFont(ofSize: 12, weight: .regular)
+        editorLabel.textColor = .secondaryLabelColor
+        editorLabel.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(editorLabel)
+
+        let popUp = NSPopUpButton(frame: .zero, pullsDown: false)
+        popUp.translatesAutoresizingMaskIntoConstraints = false
+        popUp.addItems(withTitles: EditorPreferences.knownEditors)
+        let saved = EditorPreferences.loadPreferredEditor()
+        let displayTitle = EditorPreferences.displayTitle(forIdentifier: saved)
+        if let idx = EditorPreferences.knownEditors.firstIndex(of: displayTitle) {
+            popUp.selectItem(at: idx)
+        } else {
+            popUp.selectItem(at: 0)
+        }
+        popUp.target = self
+        popUp.action = #selector(editorPopUpChanged(_:))
+        addSubview(popUp)
+        editorPopUp = popUp
+
+        NSLayoutConstraint.activate([
+            editorLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            editorLabel.topAnchor.constraint(equalTo: openConfigButton.bottomAnchor, constant: 20),
+            popUp.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            popUp.topAnchor.constraint(equalTo: editorLabel.bottomAnchor, constant: 6),
+            popUp.widthAnchor.constraint(greaterThanOrEqualToConstant: 200),
+        ])
+    }
+
+    @objc private func openConfigTapped(_ sender: NSButton) {
+        guard let path = configPath else { return }
+        let url = URL(fileURLWithPath: path)
+        let editor = EditorPreferences.loadPreferredEditor()
+        openFile(url: url, withEditor: editor)
+    }
+
+    /// Opens a file with the chosen default editor (system app, named app, or vim in terminal).
+    private func openFile(url: URL, withEditor editorIdentifier: String?) {
+        let path = url.path
+        if editorIdentifier == nil || editorIdentifier == "default" || editorIdentifier?.isEmpty == true {
+            NSWorkspace.shared.open(url)
+            return
+        }
+        switch editorIdentifier! {
+        case "Vim (in default terminal)":
+            guard let config = config else {
+                NSWorkspace.shared.open(url)
+                return
+            }
+            let dir = (path as NSString).deletingLastPathComponent
+            // Use Auto terminal
+            let launcher = TerminalLauncher(config: config, terminalOverride: nil, openURL: { NSWorkspace.shared.open($0) })
+            let escaped = path.replacingOccurrences(of: "\"", with: "\\\"")
+            launcher.run("zsh -i -c 'vim \"\(escaped)\"'", workingDirectory: dir)
+        case "Cursor", "Visual Studio Code", "TextEdit", "Sublime Text":
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+            process.arguments = ["-a", editorIdentifier!, path]
+            process.qualityOfService = .userInitiated
+            try? process.run()
+        default:
+            NSWorkspace.shared.open(url)
+        }
+    }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        if window != nil {
+            refreshEditorSelection()
+        }
+    }
+
+    private func refreshEditorSelection() {
+        guard let popUp = editorPopUp else { return }
+        let saved = EditorPreferences.loadPreferredEditor()
+        let displayTitle = EditorPreferences.displayTitle(forIdentifier: saved)
+        if let idx = EditorPreferences.knownEditors.firstIndex(of: displayTitle) {
+            popUp.selectItem(at: idx)
+        } else {
+            popUp.selectItem(at: 0)
+        }
+    }
+
+    @objc private func editorPopUpChanged(_ sender: NSPopUpButton) {
+        guard let title = sender.selectedItem?.title else { return }
+        let id = EditorPreferences.identifier(forDisplayTitle: title)
+        EditorPreferences.savePreferredEditor(id)
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
