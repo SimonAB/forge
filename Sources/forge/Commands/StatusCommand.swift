@@ -2,16 +2,16 @@ import ArgumentParser
 import Foundation
 import ForgeCore
 
-struct StatusCommand: ParsableCommand {
+struct StatusCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "status",
         abstract: "Show a summary dashboard of all projects."
     )
 
-    mutating func run() throws {
+    mutating func run() async throws {
         let config = try ConfigLoader.load()
         let scanner = WorkspaceScanner(config: config)
-        let projects = try scanner.scanProjects()
+        let projects = try await scanner.scanProjects()
 
         let bold = "\u{1B}[1m"
         let dim = "\u{1B}[2m"

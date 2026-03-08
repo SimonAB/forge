@@ -18,7 +18,16 @@ public struct TaskFileFinder: Sendable {
     /// Hidden directories (`.` prefix) and build artefacts (`.build`, `node_modules`)
     /// are skipped for performance. Does not use skipsPackageDescendants, so TASKS.md
     /// inside Swift packages (e.g. projects containing Package.swift) are still found.
-    public static func findAll(under root: String) -> [TaskFile] {
+    ///
+    /// - Parameters:
+    ///   - root: Directory path to search under.
+    ///   - maxFiles: If set, stop after collecting this many files (default: nil = no limit).
+    ///   - maxDepth: If set, do not descend beyond this depth relative to root; 0 = root only (default: nil = no limit).
+    public static func findAll(
+        under root: String,
+        maxFiles: Int? = nil,
+        maxDepth: Int? = nil
+    ) -> [TaskFile] {
         let fm = FileManager.default
         guard let enumerator = fm.enumerator(
             at: URL(fileURLWithPath: root),
@@ -34,6 +43,14 @@ public struct TaskFileFinder: Sendable {
         var results: [TaskFile] = []
 
         for case let url as URL in enumerator {
+            if let cap = maxFiles, results.count >= cap { break }
+
+            let depth = enumerator.level
+            if let maxD = maxDepth, depth > maxD {
+                enumerator.skipDescendants()
+                continue
+            }
+
             let name = url.lastPathComponent
 
             if name.hasPrefix(".") || skipNames.contains(name) {

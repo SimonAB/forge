@@ -2,7 +2,7 @@ import ArgumentParser
 import Foundation
 import ForgeCore
 
-struct AddCommand: ParsableCommand {
+struct AddCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "add",
         abstract: "Add a task to a project's TASKS.md."
@@ -14,10 +14,10 @@ struct AddCommand: ParsableCommand {
     @Argument(help: "Task description. Inline tags like @due(2026-03-15) @ctx(lab) are parsed.")
     var text: [String]
 
-    mutating func run() throws {
+    mutating func run() async throws {
         let config = try ConfigLoader.load()
         let scanner = WorkspaceScanner(config: config)
-        let projects = try scanner.scanProjects()
+        let projects = try await scanner.scanProjects()
 
         guard let matched = findProject(named: project, in: projects) else {
             throw ValidationError(

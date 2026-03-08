@@ -2,16 +2,16 @@ import ArgumentParser
 import Foundation
 import ForgeCore
 
-struct ReviewCommand: ParsableCommand {
+struct ReviewCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "review",
         abstract: "Guided weekly review checklist."
     )
 
-    mutating func run() throws {
+    mutating func run() async throws {
         let config = try ConfigLoader.load()
         let scanner = WorkspaceScanner(config: config)
-        let projects = try scanner.scanProjects()
+        let projects = try await scanner.scanProjects()
         let markdownIO = MarkdownIO()
 
         let bold = "\u{1B}[1m"

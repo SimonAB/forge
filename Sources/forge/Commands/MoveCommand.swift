@@ -2,7 +2,7 @@ import ArgumentParser
 import Foundation
 import ForgeCore
 
-struct MoveCommand: ParsableCommand {
+struct MoveCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "move",
         abstract: "Move a project to a different kanban column."
@@ -14,10 +14,10 @@ struct MoveCommand: ParsableCommand {
     @Argument(help: "Target column name (e.g. Active, Analyse, Write, Review, Shipped, Paused, Plan).")
     var targetColumn: String
 
-    mutating func run() throws {
+    mutating func run() async throws {
         let config = try ConfigLoader.load()
         let scanner = WorkspaceScanner(config: config)
-        let projects = try scanner.scanProjects()
+        let projects = try await scanner.scanProjects()
         let tagStore = FinderTagStore()
 
         guard let targetCol = findColumn(named: targetColumn, in: config) else {

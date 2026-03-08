@@ -2,7 +2,7 @@ import ArgumentParser
 import Foundation
 import ForgeCore
 
-struct InitCommand: ParsableCommand {
+struct InitCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "init",
         abstract: "Initialise forge in a workspace directory."
@@ -11,7 +11,7 @@ struct InitCommand: ParsableCommand {
     @Option(name: .long, help: "Path to the workspace directory.")
     var workspace: String?
 
-    mutating func run() throws {
+    mutating func run() async throws {
         let workspacePath = resolveWorkspace()
         let forgeDir = (workspacePath as NSString).appendingPathComponent("Forge")
         let configPath = (forgeDir as NSString).appendingPathComponent("config.yaml")
@@ -21,7 +21,7 @@ struct InitCommand: ParsableCommand {
             print("Forge already initialised at \(forgeDir)")
             print("Running tag cleanup...\n")
             let config = try ForgeConfig.load(from: configPath)
-            try runCleanup(config: config)
+            try await runCleanup(config: config)
             return
         }
 
@@ -60,7 +60,7 @@ struct InitCommand: ParsableCommand {
         }
 
         print()
-        try runCleanup(config: config)
+        try await runCleanup(config: config)
 
         print("\nForge is ready. Try 'forge board' to see your kanban board.")
     }
@@ -77,7 +77,7 @@ struct InitCommand: ParsableCommand {
         return cwd
     }
 
-    private func runCleanup(config: ForgeConfig) throws {
+    private func runCleanup(config: ForgeConfig) async throws {
         let cleanup = TagCleanup(config: config)
         var allActions: [TagCleanup.CleanupAction] = []
         for root in config.resolvedProjectRoots {
@@ -95,7 +95,7 @@ struct InitCommand: ParsableCommand {
         }
 
         let scanner = WorkspaceScanner(config: config)
-        let projects = try scanner.scanProjects()
+        let projects = try await scanner.scanProjects()
         let untagged = projects.filter { $0.column == nil }
         let tagged = projects.count - untagged.count
 

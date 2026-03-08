@@ -2,7 +2,7 @@ import ArgumentParser
 import Foundation
 import ForgeCore
 
-struct SomedayCommand: ParsableCommand {
+struct SomedayCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "someday",
         abstract: "View and manage the someday/maybe list."
@@ -11,19 +11,19 @@ struct SomedayCommand: ParsableCommand {
     @Argument(help: "Text to add to someday/maybe. If omitted, shows current items.")
     var text: [String] = []
 
-    mutating func run() throws {
+    mutating func run() async throws {
         let config = try ConfigLoader.load()
         let forgeDir = ConfigLoader.forgeDirectory(for: config)
         let somedayPath = (forgeDir as NSString).appendingPathComponent("someday-maybe.md")
 
         if text.isEmpty {
-            try showSomeday(at: somedayPath, config: config)
+            try await showSomeday(at: somedayPath, config: config)
         } else {
             try addToSomeday(text: text.joined(separator: " "), at: somedayPath)
         }
     }
 
-    private func showSomeday(at path: String, config: ForgeConfig) throws {
+    private func showSomeday(at path: String, config: ForgeConfig) async throws {
         let markdownIO = MarkdownIO()
         let bold = "\u{1B}[1m"
         let dim = "\u{1B}[2m"
@@ -36,7 +36,7 @@ struct SomedayCommand: ParsableCommand {
         }
 
         let scanner = WorkspaceScanner(config: config)
-        let projects = try scanner.scanProjects()
+        let projects = try await scanner.scanProjects()
         let paused = projects.filter { $0.column == "Paused" }
 
         print("\(bold)Someday / Maybe\(reset)\n")

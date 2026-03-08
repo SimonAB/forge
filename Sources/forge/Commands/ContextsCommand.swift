@@ -2,7 +2,7 @@ import ArgumentParser
 import Foundation
 import ForgeCore
 
-struct ContextsCommand: ParsableCommand {
+struct ContextsCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "contexts",
         abstract: "Show tasks grouped by context."
@@ -14,7 +14,7 @@ struct ContextsCommand: ParsableCommand {
     @Option(name: .long, help: "Focus on a specific tag (e.g. work, personal). Overrides persistent focus.")
     var focus: String?
 
-    mutating func run() throws {
+    mutating func run() async throws {
         let config = try ConfigLoader.load()
         let forgeDir = ConfigLoader.forgeDirectory(for: config)
         let scanner = WorkspaceScanner(config: config)
@@ -34,7 +34,7 @@ struct ContextsCommand: ParsableCommand {
         var tasksByContext: [String: [(task: ForgeTask, project: String)]] = [:]
 
         if showProjects {
-            let projects = try scanner.scanProjects()
+            let projects = try await scanner.scanProjects()
             let activeProjects = projects.filter { p in
                 p.column != nil && p.column != "Shipped" && p.column != "Paused"
             }
