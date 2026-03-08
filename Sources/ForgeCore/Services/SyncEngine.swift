@@ -65,6 +65,12 @@ public final class SyncEngine: @unchecked Sendable {
     }
 
     /// Perform a full two-way sync.
+    ///
+    /// **Deduplication order:** Reminders are deduplicated first by Forge ID (same task synced to
+    /// multiple lists), then by content (same logical task with different IDs; one is kept and
+    /// non-canonical markdown tasks are removed). Events are deduplicated only by Forge ID.
+    /// All downstream steps (indices, push to Reminders/Calendar, pull to markdown) use these
+    /// deduplicated lists so we never push or pull duplicates.
     public func sync() async throws -> SyncReport {
         var report = SyncReport()
         var importedInboxSignatures: [ReminderContentSignature: String] = [:]
@@ -102,6 +108,7 @@ public final class SyncEngine: @unchecked Sendable {
         var remindersByID = buildReminderIndex(remindersAfterDedup)
         let eventsByID = buildEventIndex(eventsAfterDedup)
 
+        // When the same task ID appears more than once in markdown, only sync the first to avoid duplicate reminders/events.
         var seenTaskIDs = Set<String>()
         for st in sourced {
             guard seenTaskIDs.insert(st.task.id).inserted else { continue }
@@ -147,17 +154,25 @@ public final class SyncEngine: @unchecked Sendable {
 
     // MARK: - Collect Tasks
 
+    /// Recursively find all TASKS.md files under each project root (not only direct children).
+    /// This ensures nested project folders are included regardless of Finder tags.
+    private func findAllProjectTaskFiles() -> [(path: String, projectName: String)] {
+        var result: [(path: String, projectName: String)] = []
+        for root in config.resolvedProjectRoots {
+            let taskFiles = TaskFileFinder.findAll(under: root)
+            for tf in taskFiles {
+                result.append((path: tf.path, projectName: tf.label))
+            }
+        }
+        return result
+    }
+
     private func collectAllTasks(areaFiles: [(path: String, name: String, frontmatter: Frontmatter?, body: String)]) async throws -> [SourcedTask] {
         var result: [SourcedTask] = []
 
-        let scanner = WorkspaceScanner(config: config)
-        let projects = try await scanner.scanProjects()
-
-        for project in projects {
-            let tasksPath = (project.path as NSString).appendingPathComponent("TASKS.md")
-            guard FileManager.default.fileExists(atPath: tasksPath) else { continue }
-
-            let tasks = (try? markdownIO.parseTasks(at: tasksPath, projectName: project.name)) ?? []
+        let projectTaskFiles = findAllProjectTaskFiles()
+        for (tasksPath, projectName) in projectTaskFiles {
+            let tasks = (try? markdownIO.parseTasksAtPathAndPersistIds(at: tasksPath, projectName: projectName)) ?? []
             for task in tasks {
                 result.append(SourcedTask(
                     task: task, filePath: tasksPath,
@@ -168,7 +183,11 @@ public final class SyncEngine: @unchecked Sendable {
 
         for area in areaFiles {
             let tags = area.frontmatter?.tags ?? []
-            let tasks = markdownIO.parseTasks(from: area.body, projectName: area.name)
+            let (tasks, updatedBody) = markdownIO.parseTasksReturningUpdatedBody(from: area.body, projectName: area.name)
+            if let updated = updatedBody {
+                let output = MarkdownIO.reassemble(frontmatter: area.frontmatter?.touchingModified(), body: updated)
+                try? output.write(toFile: area.path, atomically: true, encoding: .utf8)
+            }
             for task in tasks {
                 result.append(SourcedTask(
                     task: task, filePath: area.path,

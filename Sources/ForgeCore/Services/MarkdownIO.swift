@@ -87,8 +87,8 @@ public struct MarkdownIO: Sendable {
                 continue
             }
 
-            if let task = parseTaskLine(trimmed, section: currentSection, projectName: projectName) {
-                var taskWithNotes = task
+            if let parsed = parseTaskLine(trimmed, section: currentSection, projectName: projectName) {
+                var taskWithNotes = parsed.task
                 var notesLines: [String] = []
                 i += 1
                 while i < lines.count {
@@ -113,6 +113,94 @@ public struct MarkdownIO: Sendable {
             }
         }
 
+        return tasks
+    }
+
+    /// Parse tasks from markdown and optionally return an updated body with any newly assigned IDs written in.
+    /// Use when you need to persist IDs for tasks that were missing `<!-- id:xxx -->`.
+    /// Returns `updatedBody` only when at least one task received a generated ID.
+    public func parseTasksReturningUpdatedBody(from content: String, projectName: String? = nil) -> (tasks: [ForgeTask], updatedBody: String?) {
+        let (_, body) = Frontmatter.parse(from: content)
+        let cleaned = Self.stripRollup(body)
+        let lines = cleaned.components(separatedBy: .newlines)
+        var currentSection: ForgeTask.Section = .nextActions
+        var tasks: [ForgeTask] = []
+        var outputLines: [String] = []
+        var anyIdGenerated = false
+        var i = 0
+
+        while i < lines.count {
+            let line = lines[i]
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+
+            if trimmed.hasPrefix("## ") {
+                let heading = String(trimmed.dropFirst(3)).trimmingCharacters(in: .whitespaces)
+                if let section = parseSection(heading) {
+                    currentSection = section
+                }
+                outputLines.append(line)
+                i += 1
+                continue
+            }
+
+            if currentSection == .notes {
+                outputLines.append(line)
+                i += 1
+                continue
+            }
+
+            if let parsed = parseTaskLine(trimmed, section: currentSection, projectName: projectName) {
+                var taskWithNotes = parsed.task
+                var notesLines: [String] = []
+                var rawBlock: [String] = [line]
+                i += 1
+                while i < lines.count {
+                    let next = lines[i]
+                    let (isNoteLine, noteContent) = Self.parseNoteLine(next)
+                    if isNoteLine {
+                        notesLines.append(noteContent)
+                        rawBlock.append(next)
+                        i += 1
+                    } else if next.trimmingCharacters(in: .whitespaces).isEmpty && !notesLines.isEmpty {
+                        notesLines.append("")
+                        rawBlock.append(next)
+                        i += 1
+                    } else {
+                        break
+                    }
+                }
+                if !notesLines.isEmpty {
+                    taskWithNotes.notes = notesLines.joined(separator: "\n")
+                }
+                tasks.append(taskWithNotes)
+                if parsed.idWasGenerated {
+                    anyIdGenerated = true
+                    outputLines.append(formatTaskBlock(taskWithNotes))
+                } else {
+                    outputLines.append(contentsOf: rawBlock)
+                }
+            } else {
+                outputLines.append(line)
+                i += 1
+            }
+        }
+
+        let updatedBody: String? = anyIdGenerated ? outputLines.joined(separator: "\n") : nil
+        return (tasks, updatedBody)
+    }
+
+    /// Parse a TASKS.md file at the given path; if any tasks are missing IDs, assign them and write the file back.
+    /// Use during sync so that project task files get persistent IDs.
+    public func parseTasksAtPathAndPersistIds(at path: String, projectName: String? = nil) throws -> [ForgeTask] {
+        let size = (try? FileManager.default.attributesOfItem(atPath: path)[.size] as? Int) ?? 0
+        guard size <= Self.maxTaskFileSizeBytes else { return [] }
+        let content = try String(contentsOfFile: path, encoding: .utf8)
+        let (frontmatter, _) = Frontmatter.parse(from: content)
+        let (tasks, updatedBody) = parseTasksReturningUpdatedBody(from: content, projectName: projectName)
+        if let body = updatedBody {
+            let output = Self.reassemble(frontmatter: frontmatter?.touchingModified(), body: body)
+            try output.write(toFile: path, atomically: true, encoding: .utf8)
+        }
         return tasks
     }
 
@@ -195,7 +283,7 @@ public struct MarkdownIO: Sendable {
             let isUnchecked = line.contains("- [ ]")
             let isChecked = line.contains("- [x]") || line.contains("- [X]")
             if line.contains(idMarker) && (isUnchecked || isChecked) {
-                matchedTask = parseTaskLine(line, section: .nextActions, projectName: nil)
+                matchedTask = parseTaskLine(line, section: .nextActions, projectName: nil)?.task
 
                 var modified = line
                 if isUnchecked {
@@ -345,8 +433,8 @@ public struct MarkdownIO: Sendable {
                 continue
             }
 
-            if line.contains(idMarker), let task = parseTaskLine(line, section: currentSection, projectName: nil) {
-                var revised = task
+            if line.contains(idMarker), let parsed = parseTaskLine(line, section: currentSection, projectName: nil) {
+                var revised = parsed.task
                 revised.dueDate = date
                 newLines.append(formatTaskLine(revised))
                 updated = true
@@ -382,7 +470,7 @@ public struct MarkdownIO: Sendable {
     // MARK: - Private Parsing Helpers
 
     /// Remove the auto-generated rollup section so its mirrored tasks are not parsed.
-    static func stripRollup(_ text: String) -> String {
+    public static func stripRollup(_ text: String) -> String {
         guard let startRange = text.range(of: "<!-- forge:rollup -->"),
               let endRange = text.range(of: "<!-- /forge:rollup -->") else {
             return text
@@ -403,7 +491,7 @@ public struct MarkdownIO: Sendable {
 
     private func parseTaskLine(
         _ line: String, section: ForgeTask.Section, projectName: String?
-    ) -> ForgeTask? {
+    ) -> (task: ForgeTask, idWasGenerated: Bool)? {
         guard line.hasPrefix("- [") else { return nil }
 
         let isCompleted = line.hasPrefix("- [x]") || line.hasPrefix("- [X]")
@@ -411,10 +499,13 @@ public struct MarkdownIO: Sendable {
 
         let idPattern = /<!--\s*id:(\w+)\s*-->/
         let id: String
+        let idWasGenerated: Bool
         if let match = line.firstMatch(of: idPattern) {
             id = String(match.1)
+            idWasGenerated = false
         } else {
             id = ForgeTask.newID()
+            idWasGenerated = true
         }
 
         var text = line
@@ -441,7 +532,7 @@ public struct MarkdownIO: Sendable {
             .replacing(/@\w+\([^)]*\)/, with: "")
             .trimmingCharacters(in: .whitespaces)
 
-        return ForgeTask(
+        let task = ForgeTask(
             id: id,
             text: cleanText,
             isCompleted: isCompleted,
@@ -457,6 +548,7 @@ public struct MarkdownIO: Sendable {
             repeatRule: repeatRule,
             projectName: projectName
         )
+        return (task, idWasGenerated)
     }
 
     private func extractValue(tag: String, from text: String) -> String? {
