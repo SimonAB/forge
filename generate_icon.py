@@ -24,8 +24,6 @@ def draw_icon(size):
     s = size
     img = Image.new("RGBA", (s, s), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
-    pad = s * 0.06
-    radius = int(s * 0.22)
 
     # --- Background: deep forge gradient (dark at top, warm glow at bottom) ---
     bg = Image.new("RGBA", (s, s), (0, 0, 0, 0))
@@ -37,9 +35,7 @@ def draw_icon(size):
         b = int(lerp(22, 18, t))
         bg_draw.line([(0, y), (s - 1, y)], fill=(r, g, b, 255))
 
-    mask = Image.new("L", (s, s), 0)
-    mask_draw = ImageDraw.Draw(mask)
-    mask_draw.rounded_rectangle([0, 0, s - 1, s - 1], radius=radius, fill=255)
+    mask = Image.new("L", (s, s), 255)  # Full rect, no rounded outline
     bg.putalpha(mask)
     img = Image.alpha_composite(img, bg)
 
