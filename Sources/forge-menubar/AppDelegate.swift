@@ -8,11 +8,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private var statusBar: StatusBarController!
     private var preferencesWindowController: PreferencesWindowController?
+    private var captureSelectionMonitor: Any?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         statusBar = StatusBarController()
         statusBar.start()
         setupMainMenu()
+        setupCaptureSelectionShortcut()
+    }
+
+    /// Registers the global shortcut ⌃⌥⌘. to capture the current selection (Mail/Finder) to the inbox.
+    /// Requires Accessibility permission for the shortcut to work when another app is frontmost.
+    private func setupCaptureSelectionShortcut() {
+        captureSelectionMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard event.modifierFlags.contains([.control, .option, .command]),
+                  event.characters == "." else { return }
+            Task { @MainActor in
+                self?.statusBar.captureSelectionToInbox()
+            }
+        }
     }
 
     // MARK: - Main menu (macOS conventions)
@@ -49,6 +63,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         mainMenu.addItem(fileMenuItem)
         fileMenuItem.submenu = fileMenu
         addItem(to: fileMenu, title: "New Quick Capture…", action: #selector(showQuickCapture(_:)), keyEquivalent: "n", modifiers: [.command, .shift])
+        addItem(to: fileMenu, title: "Capture Selection to Inbox", action: #selector(captureSelectionToInbox(_:)), keyEquivalent: ".", modifiers: [.control, .option, .command])
 
         // Edit
         let editMenu = NSMenu(title: "Edit")
@@ -121,6 +136,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func showQuickCapture(_ sender: Any?) {
         statusBar.showQuickCapture()
+    }
+
+    @objc private func captureSelectionToInbox(_ sender: Any?) {
+        statusBar.captureSelectionToInbox()
     }
 
     @objc private func showHelp(_ sender: Any?) {

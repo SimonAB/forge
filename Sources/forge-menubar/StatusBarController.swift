@@ -145,6 +145,15 @@ final class StatusBarController: NSObject {
         captureItem.target = self
         menu.addItem(captureItem)
 
+        let captureSelectionItem = NSMenuItem(
+            title: "Capture Selection to Inbox",
+            action: #selector(captureSelectionToInboxFromMenu),
+            keyEquivalent: "."
+        )
+        captureSelectionItem.keyEquivalentModifierMask = [.control, .option, .command]
+        captureSelectionItem.target = self
+        menu.addItem(captureSelectionItem)
+
         menu.addItem(NSMenuItem.separator())
 
         let syncItem = NSMenuItem(
@@ -373,6 +382,22 @@ final class StatusBarController: NSObject {
     /// Exposed for main menu "New Quick Capture" (⇧⌘N).
     @objc func showQuickCapture() {
         openCapture()
+    }
+
+    /// Captures the current selection from Mail (selected message) or Finder (selected file/folder)
+    /// and adds it as an inbox task with a clickable link. Invoked by ⌃⌥⌘. or the File menu.
+    @objc func captureSelectionToInbox() {
+        guard config != nil else { return }
+        guard let item = SelectionCapture.captureFromFrontmostApplication() else {
+            sendNotification(title: "Forge", body: "No selection. Select an email in Mail or a file in Finder, then try again.")
+            return
+        }
+        let taskText = SelectionCapture.taskText(for: item)
+        captureToInbox(text: taskText)
+    }
+
+    @objc private func captureSelectionToInboxFromMenu() {
+        captureSelectionToInbox()
     }
 
     private func captureToInbox(text: String) {
