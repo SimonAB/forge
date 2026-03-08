@@ -266,6 +266,51 @@ public struct MarkdownIO: Sendable {
         return true
     }
 
+    /// Remove a task from a markdown file by its ID (e.g. when merging duplicate tasks from Reminders).
+    /// Removes the task line and any following note lines (indented blockquote). Returns true if the task was found and removed.
+    /// Updates `date_modified` in frontmatter.
+    public func removeTask(withID taskID: String, inFileAt path: String) throws -> Bool {
+        let raw = try String(contentsOfFile: path, encoding: .utf8)
+        let idMarker = "<!-- id:\(taskID) -->"
+
+        guard raw.contains(idMarker) else { return false }
+
+        let (frontmatter, body) = Frontmatter.parse(from: raw)
+        let lines = body.components(separatedBy: "\n")
+        var newLines: [String] = []
+        var found = false
+        var i = 0
+
+        while i < lines.count {
+            let line = lines[i]
+            if line.contains(idMarker) {
+                found = true
+                i += 1
+                while i < lines.count {
+                    let next = lines[i]
+                    let (isNote, _) = Self.parseNoteLine(next)
+                    if isNote {
+                        i += 1
+                    } else if next.trimmingCharacters(in: .whitespaces).isEmpty {
+                        i += 1
+                    } else {
+                        break
+                    }
+                }
+            } else {
+                newLines.append(line)
+                i += 1
+            }
+        }
+
+        guard found else { return false }
+
+        let result = newLines.joined(separator: "\n")
+        let output = Self.reassemble(frontmatter: frontmatter?.touchingModified(), body: result)
+        try output.write(toFile: path, atomically: true, encoding: .utf8)
+        return true
+    }
+
     /// Update a task's due date in a markdown file by its ID (e.g. when the date was changed in Calendar).
     /// Updates the @due(...) tag and touches `date_modified` in frontmatter. Returns true if the task was found and updated.
     public func updateTaskDueDate(withID taskID: String, to date: Date, inFileAt path: String) throws -> Bool {

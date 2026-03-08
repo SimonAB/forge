@@ -37,6 +37,15 @@ struct SyncCommand: AsyncParsableCommand {
         if report.remindersMoved > 0 {
             print("  ↔ \(report.remindersMoved) reminder\(report.remindersMoved == 1 ? "" : "s") moved to context list\(report.remindersMoved == 1 ? "" : "s")")
         }
+        if report.remindersDeduplicated > 0 {
+            print("  ↓ \(report.remindersDeduplicated) duplicate reminder\(report.remindersDeduplicated == 1 ? "" : "s") removed (same ID)")
+        }
+        if report.remindersMergedByContent > 0 {
+            print("  ↓ \(report.remindersMergedByContent) duplicate reminder\(report.remindersMergedByContent == 1 ? "" : "s") merged by content")
+        }
+        if report.tasksMergedInMarkdown > 0 {
+            print("  ↓ \(report.tasksMergedInMarkdown) duplicate task\(report.tasksMergedInMarkdown == 1 ? "" : "s") removed from markdown")
+        }
         if report.eventsCreated > 0 {
             print("\(green)  ↑\(reset) \(report.eventsCreated) calendar events created")
         }
@@ -45,6 +54,9 @@ struct SyncCommand: AsyncParsableCommand {
         }
         if report.eventsRemoved > 0 {
             print("  ↓ \(report.eventsRemoved) calendar events removed")
+        }
+        if report.eventsDeduplicated > 0 {
+            print("  ↓ \(report.eventsDeduplicated) duplicate calendar event\(report.eventsDeduplicated == 1 ? "" : "s") removed")
         }
         if report.tasksCompleted > 0 {
             print("\(green)  ↓\(reset) \(report.tasksCompleted) tasks completed from Reminders")
@@ -60,8 +72,9 @@ struct SyncCommand: AsyncParsableCommand {
         }
 
         let totalActions = report.remindersCreated + report.remindersCompleted
-            + report.remindersMoved
-            + report.eventsCreated + report.eventsUpdated + report.eventsRemoved
+            + report.remindersMoved + report.remindersDeduplicated + report.remindersMergedByContent
+            + report.tasksMergedInMarkdown
+            + report.eventsCreated + report.eventsUpdated + report.eventsRemoved + report.eventsDeduplicated
             + report.tasksCompleted + report.inboxItemsAdded + report.tasksUpdated
 
         if totalActions == 0 {

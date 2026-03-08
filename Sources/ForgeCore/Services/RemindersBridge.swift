@@ -169,6 +169,11 @@ public final class RemindersBridge: @unchecked Sendable {
         try store.save(reminder, commit: false)
     }
 
+    /// Remove a reminder (e.g. when deduplicating).
+    public func removeReminder(_ reminder: EKReminder) throws {
+        try store.remove(reminder, commit: false)
+    }
+
     /// Format the notes field with forge ID and tags.
     ///
     /// Format: `forge:Project:taskID\ntags: work, personal`
