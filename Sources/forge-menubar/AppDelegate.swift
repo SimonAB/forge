@@ -15,18 +15,68 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusBar.start()
         setupMainMenu()
         setupCaptureSelectionShortcut()
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(shortcutPreferencesDidChange(_:)),
+            name: ShortcutPreferences.didChangeNotification,
+            object: nil
+        )
     }
 
-    /// Registers the global shortcut ⌃⌥⌘. to capture the current selection (Mail/Finder) to the inbox.
-    /// Requires Accessibility permission for the shortcut to work when another app is frontmost.
+    func applicationDidBecomeActive(_ notification: Notification) {
+        if captureSelectionMonitor == nil {
+            setupCaptureSelectionShortcut()
+        }
+    }
+
+    @objc private func shortcutPreferencesDidChange(_ notification: Notification) {
+        if let mon = captureSelectionMonitor {
+            NSEvent.removeMonitor(mon)
+            captureSelectionMonitor = nil
+        }
+        setupMainMenu()
+        setupCaptureSelectionShortcut()
+    }
+
+    /// Registers the global shortcut for Capture Selection to Inbox (from ShortcutPreferences).
+    /// Requires Accessibility permission; returns nil when permission is missing. Re-try on applicationDidBecomeActive.
     private func setupCaptureSelectionShortcut() {
-        captureSelectionMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            guard event.modifierFlags.contains([.control, .option, .command]),
-                  event.characters == "." else { return }
+        let spec = ShortcutPreferences.spec(for: .captureSelection)
+        let modMask: NSEvent.ModifierFlags = [.control, .option, .shift, .command]
+        let expectedMods = spec.modifierFlags.intersection(modMask)
+
+        let monitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            let eventMods = event.modifierFlags.intersection(modMask)
+            guard eventMods == expectedMods else { return }
+            let keyMatches: Bool
+            if !spec.keyEquivalent.isEmpty {
+                keyMatches = (event.characters == spec.keyEquivalent || event.charactersIgnoringModifiers == spec.keyEquivalent)
+            } else {
+                keyMatches = event.keyCode == spec.keyCode
+            }
+            guard keyMatches else { return }
             Task { @MainActor in
                 self?.statusBar.captureSelectionToInbox()
             }
         }
+        captureSelectionMonitor = monitor
+
+        if monitor == nil {
+            scheduleRetryCaptureSelectionShortcut()
+        }
+    }
+
+    private var captureSelectionRetryWorkItem: DispatchWorkItem?
+
+    private func scheduleRetryCaptureSelectionShortcut() {
+        captureSelectionRetryWorkItem?.cancel()
+        let item = DispatchWorkItem { [weak self] in
+            Task { @MainActor in
+                self?.setupCaptureSelectionShortcut()
+            }
+        }
+        captureSelectionRetryWorkItem = item
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0, execute: item)
     }
 
     // MARK: - Main menu (macOS conventions)
@@ -62,8 +112,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let fileMenuItem = NSMenuItem(title: "File", action: nil, keyEquivalent: "")
         mainMenu.addItem(fileMenuItem)
         fileMenuItem.submenu = fileMenu
-        addItem(to: fileMenu, title: "New Quick Capture…", action: #selector(showQuickCapture(_:)), keyEquivalent: "n", modifiers: [.command, .shift])
-        addItem(to: fileMenu, title: "Capture Selection to Inbox", action: #selector(captureSelectionToInbox(_:)), keyEquivalent: ".", modifiers: [.control, .option, .command])
+        let quickCaptureSpec = ShortcutPreferences.spec(for: .quickCapture)
+        let captureSelectionSpec = ShortcutPreferences.spec(for: .captureSelection)
+        addItem(to: fileMenu, title: "New Quick Capture…", action: #selector(showQuickCapture(_:)), keyEquivalent: quickCaptureSpec.keyEquivalent, modifiers: quickCaptureSpec.modifierFlags)
+        addItem(to: fileMenu, title: "Capture Selection to Inbox", action: #selector(captureSelectionToInbox(_:)), keyEquivalent: captureSelectionSpec.keyEquivalent, modifiers: captureSelectionSpec.modifierFlags)
 
         // Edit
         let editMenu = NSMenu(title: "Edit")
