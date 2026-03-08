@@ -38,6 +38,35 @@ public struct FinderTagStore: Sendable {
         return box.tags ?? []
     }
 
+    /// Async version: read tags only if the path responds within the timeout; returns nil on timeout or error.
+    /// Prefer this over the synchronous version to avoid blocking the calling thread.
+    public func readTagsIfAvailable(at path: String, timeout: TimeInterval = defaultAvailabilityTimeout) async -> [String]? {
+        let url = URL(fileURLWithPath: path)
+        return await withCheckedContinuation { continuation in
+            final class ResumeState: @unchecked Sendable {
+                let lock = NSLock()
+                var resumed = false
+                var continuation: CheckedContinuation<[String]?, Never>?
+                func resumeOnce(with value: [String]?) {
+                    lock.lock()
+                    defer { lock.unlock() }
+                    guard !resumed else { return }
+                    resumed = true
+                    continuation?.resume(returning: value)
+                }
+            }
+            let state = ResumeState()
+            state.continuation = continuation
+            DispatchQueue.global(qos: .utility).async {
+                let values = try? url.resourceValues(forKeys: [.tagNamesKey])
+                state.resumeOnce(with: values?.tagNames ?? [])
+            }
+            DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + timeout) {
+                state.resumeOnce(with: nil)
+            }
+        }
+    }
+
     /// Write Finder tags to a file or directory, replacing all existing tags.
     /// Uses the binary plist xattr directly for cross-version compatibility.
     public func writeTags(_ tags: [String], at path: String) throws {
