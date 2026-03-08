@@ -2,7 +2,7 @@ import ArgumentParser
 import Foundation
 import ForgeCore
 
-struct DoneCommand: ParsableCommand {
+struct DoneCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "done",
         abstract: "Mark a task as completed by its ID."
@@ -11,12 +11,12 @@ struct DoneCommand: ParsableCommand {
     @Argument(help: "Task ID (the 6-character code from <!-- id:xxxxxx -->).")
     var taskID: String
 
-    mutating func run() throws {
+    mutating func run() async throws {
         let config = try ConfigLoader.load()
         let forgeDir = ConfigLoader.forgeDirectory(for: config)
         let markdownIO = MarkdownIO()
         let scanner = WorkspaceScanner(config: config)
-        let projects = try scanner.scanProjects()
+        let projects = try await scanner.scanProjects()
 
         for project in projects {
             let tasksPath = (project.path as NSString).appendingPathComponent("TASKS.md")

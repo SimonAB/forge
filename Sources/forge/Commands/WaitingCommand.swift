@@ -2,7 +2,7 @@ import ArgumentParser
 import Foundation
 import ForgeCore
 
-struct WaitingCommand: ParsableCommand {
+struct WaitingCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "waiting",
         abstract: "Show all waiting-for items across projects."
@@ -11,7 +11,7 @@ struct WaitingCommand: ParsableCommand {
     @Option(name: .long, help: "Focus on a specific tag (e.g. work, personal). Overrides persistent focus.")
     var focus: String?
 
-    mutating func run() throws {
+    mutating func run() async throws {
         let config = try ConfigLoader.load()
         let forgeDir = ConfigLoader.forgeDirectory(for: config)
         let scanner = WorkspaceScanner(config: config)
@@ -32,7 +32,7 @@ struct WaitingCommand: ParsableCommand {
         var totalWaiting = 0
 
         if showProjects {
-            let projects = try scanner.scanProjects()
+            let projects = try await scanner.scanProjects()
             for proj in projects {
                 let tasksPath = (proj.path as NSString).appendingPathComponent("TASKS.md")
                 guard FileManager.default.fileExists(atPath: tasksPath) else { continue }

@@ -2,7 +2,7 @@ import ArgumentParser
 import Foundation
 import ForgeCore
 
-struct NextCommand: ParsableCommand {
+struct NextCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "next",
         abstract: "Show all next actions across projects."
@@ -23,7 +23,7 @@ struct NextCommand: ParsableCommand {
     @Option(name: .long, help: "Focus on a specific tag (e.g. work, personal). Overrides persistent focus.")
     var focus: String?
 
-    mutating func run() throws {
+    mutating func run() async throws {
         let config = try ConfigLoader.load()
         let forgeDir = ConfigLoader.forgeDirectory(for: config)
         let scanner = WorkspaceScanner(config: config)
@@ -46,7 +46,7 @@ struct NextCommand: ParsableCommand {
         var overdueTasks = 0
 
         if showProjects {
-            let projects = try scanner.scanProjects()
+            let projects = try await scanner.scanProjects()
             let filteredProjects: [Project]
             if let projectFilter = project {
                 let lower = projectFilter.lowercased()

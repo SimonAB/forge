@@ -19,6 +19,9 @@ import Foundation
 /// ```
 public struct MarkdownIO: Sendable {
 
+    /// Maximum file size (bytes) to load for parsing; larger files are skipped to avoid excessive memory use.
+    public static let maxTaskFileSizeBytes: Int = 5 * 1024 * 1024  // 5 MB
+
     private static let dateFormatter: DateFormatter = {
         let f = DateFormatter()
         f.dateFormat = "yyyy-MM-dd"
@@ -31,15 +34,21 @@ public struct MarkdownIO: Sendable {
     // MARK: - Parsing
 
     /// Parse a TASKS.md file and return all tasks found.
+    /// Files larger than `maxTaskFileSizeBytes` are not loaded; returns an empty array.
     public func parseTasks(at path: String, projectName: String? = nil) throws -> [ForgeTask] {
+        let size = (try? FileManager.default.attributesOfItem(atPath: path)[.size] as? Int) ?? 0
+        guard size <= Self.maxTaskFileSizeBytes else { return [] }
         let content = try String(contentsOfFile: path, encoding: .utf8)
         return parseTasks(from: content, projectName: projectName)
     }
 
     /// Parse frontmatter and tasks from a markdown file at the given path.
+    /// Files larger than `maxTaskFileSizeBytes` are not loaded; returns (nil, []).
     public func parseFile(at path: String, projectName: String? = nil) throws
         -> (frontmatter: Frontmatter?, tasks: [ForgeTask])
     {
+        let size = (try? FileManager.default.attributesOfItem(atPath: path)[.size] as? Int) ?? 0
+        guard size <= Self.maxTaskFileSizeBytes else { return (nil, []) }
         let content = try String(contentsOfFile: path, encoding: .utf8)
         let (fm, body) = Frontmatter.parse(from: content)
         let tasks = parseTasks(from: body, projectName: projectName)

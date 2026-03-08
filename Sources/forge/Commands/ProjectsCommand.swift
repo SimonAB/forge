@@ -3,7 +3,7 @@ import Foundation
 import ForgeCore
 
 /// Show tasks grouped by project, with summary counts and status indicators.
-struct ProjectsCommand: ParsableCommand {
+struct ProjectsCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "projects",
         abstract: "Show tasks per project."
@@ -24,7 +24,7 @@ struct ProjectsCommand: ParsableCommand {
     @Option(name: .long, help: "Focus on a specific tag (overrides persistent focus).")
     var focus: String?
 
-    mutating func run() throws {
+    mutating func run() async throws {
         let config = try ConfigLoader.load()
         let forgeDir = ConfigLoader.forgeDirectory(for: config)
         let scanner = WorkspaceScanner(config: config)
@@ -49,7 +49,7 @@ struct ProjectsCommand: ParsableCommand {
         var totalTasks = 0
 
         if showProjects {
-            var projects = try scanner.scanProjects()
+            var projects = try await scanner.scanProjects()
 
             if let projectFilter = project {
                 let lower = projectFilter.lowercased()

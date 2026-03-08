@@ -2,7 +2,7 @@ import ArgumentParser
 import Foundation
 import ForgeCore
 
-struct BoardCommand: ParsableCommand {
+struct BoardCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "board",
         abstract: "Display the kanban board."
@@ -14,10 +14,10 @@ struct BoardCommand: ParsableCommand {
     @Option(name: .shortAndLong, help: "Filter to a specific column.")
     var column: String?
 
-    mutating func run() throws {
+    mutating func run() async throws {
         let config = try ConfigLoader.load()
         let scanner = WorkspaceScanner(config: config)
-        var projects = try scanner.scanProjects()
+        var projects = try await scanner.scanProjects()
 
         if let columnFilter = column {
             let lowerFilter = columnFilter.lowercased()
