@@ -323,7 +323,7 @@ final class StatusBarController: NSObject {
     @objc private func openDue() {
         guard let config = config else { return }
         NSApp.activate(ignoringOtherApps: true)
-        let launcher = TerminalLauncher(config: config)
+        let launcher = TerminalLauncher(config: config, openURL: { NSWorkspace.shared.open($0) })
         launcher.run("forge due", workingDirectory: config.resolvedWorkspacePath)
     }
 
@@ -338,21 +338,21 @@ final class StatusBarController: NSObject {
     @objc private func openBoardInTerminal() {
         guard let config = config else { return }
         NSApp.activate(ignoringOtherApps: true)
-        let launcher = TerminalLauncher(config: config)
+        let launcher = TerminalLauncher(config: config, openURL: { NSWorkspace.shared.open($0) })
         launcher.run("forge board", workingDirectory: config.resolvedWorkspacePath)
     }
 
     @objc private func openProcess() {
         guard let config = config else { return }
         NSApp.activate(ignoringOtherApps: true)
-        let launcher = TerminalLauncher(config: config)
+        let launcher = TerminalLauncher(config: config, openURL: { NSWorkspace.shared.open($0) })
         launcher.run("forge process", workingDirectory: config.resolvedWorkspacePath)
     }
 
     @objc private func openReview() {
         guard let config = config else { return }
         NSApp.activate(ignoringOtherApps: true)
-        let launcher = TerminalLauncher(config: config)
+        let launcher = TerminalLauncher(config: config, openURL: { NSWorkspace.shared.open($0) })
         launcher.run("forge review", workingDirectory: config.resolvedWorkspacePath)
     }
 
