@@ -7,6 +7,7 @@ struct ProjectCardView: View {
     let project: Project
     @Environment(\.projectContextMenuActions) private var contextMenuActions
     @Environment(\.projectRevealAction) private var revealAction
+    @Environment(\.openFileWithDefaultEditor) private var openFileWithDefaultEditor
 
     var body: some View {
         HStack(alignment: .center, spacing: 6) {
@@ -24,6 +25,20 @@ struct ProjectCardView: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+
+            if let openFileWithDefaultEditor = openFileWithDefaultEditor {
+                Button {
+                    let tasksPath = (project.path as NSString).appendingPathComponent("TASKS.md")
+                    openFileWithDefaultEditor(URL(fileURLWithPath: tasksPath))
+                } label: {
+                    Image(systemName: "checklist")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help("Open TASKS.md")
+            }
 
             if let revealAction = revealAction {
                 Button {
