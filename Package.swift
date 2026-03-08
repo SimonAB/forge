@@ -4,7 +4,7 @@ import PackageDescription
 
 let package = Package(
     name: "Forge",
-    platforms: [.macOS(.v14)],
+    platforms: [.macOS(.v14), .iOS(.v17)],
     dependencies: [
         .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.5.0"),
         .package(url: "https://github.com/jpsim/Yams.git", from: "5.0.0"),
@@ -23,13 +23,28 @@ let package = Package(
             ],
             path: "Sources/forge"
         ),
+        .target(
+            name: "ForgeUI",
+            dependencies: ["ForgeCore"],
+            path: "Sources/ForgeUI"
+        ),
         .executableTarget(
             name: "forge-menubar",
-            dependencies: ["ForgeCore"],
+            dependencies: ["ForgeCore", "ForgeUI"],
             path: "Sources/forge-menubar",
             linkerSettings: [
                 .linkedFramework("AppKit"),
                 .linkedFramework("UserNotifications"),
+                .linkedFramework("SwiftUI"),
+            ]
+        ),
+        .executableTarget(
+            name: "forge-board",
+            dependencies: ["ForgeCore", "ForgeUI"],
+            path: "Sources/forge-board",
+            linkerSettings: [
+                .linkedFramework("AppKit"),
+                .linkedFramework("SwiftUI"),
             ]
         ),
         .testTarget(
