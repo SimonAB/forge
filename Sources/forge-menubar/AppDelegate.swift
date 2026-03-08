@@ -1,16 +1,20 @@
 import AppKit
+import ApplicationServices
 import ForgeCore
+import UserNotifications
 
 /// Menu bar application delegate. Manages the status item, main menu bar,
 /// preferences window, background sync, quick capture, and overdue notifications.
 @MainActor
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate {
 
     private var statusBar: StatusBarController!
     private var preferencesWindowController: PreferencesWindowController?
     private var captureSelectionMonitor: Any?
+    private var hasShownAccessibilityAlertThisLaunch = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        UNUserNotificationCenter.current().delegate = self
         statusBar = StatusBarController()
         statusBar.start()
         setupMainMenu()
@@ -27,6 +31,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if captureSelectionMonitor == nil {
             setupCaptureSelectionShortcut()
         }
+    }
+
+    nonisolated func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        completionHandler([.banner, .sound, .list])
     }
 
     @objc private func shortcutPreferencesDidChange(_ notification: Notification) {
@@ -62,8 +74,39 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         captureSelectionMonitor = monitor
 
         if monitor == nil {
+            promptForAccessibilityIfNeeded()
+            showAccessibilityAlertIfNeeded()
             scheduleRetryCaptureSelectionShortcut()
         }
+    }
+
+    /// Shows an in-app alert when the global monitor failed. The system dialog from
+    /// AXIsProcessTrustedWithOptions is often suppressed (e.g. under Xcode, or sandbox).
+    private func showAccessibilityAlertIfNeeded() {
+        guard !hasShownAccessibilityAlertThisLaunch else { return }
+        hasShownAccessibilityAlertThisLaunch = true
+
+        let appName = ProcessInfo.processInfo.processName
+        let alert = NSAlert()
+        alert.messageText = "Capture Selection shortcut needs Accessibility"
+        alert.informativeText = "The keyboard shortcut for capturing from Finder or Mail only works when \(appName) has Accessibility permission. After each new build you may need to re-enable it.\n\nClick \"Open System Settings\" and turn on \(appName) in the list."
+        alert.alertStyle = .informational
+        alert.addButton(withTitle: "Open System Settings")
+        alert.addButton(withTitle: "OK")
+
+        if alert.runModal() == .alertFirstButtonReturn {
+            if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
+                NSWorkspace.shared.open(url)
+            }
+        }
+    }
+
+    /// Shows the system Accessibility dialog once when the global monitor could not be installed.
+    /// After a recompile, macOS treats the new binary as a different app, so permission must be re-granted.
+    private func promptForAccessibilityIfNeeded() {
+        let optionPrompt = "AXTrustedCheckOptionPrompt" as CFString
+        let options = [optionPrompt: true] as CFDictionary
+        AXIsProcessTrustedWithOptions(options)
     }
 
     private var captureSelectionRetryWorkItem: DispatchWorkItem?

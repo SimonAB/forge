@@ -520,8 +520,9 @@ private final class PreferencesShortcutsView: NSView {
         let accessibilityLabel = NSTextField(labelWithString: "Capture Selection when another app (e.g. Finder, Mail) is active requires Accessibility permission.")
         accessibilityLabel.font = .systemFont(ofSize: 11, weight: .regular)
         accessibilityLabel.textColor = .secondaryLabelColor
-        accessibilityLabel.maximumNumberOfLines = 2
+        accessibilityLabel.maximumNumberOfLines = 4
         accessibilityLabel.lineBreakMode = .byWordWrapping
+        accessibilityLabel.cell?.truncatesLastVisibleLine = false
         accessibilityLabel.translatesAutoresizingMaskIntoConstraints = false
         addSubview(accessibilityLabel)
         self.accessibilityLabel = accessibilityLabel
@@ -559,11 +560,12 @@ private final class PreferencesShortcutsView: NSView {
 
     private func updateAccessibilityStatus() {
         let trusted = AXIsProcessTrusted()
+        let name = ProcessInfo.processInfo.processName
         if trusted {
             accessibilityLabel?.stringValue = "Capture Selection in other apps: Accessibility is allowed. The shortcut should work when Finder or Mail is frontmost."
             accessibilityLabel?.textColor = .secondaryLabelColor
         } else {
-            accessibilityLabel?.stringValue = "Capture Selection in other apps: Accessibility not allowed. Add \"\(ProcessInfo.processInfo.processName)\" to the list below and enable it, then switch back to Forge."
+            accessibilityLabel?.stringValue = "Capture Selection in other apps: not allowed for this run. The running app (\"\(name)\") must be in the list and enabled. If Forge.app is already ON, turn it OFF then ON again to re-grant for the current build."
             accessibilityLabel?.textColor = .systemOrange
         }
     }
