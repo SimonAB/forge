@@ -2,9 +2,14 @@ import SwiftUI
 import ForgeCore
 
 /// Main Kanban board view: horizontal scroll of columns, each with header and project cards. Supports drag-and-drop between columns.
+/// When the window is narrower than `narrowWindowThreshold`, shows a list view instead.
 public struct BoardView: View {
     @Bindable var viewModel: BoardViewModel
     @Environment(\.runForgeInTerminal) private var runForgeInTerminal
+    @Environment(\.openTaskFilesFolder) private var openTaskFilesFolder
+
+    /// Window width below which the list layout is shown instead of the board.
+    private static let narrowWindowThreshold: CGFloat = 520
 
     public init(viewModel: BoardViewModel) {
         self.viewModel = viewModel
@@ -30,24 +35,28 @@ public struct BoardView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 GeometryReader { geometry in
-                    let columnCount = max(1, viewModel.groupedColumns.count)
-                    let padding: CGFloat = 12
-                    let spacing: CGFloat = 12
-                    let totalGaps = padding * 2 + spacing * CGFloat(columnCount - 1)
-                    let columnWidth = min(320, max(180, (geometry.size.width - totalGaps) / CGFloat(columnCount)))
-                    ScrollView(.horizontal, showsIndicators: true) {
-                        HStack(alignment: .top, spacing: spacing) {
-                            ForEach(Array(viewModel.groupedColumns.enumerated()), id: \.offset) { _, group in
-                                ColumnView(
-                                    column: group.column,
-                                    projects: group.projects,
-                                    viewModel: viewModel,
-                                    columnWidth: columnWidth
-                                )
+                    if geometry.size.width < Self.narrowWindowThreshold {
+                        BoardListView(viewModel: viewModel)
+                    } else {
+                        let columnCount = max(1, viewModel.groupedColumns.count)
+                        let padding: CGFloat = 12
+                        let spacing: CGFloat = 12
+                        let totalGaps = padding * 2 + spacing * CGFloat(columnCount - 1)
+                        let columnWidth = min(320, max(180, (geometry.size.width - totalGaps) / CGFloat(columnCount)))
+                        ScrollView(.horizontal, showsIndicators: true) {
+                            HStack(alignment: .top, spacing: spacing) {
+                                ForEach(Array(viewModel.groupedColumns.enumerated()), id: \.offset) { _, group in
+                                    ColumnView(
+                                        column: group.column,
+                                        projects: group.projects,
+                                        viewModel: viewModel,
+                                        columnWidth: columnWidth
+                                    )
+                                }
                             }
+                            .frame(minWidth: geometry.size.width)
+                            .padding(padding)
                         }
-                        .frame(minWidth: geometry.size.width)
-                        .padding(padding)
                     }
                 }
             }
@@ -112,28 +121,37 @@ public struct BoardView: View {
 
             // MARK: - Actions (trailing)
             ToolbarItemGroup(placement: .primaryAction) {
-                if runForgeInTerminal != nil {
+                if runForgeInTerminal != nil || openTaskFilesFolder != nil {
                     Menu {
                         Section("Workflow") {
-                            Button("Inbox (process)") {
-                                runForgeInTerminal?("forge process", viewModel.config.resolvedWorkspacePath)
+                            if let openTaskFilesFolder = openTaskFilesFolder {
+                                Button("Edit task files…") {
+                                    openTaskFilesFolder()
+                                }
                             }
-                            Button("Weekly review") {
-                                runForgeInTerminal?("forge review", viewModel.config.resolvedWorkspacePath)
-                            }
-                            Button("Due today") {
-                                runForgeInTerminal?("forge due", viewModel.config.resolvedWorkspacePath)
-                            }
-                            Button("Next actions") {
-                                runForgeInTerminal?("forge next", viewModel.config.resolvedWorkspacePath)
+                            if runForgeInTerminal != nil {
+                                Button("Inbox (process)") {
+                                    runForgeInTerminal?("forge process", viewModel.config.resolvedWorkspacePath)
+                                }
+                                Button("Weekly review") {
+                                    runForgeInTerminal?("forge review", viewModel.config.resolvedWorkspacePath)
+                                }
+                                Button("Due today") {
+                                    runForgeInTerminal?("forge due", viewModel.config.resolvedWorkspacePath)
+                                }
+                                Button("Next actions") {
+                                    runForgeInTerminal?("forge next", viewModel.config.resolvedWorkspacePath)
+                                }
                             }
                         }
-                        Section("Terminal") {
-                            Button("Sync") {
-                                runForgeInTerminal?("forge sync", viewModel.config.resolvedWorkspacePath)
-                            }
-                            Button("Board") {
-                                runForgeInTerminal?("forge board", viewModel.config.resolvedWorkspacePath)
+                        if runForgeInTerminal != nil {
+                            Section("Terminal") {
+                                Button("Sync") {
+                                    runForgeInTerminal?("forge sync", viewModel.config.resolvedWorkspacePath)
+                                }
+                                Button("Board") {
+                                    runForgeInTerminal?("forge board", viewModel.config.resolvedWorkspacePath)
+                                }
                             }
                         }
                     } label: {
@@ -156,5 +174,53 @@ public struct BoardView: View {
         .task {
             viewModel.load()
         }
+    }
+}
+
+// MARK: - List layout (narrow window)
+
+/// Vertical list of projects grouped by column, shown when the window is too narrow for the board.
+private struct BoardListView: View {
+    @Bindable var viewModel: BoardViewModel
+
+    var body: some View {
+        List {
+            ForEach(Array(viewModel.groupedColumns.enumerated()), id: \.offset) { _, group in
+                Section {
+                    ForEach(group.projects, id: \.path) { project in
+                        ProjectCardView(project: project)
+                            .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12))
+                            .listRowBackground(EmptyView())
+                            .listRowSeparator(.hidden)
+                            .dropDestination(for: String.self) { paths, _ in
+                                guard let path = paths.first,
+                                      let droppedProject = viewModel.projects.first(where: { $0.path == path }),
+                                      droppedProject.column != group.column.name else { return false }
+                                viewModel.move(project: droppedProject, toColumn: group.column)
+                                return true
+                            }
+                    }
+                } header: {
+                    HStack(spacing: 6) {
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(columnColor(for: group.column.colour))
+                            .frame(width: 4, height: 14)
+                        Text(group.column.name)
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.vertical, 4)
+                    .dropDestination(for: String.self) { paths, _ in
+                        guard let path = paths.first,
+                              let droppedProject = viewModel.projects.first(where: { $0.path == path }),
+                              droppedProject.column != group.column.name else { return false }
+                        viewModel.move(project: droppedProject, toColumn: group.column)
+                        return true
+                    }
+                }
+            }
+        }
+        .listStyle(.inset)
     }
 }
