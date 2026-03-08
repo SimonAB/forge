@@ -1,0 +1,56 @@
+import SwiftUI
+import ForgeCore
+
+/// A single project card on the board: name, meta tags (context/people from native folder tags), draggable,
+/// optional clickable folder icon to reveal in Finder, and optional context menu from environment.
+struct ProjectCardView: View {
+    let project: Project
+    @Environment(\.projectContextMenuActions) private var contextMenuActions
+    @Environment(\.projectRevealAction) private var revealAction
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 6) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(project.name)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                if !project.metaTags.isEmpty {
+                    Text(project.metaTags.joined(separator: " "))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            if let revealAction = revealAction {
+                Button {
+                    revealAction(project)
+                } label: {
+                    Image(systemName: "folder")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help("Reveal in Finder")
+            }
+        }
+        .padding(8)
+        .background(Color.primary.opacity(0.04))
+        .clipShape(RoundedRectangle(cornerRadius: 6))
+        .draggable(project.path)
+        .contentShape(Rectangle())
+        .contextMenu {
+            if let actions = contextMenuActions?(project), !actions.isEmpty {
+                ForEach(Array(actions.enumerated()), id: \.offset) { _, action in
+                    Button(action.title) {
+                        action.action(project)
+                    }
+                }
+            }
+        }
+    }
+}
