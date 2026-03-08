@@ -71,3 +71,17 @@ public extension EnvironmentValues {
         set { self[OpenFileWithDefaultEditorKey.self] = newValue }
     }
 }
+
+// MARK: - Open task files folder (inbox, area files, someday)
+
+private enum OpenTaskFilesFolderKey: EnvironmentKey {
+    static let defaultValue: (@Sendable () -> Void)? = nil
+}
+
+public extension EnvironmentValues {
+    /// When set, the board toolbar can offer "Edit task files…" to open Forge/tasks in the default editor.
+    var openTaskFilesFolder: (@Sendable () -> Void)? {
+        get { self[OpenTaskFilesFolderKey.self] }
+        set { self[OpenTaskFilesFolderKey.self] = newValue }
+    }
+}

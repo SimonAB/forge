@@ -9,10 +9,12 @@ import AppKit
 @main
 struct ForgeBoardApp: App {
     @State private var config: ForgeConfig?
+    @State private var forgeDir: String?
     @State private var configLoaded = false
 
     init() {
         _config = State(initialValue: nil)
+        _forgeDir = State(initialValue: nil)
         _configLoaded = State(initialValue: false)
     }
 
@@ -22,31 +24,73 @@ struct ForgeBoardApp: App {
                 if !configLoaded {
                     LoadingConfigView()
                 } else if let config = config {
-                    BoardRootView(config: config)
+                    BoardRootView(config: config, forgeDir: forgeDir)
                 } else {
                     NoConfigView()
                 }
             }
             .task {
                 guard !configLoaded else { return }
-                config = await Self.loadConfig()
+                let loaded = await Self.loadConfig()
+                config = loaded?.config
+                forgeDir = loaded?.forgeDir
                 configLoaded = true
             }
         }
         .windowStyle(.titleBar)
         .defaultSize(width: 900, height: 500)
+        #if canImport(AppKit)
+        .commands {
+            CommandGroup(after: .windowArrangement) {
+                Button("Edit task files…") {
+                    openTaskFilesFolder()
+                }
+                .keyboardShortcut("e", modifiers: [.command, .shift])
+                .disabled(forgeDir == nil)
+            }
+        }
+        #endif
     }
 
-    private static func loadConfig() async -> ForgeConfig? {
-        let home = FileManager.default.homeDirectoryForCurrentUser.path
-        let candidates = [
-            (home as NSString).appendingPathComponent("Documents/Forge/config.yaml"),
-            (home as NSString).appendingPathComponent("Documents/Work/Projects/Forge/config.yaml"),
-        ]
+    #if canImport(AppKit)
+    private func openTaskFilesFolder() {
+        guard let forgeDir = forgeDir, let config = config else { return }
+        let paths = ForgePaths(forgeDir: forgeDir)
+        let folderURL = URL(fileURLWithPath: paths.taskFilesRoot)
+        let editor = EditorPreferences.loadPreferredEditor()
+        if editor == nil || editor == "default" || editor?.isEmpty == true {
+            NSWorkspace.shared.open(folderURL)
+            return
+        }
+        let path = paths.taskFilesRoot
+        switch editor! {
+        case "Vim (in default terminal)":
+            let launcher = TerminalLauncher(config: config, terminalOverride: nil, openURL: { NSWorkspace.shared.open($0) })
+            let escaped = path.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"")
+            launcher.run("zsh -i -c 'vim \"\(escaped)\"'", workingDirectory: path)
+        case "Cursor", "Visual Studio Code", "TextEdit", "Sublime Text":
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+            process.arguments = ["-a", editor!, path]
+            process.qualityOfService = .userInitiated
+            try? process.run()
+        default:
+            NSWorkspace.shared.open(folderURL)
+        }
+    }
+    #endif
+
+    private static func loadConfig() async -> (config: ForgeConfig, forgeDir: String)? {
         return await Task.detached(priority: .userInitiated) {
+            let home = FileManager.default.homeDirectoryForCurrentUser.path
+            let candidates = [
+                (home as NSString).appendingPathComponent("Documents/Forge/config.yaml"),
+                (home as NSString).appendingPathComponent("Documents/Work/Projects/Forge/config.yaml"),
+            ]
             for path in candidates {
                 if FileManager.default.fileExists(atPath: path), let config = try? ForgeConfig.load(from: path) {
-                    return config
+                    let forgeDir = (path as NSString).deletingLastPathComponent
+                    return (config, forgeDir)
                 }
             }
             return nil
@@ -58,10 +102,12 @@ struct ForgeBoardApp: App {
 
 private struct BoardRootView: View {
     let config: ForgeConfig
+    var forgeDir: String?
     @State private var viewModel: BoardViewModel
 
-    init(config: ForgeConfig) {
+    init(config: ForgeConfig, forgeDir: String? = nil) {
         self.config = config
+        self.forgeDir = forgeDir
         _viewModel = State(initialValue: Self.makeViewModel(config))
     }
 
@@ -77,6 +123,11 @@ private struct BoardRootView: View {
                 Self.openFileWithEditor(url: url, config: config)
             }
         }
+        var openTaskFiles: (@Sendable () -> Void)?
+        if let fd = forgeDir {
+            let c = config
+            openTaskFiles = { Self.openTaskFilesFolder(forgeDir: fd, config: c) }
+        }
         #endif
         return BoardView(viewModel: viewModel)
             .environment(\.projectContextMenuActions, contextMenuActions(for: viewModel))
@@ -84,10 +135,38 @@ private struct BoardRootView: View {
             .environment(\.runForgeInTerminal, runForge)
             #if canImport(AppKit)
             .environment(\.openFileWithDefaultEditor, openWithEditor)
+            .environment(\.openTaskFilesFolder, openTaskFiles)
             #endif
     }
 
     #if canImport(AppKit)
+    private nonisolated static func openTaskFilesFolder(forgeDir: String, config: ForgeConfig) {
+        let paths = ForgePaths(forgeDir: forgeDir)
+        try? paths.ensureTaskFilesDirectoryExists()
+        let taskFilesRoot = (paths.taskFilesRoot as NSString).standardizingPath
+        let folderURL = URL(fileURLWithPath: taskFilesRoot).standardizedFileURL
+        let editor = EditorPreferences.loadPreferredEditor()
+        if editor == nil || editor == "default" || editor?.isEmpty == true {
+            NSWorkspace.shared.open(folderURL)
+            return
+        }
+        let path = taskFilesRoot
+        switch editor! {
+        case "Vim (in default terminal)":
+            let launcher = TerminalLauncher(config: config, terminalOverride: nil, openURL: { NSWorkspace.shared.open($0) })
+            let escaped = path.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"")
+            launcher.run("zsh -i -c 'vim \"\(escaped)\"'", workingDirectory: path)
+        case "Cursor", "Visual Studio Code", "TextEdit", "Sublime Text":
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+            process.arguments = ["-a", editor!, path]
+            process.qualityOfService = .userInitiated
+            try? process.run()
+        default:
+            NSWorkspace.shared.open(folderURL)
+        }
+    }
+
     private static func openFileWithEditor(url: URL, config: ForgeConfig) {
         let path = url.path
         // Create TASKS.md from template if missing (same structure as MarkdownIO.createEmptyTasksFile).
