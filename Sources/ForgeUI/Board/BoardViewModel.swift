@@ -19,17 +19,29 @@ public final class BoardViewModel {
     /// When set, only projects that have this meta tag (context/people) are shown. Nil = show all.
     public var metaTagFilter: String? = nil
 
+    /// When non-nil and non-empty, only these meta tags appear in the board filter picker; otherwise all from config.
+    private let filterMetaTags: [String]?
+
     private let fetchProjects: @Sendable () async throws -> [Project]
     private let moveProject: @Sendable (Project, ColumnConfig) throws -> Void
 
     public init(
         config: ForgeConfig,
         fetchProjects: @escaping @Sendable () async throws -> [Project],
-        moveProject: @escaping @Sendable (Project, ColumnConfig) throws -> Void
+        moveProject: @escaping @Sendable (Project, ColumnConfig) throws -> Void,
+        filterMetaTags: [String]? = nil
     ) {
         self.config = config
         self.fetchProjects = fetchProjects
         self.moveProject = moveProject
+        self.filterMetaTags = filterMetaTags
+    }
+
+    /// Meta tags to show in the board filter picker. Subset of config when preference is set; otherwise all.
+    public var metaTagsForFilter: [String] {
+        let all = config.board.metaTags
+        guard let selected = filterMetaTags, !selected.isEmpty else { return all }
+        return all.filter { selected.contains($0) }
     }
 
     /// Load projects from the injected fetch closure and update state on the main actor.

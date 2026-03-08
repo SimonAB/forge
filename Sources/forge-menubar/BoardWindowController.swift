@@ -32,7 +32,8 @@ final class BoardWindowController: NSObject, NSWindowDelegate {
         self.viewModel = BoardViewModel(
             config: config,
             fetchProjects: fetchProjects,
-            moveProject: moveProject
+            moveProject: moveProject,
+            filterMetaTags: BoardFilterPreferences.loadEnabledMetaTags()
         )
     }
 

@@ -72,7 +72,7 @@ public struct BoardView: View {
                     set: { viewModel.metaTagFilter = $0.isEmpty ? nil : $0 }
                 )) {
                     Text("All").tag("")
-                    ForEach(viewModel.config.board.metaTags, id: \.self) { tag in
+                    ForEach(viewModel.metaTagsForFilter, id: \.self) { tag in
                         Text(tag).tag(tag)
                     }
                 }
