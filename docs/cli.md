@@ -264,7 +264,7 @@ forge move manuscript Review
 ## forge status
 
 Display a colour-coded summary dashboard showing project counts per column,
-total projects, active count, and "Mine" count.
+total projects, active count, and URGENT count.
 
 ```
 forge status

@@ -72,7 +72,7 @@ CONTEXT_MAP = {
     # Deferred / Meta (not mapped to a context)
     "Someday / Maybe 🤷🏻‍♂️": None,
     "On hold ⏸︎": None,
-    "➢ Mine ⚒️": None,
+    "URGENT ⚠️": None,
 }
 
 

@@ -136,7 +136,7 @@ public struct KanbanRenderer: Sendable {
                 let colour = ansiColour(for: column, config: config)
                 if row < projects.count {
                     let project = projects[row]
-                    let meta = project.metaTags.isEmpty ? "" : " ⚒"
+                    let meta = project.metaTags.isEmpty ? "" : " •"
                     let label = truncate(project.name + meta, to: columnWidth - 2)
                     let padded = pad(" \(label)", to: columnWidth)
                     line += "│\(colour)\(padded)\(Self.reset)"
