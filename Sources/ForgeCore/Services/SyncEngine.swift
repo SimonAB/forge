@@ -16,9 +16,13 @@ public final class SyncEngine: @unchecked Sendable {
         public var remindersCreated: Int = 0
         public var remindersCompleted: Int = 0
         public var remindersMoved: Int = 0
+        public var remindersDeduplicated: Int = 0
+        public var remindersMergedByContent: Int = 0
+        public var tasksMergedInMarkdown: Int = 0
         public var eventsCreated: Int = 0
         public var eventsUpdated: Int = 0
         public var eventsRemoved: Int = 0
+        public var eventsDeduplicated: Int = 0
         public var tasksCompleted: Int = 0
         public var tasksUpdated: Int = 0
         public var inboxItemsAdded: Int = 0
@@ -59,6 +63,7 @@ public final class SyncEngine: @unchecked Sendable {
     /// Perform a full two-way sync.
     public func sync() async throws -> SyncReport {
         var report = SyncReport()
+        var importedInboxSignatures: [ReminderContentSignature: String] = [:]
 
         try await remindersBridge.requestAccess()
         try await calendarBridge.requestAccess()
@@ -74,10 +79,22 @@ public final class SyncEngine: @unchecked Sendable {
         let reminders = try await remindersBridge.fetchReminders(from: forgeLists)
         let events = await calendarBridge.fetchEvents(from: calendar)
 
-        var remindersByID = buildReminderIndex(reminders)
-        let eventsByID = buildEventIndex(events)
         let tasksByID = Dictionary(allTasks.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         let sourceByID = Dictionary(sourced.map { ($0.task.id, $0) }, uniquingKeysWith: { first, _ in first })
+
+        var remindersAfterDedup = reminders
+        remindersAfterDedup = try deduplicateRemindersByForgeID(
+            remindersAfterDedup, sourceByID: sourceByID, report: &report
+        )
+        remindersAfterDedup = try deduplicateRemindersByContent(
+            remindersAfterDedup, tasksByID: tasksByID, sourceByID: sourceByID, report: &report
+        )
+
+        var eventsAfterDedup = events
+        eventsAfterDedup = deduplicateEventsByForgeID(eventsAfterDedup, sourceByID: sourceByID, report: &report)
+
+        var remindersByID = buildReminderIndex(remindersAfterDedup)
+        let eventsByID = buildEventIndex(eventsAfterDedup)
 
         var seenTaskIDs = Set<String>()
         for st in sourced {
@@ -96,12 +113,13 @@ public final class SyncEngine: @unchecked Sendable {
         }
 
         try syncRemindersToMarkdown(
-            reminders: reminders, tasksByID: tasksByID,
-            sourceByID: sourceByID, report: &report
+            reminders: remindersAfterDedup, tasksByID: tasksByID,
+            sourceByID: sourceByID, report: &report,
+            importedInboxSignatures: &importedInboxSignatures
         )
 
         try syncEventsToMarkdown(
-            events: events, tasksByID: tasksByID,
+            events: eventsAfterDedup, tasksByID: tasksByID,
             sourceByID: sourceByID, report: &report
         )
 
@@ -175,6 +193,51 @@ public final class SyncEngine: @unchecked Sendable {
 
     // MARK: - Index Building
 
+    private static func dayString(_ date: Date) -> String {
+        let cal = Calendar.current
+        let y = cal.component(.year, from: date)
+        let m = cal.component(.month, from: date)
+        let d = cal.component(.day, from: date)
+        return String(format: "%04d-%02d-%02d", y, m, d)
+    }
+
+    /// Content signature for grouping reminders that are the same logical task (for content-based deduplication).
+    private struct ReminderContentSignature: Hashable {
+        let normalisedTitle: String
+        let listIdentifier: String
+        let dueDay: String?
+        let deferDay: String?
+        let recurrenceString: String
+    }
+
+    private func reminderContentSignature(_ reminder: EKReminder) -> ReminderContentSignature {
+        let title = (reminder.title ?? "")
+            .trimmingCharacters(in: .whitespaces)
+            .replacingOccurrences(of: "  ", with: " ")
+        let listId = reminder.calendar?.calendarIdentifier ?? ""
+        let dueDay: String? = reminder.dueDateComponents.flatMap { comp in
+            guard let d = Calendar.current.date(from: comp) else { return nil }
+            return Self.dayString(d)
+        }
+        let deferDay: String? = reminder.startDateComponents.flatMap { comp in
+            guard let d = Calendar.current.date(from: comp) else { return nil }
+            return Self.dayString(d)
+        }
+        let recurrenceString: String
+        if let rule = reminder.recurrenceRules?.first {
+            recurrenceString = "\(rule.frequency.rawValue)-\(rule.interval)"
+        } else {
+            recurrenceString = ""
+        }
+        return ReminderContentSignature(
+            normalisedTitle: title,
+            listIdentifier: listId,
+            dueDay: dueDay,
+            deferDay: deferDay,
+            recurrenceString: recurrenceString
+        )
+    }
+
     private func buildReminderIndex(_ reminders: [EKReminder]) -> [String: EKReminder] {
         var index: [String: EKReminder] = [:]
         for reminder in reminders {
@@ -193,6 +256,150 @@ public final class SyncEngine: @unchecked Sendable {
             }
         }
         return index
+    }
+
+    /// Deduplicate reminders that share the same forge ID; keep one per (project, taskID), remove the rest.
+    private func deduplicateRemindersByForgeID(
+        _ reminders: [EKReminder],
+        sourceByID: [String: SourcedTask],
+        report: inout SyncReport
+    ) throws -> [EKReminder] {
+        var withoutID: [EKReminder] = []
+        var byKey: [String: [EKReminder]] = [:]
+        for r in reminders {
+            if let ids = remindersBridge.extractForgeID(from: r) {
+                let key = "\(ids.project):\(ids.taskID)"
+                byKey[key, default: []].append(r)
+            } else {
+                withoutID.append(r)
+            }
+        }
+        var result: [EKReminder] = []
+        result.append(contentsOf: withoutID)
+        for (_, group) in byKey {
+            if group.count == 1 {
+                result.append(group[0])
+                continue
+            }
+            let taskID = remindersBridge.extractForgeID(from: group[0])!.taskID
+            let preferredListId: String? = sourceByID[taskID].flatMap { st in
+                (try? remindersBridge.findOrCreateList(context: st.task.context))?.calendarIdentifier
+            }
+            let sorted = group.sorted { r1, r2 in
+                let m1 = r1.calendar?.calendarIdentifier == preferredListId
+                let m2 = r2.calendar?.calendarIdentifier == preferredListId
+                if m1 != m2 { return m1 }
+                return false
+            }
+            result.append(sorted[0])
+            for i in 1..<sorted.count {
+                try remindersBridge.removeReminder(sorted[i])
+                report.remindersDeduplicated += 1
+            }
+        }
+        return result
+    }
+
+    /// Deduplicate reminders that have the same content but different forge IDs.
+    private func deduplicateRemindersByContent(
+        _ reminders: [EKReminder],
+        tasksByID: [String: ForgeTask],
+        sourceByID: [String: SourcedTask],
+        report: inout SyncReport
+    ) throws -> [EKReminder] {
+        var bySig: [ReminderContentSignature: [EKReminder]] = [:]
+        for r in reminders {
+            bySig[reminderContentSignature(r), default: []].append(r)
+        }
+        var result: [EKReminder] = []
+        for (_, group) in bySig {
+            if group.count == 1 {
+                result.append(group[0])
+                continue
+            }
+            let taskIDsInGroup = group.compactMap { remindersBridge.extractForgeID(from: $0)?.taskID }
+            let canonicalID: String? = taskIDsInGroup.isEmpty ? nil
+                : (taskIDsInGroup.filter { tasksByID[$0] != nil }.sorted().first
+                    ?? taskIDsInGroup.min()
+                    ?? taskIDsInGroup.first)
+            guard let canonicalID = canonicalID else {
+                result.append(group[0])
+                for i in 1..<group.count {
+                    try? remindersBridge.removeReminder(group[i])
+                    report.remindersMergedByContent += 1
+                }
+                continue
+            }
+            let projectName: String = {
+                if let ids = remindersBridge.extractForgeID(from: group[0]) { return ids.project }
+                let listTitle = group[0].calendar?.title ?? ""
+                let prefix = "\(config.gtd.remindersList) • "
+                if listTitle.hasPrefix(prefix) {
+                    return String(listTitle.dropFirst(prefix.count))
+                }
+                return "Inbox"
+            }()
+            let keeperIndex = group.firstIndex(where: { remindersBridge.extractForgeID(from: $0)?.taskID == canonicalID }) ?? 0
+            let keeper = group[keeperIndex]
+            let tags = remindersBridge.extractTags(from: keeper)
+            keeper.notes = remindersBridge.formatNotes(project: projectName, taskID: canonicalID, tags: tags)
+            try? store.save(keeper, commit: false)
+
+            for (idx, r) in group.enumerated() {
+                if idx == keeperIndex { continue }
+                let rid = remindersBridge.extractForgeID(from: r)?.taskID
+                try remindersBridge.removeReminder(r)
+                report.remindersMergedByContent += 1
+                if let rid = rid, rid != canonicalID, let source = sourceByID[rid] {
+                    if try markdownIO.removeTask(withID: rid, inFileAt: source.filePath) {
+                        report.tasksMergedInMarkdown += 1
+                    }
+                }
+            }
+            result.append(keeper)
+        }
+        return result
+    }
+
+    /// Deduplicate events that share the same forge ID; keep one per (project, taskID), remove the rest.
+    private func deduplicateEventsByForgeID(
+        _ events: [EKEvent],
+        sourceByID: [String: SourcedTask],
+        report: inout SyncReport
+    ) -> [EKEvent] {
+        var withoutID: [EKEvent] = []
+        var byKey: [String: [EKEvent]] = [:]
+        for e in events {
+            if let ids = calendarBridge.extractForgeID(from: e) {
+                let key = "\(ids.project):\(ids.taskID)"
+                byKey[key, default: []].append(e)
+            } else {
+                withoutID.append(e)
+            }
+        }
+        var result: [EKEvent] = []
+        result.append(contentsOf: withoutID)
+        for (_, group) in byKey {
+            if group.count == 1 {
+                result.append(group[0])
+                continue
+            }
+            let taskID = calendarBridge.extractForgeID(from: group[0])!.taskID
+            let preferredStart = sourceByID[taskID]?.task.dueDate
+            let sorted = group.sorted { e1, e2 in
+                guard let pref = preferredStart else { return false }
+                let m1 = Calendar.current.isDate(e1.startDate, inSameDayAs: pref)
+                let m2 = Calendar.current.isDate(e2.startDate, inSameDayAs: pref)
+                if m1 != m2 { return m1 }
+                return false
+            }
+            result.append(sorted[0])
+            for i in 1..<sorted.count {
+                try? calendarBridge.removeEvent(sorted[i])
+                report.eventsDeduplicated += 1
+            }
+        }
+        return result
     }
 
     // MARK: - Markdown -> Reminders
@@ -282,7 +489,8 @@ public final class SyncEngine: @unchecked Sendable {
         reminders: [EKReminder],
         tasksByID: [String: ForgeTask],
         sourceByID: [String: SourcedTask],
-        report: inout SyncReport
+        report: inout SyncReport,
+        importedInboxSignatures: inout [ReminderContentSignature: String]
     ) throws {
         for reminder in reminders {
             if let ids = remindersBridge.extractForgeID(from: reminder) {
@@ -295,6 +503,14 @@ public final class SyncEngine: @unchecked Sendable {
                     }
                 }
             } else if !reminder.isCompleted {
+                let sig = reminderContentSignature(reminder)
+                if let existingTaskID = importedInboxSignatures[sig] {
+                    reminder.notes = remindersBridge.formatNotes(
+                        project: "Inbox", taskID: existingTaskID, tags: ["work", "personal"]
+                    )
+                    try? store.save(reminder, commit: false)
+                    continue
+                }
                 let inboxPath = (forgeDir as NSString)
                     .appendingPathComponent("inbox.md")
                 let incomingRepeat = reminder.recurrenceRules?.first.flatMap {
@@ -313,6 +529,7 @@ public final class SyncEngine: @unchecked Sendable {
                 )
                 try markdownIO.appendTask(task, toFileAt: inboxPath)
                 report.inboxItemsAdded += 1
+                importedInboxSignatures[sig] = task.id
 
                 reminder.notes = remindersBridge.formatNotes(
                     project: "Inbox", taskID: task.id, tags: ["work", "personal"]
