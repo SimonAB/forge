@@ -267,7 +267,12 @@ final class StatusBarController: NSObject {
             do {
                 guard let forgeDir = self.forgeDir else { return }
                 let paths = ForgePaths(forgeDir: forgeDir)
-                let engine = SyncEngine(config: config, forgeDir: forgeDir, taskFilesRoot: paths.taskFilesRoot)
+                let engine = SyncEngine(
+                    config: config,
+                    forgeDir: forgeDir,
+                    taskFilesRoot: paths.taskFilesRoot,
+                    options: .background
+                )
                 let report = try await engine.sync()
                 lastSyncDate = Date()
                 refreshCounts()

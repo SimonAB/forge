@@ -8,6 +8,7 @@ public final class SyncEngine: @unchecked Sendable {
     private let forgeDir: String
     /// Root directory for task files (inbox, area .md). When nil, forgeDir is used (backwards compatibility).
     private let taskFilesRoot: String
+    private let options: Options
     private let markdownIO: MarkdownIO
     private let remindersBridge: RemindersBridge
     private let calendarBridge: CalendarBridge
@@ -33,16 +34,54 @@ public final class SyncEngine: @unchecked Sendable {
         public var errors: [String] = []
     }
 
+    /// Controls which optional operations run during sync.
+    public struct Options: Sendable {
+        public var enableLinting: Bool
+        public var enableDueSummary: Bool
+        public var enableRollups: Bool
+        public var enableFinderTags: Bool
+
+        public init(
+            enableLinting: Bool = true,
+            enableDueSummary: Bool = true,
+            enableRollups: Bool = true,
+            enableFinderTags: Bool = true
+        ) {
+            self.enableLinting = enableLinting
+            self.enableDueSummary = enableDueSummary
+            self.enableRollups = enableRollups
+            self.enableFinderTags = enableFinderTags
+        }
+
+        /// Full sync used by command-line tools and interactive flows.
+        public static let full = Options()
+
+        /// Lighter-weight sync for background timers where responsiveness matters more than
+        /// always regenerating derived artefacts.
+        public static let background = Options(
+            enableLinting: false,
+            enableDueSummary: true,
+            enableRollups: false,
+            enableFinderTags: false
+        )
+    }
+
     /// Initialise the sync engine.
     ///
     /// - Parameters:
     ///   - config: The loaded forge configuration.
     ///   - forgeDir: Explicit path to the Forge directory. Falls back to workspace-relative if nil.
     ///   - taskFilesRoot: Root for inbox and area markdown files. When nil, forgeDir is used.
-    public init(config: ForgeConfig, forgeDir: String? = nil, taskFilesRoot: String? = nil) {
+    public init(
+        config: ForgeConfig,
+        forgeDir: String? = nil,
+        taskFilesRoot: String? = nil,
+        options: Options = .full
+    ) {
         self.config = config
         self.forgeDir = forgeDir ?? (config.resolvedWorkspacePath as NSString).appendingPathComponent("Forge")
         self.taskFilesRoot = taskFilesRoot ?? self.forgeDir
+        self.options = options
         self.markdownIO = MarkdownIO()
         self.store = EKEventStore()
         self.remindersBridge = RemindersBridge(
@@ -88,26 +127,29 @@ public final class SyncEngine: @unchecked Sendable {
         // IDs, headings, spacing, inbox/completed placement, and titles are normalised.
         let areaFiles = scanAreaFiles()
         let projectTaskFiles = findAllProjectTaskFiles()
-        let linter = TaskFileLinter()
-        var lintPaths = Set<String>()
 
-        // All markdown files in the task files root (Forge/tasks/*.md), including inbox and someday-maybe.
-        let paths = ForgePaths(forgeDir: forgeDir)
-        let fm = FileManager.default
-        if let entries = try? fm.contentsOfDirectory(atPath: paths.taskFilesRoot) {
-            for entry in entries where entry.hasSuffix(".md") {
-                // Skip generated summaries such as due.md.
-                if entry == "due.md" { continue }
-                let fullPath = (paths.taskFilesRoot as NSString).appendingPathComponent(entry)
-                lintPaths.insert(fullPath)
+        if options.enableLinting {
+            let linter = TaskFileLinter()
+            var lintPaths = Set<String>()
+
+            // All markdown files in the task files root (Forge/tasks/*.md), including inbox and someday-maybe.
+            let paths = ForgePaths(forgeDir: forgeDir)
+            let fm = FileManager.default
+            if let entries = try? fm.contentsOfDirectory(atPath: paths.taskFilesRoot) {
+                for entry in entries where entry.hasSuffix(".md") {
+                    // Skip generated summaries such as due.md.
+                    if entry == "due.md" { continue }
+                    let fullPath = (paths.taskFilesRoot as NSString).appendingPathComponent(entry)
+                    lintPaths.insert(fullPath)
+                }
             }
-        }
 
-        // All project TASKS.md discovered under project_roots.
-        lintPaths.formUnion(projectTaskFiles.map(\.path))
+            // All project TASKS.md discovered under project_roots.
+            lintPaths.formUnion(projectTaskFiles.map(\.path))
 
-        for path in lintPaths {
-            _ = try? linter.fix(path: path)
+            for path in lintPaths {
+                _ = try? linter.fix(path: path)
+            }
         }
 
         let sourced = try await collectAllTasks(areaFiles: areaFiles)
@@ -161,12 +203,16 @@ public final class SyncEngine: @unchecked Sendable {
             sourceByID: sourceByID, report: &report
         )
 
-        await applyFinderTags(sourced: sourced, areaFiles: areaFiles)
+        if options.enableFinderTags {
+            await applyFinderTags(sourced: sourced, areaFiles: areaFiles)
+        }
 
         // Refresh the read-only due summary markdown with the default 7-day horizon, including areas.
-        await refreshDueMarkdownSummary()
+        if options.enableDueSummary {
+            await refreshDueMarkdownSummary()
+        }
 
-        if !config.projectAreas.isEmpty {
+        if options.enableRollups, !config.projectAreas.isEmpty {
             let rollup = RollupGenerator(config: config, forgeDir: forgeDir, taskFilesRoot: taskFilesRoot)
             if let rollupReport = try? rollup.generateAll() {
                 report.rollupAreas = rollupReport.areasUpdated
@@ -240,10 +286,13 @@ public final class SyncEngine: @unchecked Sendable {
     /// This ensures nested project folders are included regardless of Finder tags.
     private func findAllProjectTaskFiles() -> [(path: String, projectName: String)] {
         var result: [(path: String, projectName: String)] = []
+        var seenPaths = Set<String>()
         for root in config.resolvedProjectRoots {
             let taskFiles = TaskFileFinder.findAll(under: root)
             for tf in taskFiles {
-                result.append((path: tf.path, projectName: tf.label))
+                if seenPaths.insert(tf.path).inserted {
+                    result.append((path: tf.path, projectName: tf.label))
+                }
             }
         }
         return result
