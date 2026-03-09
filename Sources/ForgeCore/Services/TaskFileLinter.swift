@@ -569,13 +569,36 @@ public struct TaskFileLinter: Sendable {
             }
 
             if trimmed.isEmpty {
-                // Remove empty lines between consecutive list items.
-                let prevIsList = i > 0 && isListLine(lines[i - 1])
-                let nextIsList = i + 1 < lines.count && isListLine(lines[i + 1])
-                if prevIsList && nextIsList {
+                // Remove all empty lines that sit between two list items.
+                var prevNonEmptyIndex: Int?
+                var j = i - 1
+                while j >= 0 {
+                    if !lines[j].trimmingCharacters(in: .whitespaces).isEmpty {
+                        prevNonEmptyIndex = j
+                        break
+                    }
+                    j -= 1
+                }
+
+                var nextNonEmptyIndex: Int?
+                j = i + 1
+                while j < lines.count {
+                    if !lines[j].trimmingCharacters(in: .whitespaces).isEmpty {
+                        nextNonEmptyIndex = j
+                        break
+                    }
+                    j += 1
+                }
+
+                if let prev = prevNonEmptyIndex,
+                   let next = nextNonEmptyIndex,
+                   isListLine(lines[prev]),
+                   isListLine(lines[next]) {
+                    // Skip this empty line entirely.
                     i += 1
                     continue
                 }
+
                 result.append(line)
                 i += 1
                 continue
