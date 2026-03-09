@@ -85,13 +85,26 @@ public final class SyncEngine: @unchecked Sendable {
         let calendar = try calendarBridge.findOrCreateCalendar()
 
         // Lint and auto-fix task markdown files before collecting tasks so that
-        // IDs, headings, spacing, and completed task placement are normalised.
+        // IDs, headings, spacing, inbox/completed placement, and titles are normalised.
         let areaFiles = scanAreaFiles()
         let projectTaskFiles = findAllProjectTaskFiles()
         let linter = TaskFileLinter()
         var lintPaths = Set<String>()
         lintPaths.formUnion(areaFiles.map(\.path))
         lintPaths.formUnion(projectTaskFiles.map(\.path))
+
+        // Also include inbox and someday-maybe in the task files root when present.
+        let paths = ForgePaths(forgeDir: forgeDir)
+        let fm = FileManager.default
+        let inboxPath = paths.inboxPath
+        if fm.fileExists(atPath: inboxPath) {
+            lintPaths.insert(inboxPath)
+        }
+        let somedayPath = paths.somedayPath
+        if fm.fileExists(atPath: somedayPath) {
+            lintPaths.insert(somedayPath)
+        }
+
         for path in lintPaths {
             _ = try? linter.fix(path: path)
         }
