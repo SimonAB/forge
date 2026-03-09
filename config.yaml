@@ -36,16 +36,16 @@ board:
   - "Collab \U0001F91D"
   - "Student \U0001F393"
   tag_aliases:
-    "Plan \U0001F4A1": "Plan \U0001F4D0"
     "Review \U0001F4DD": "Review \U0001F58D\uFE0F"
-    "4. Write \u2712\uFE0F": "Write \u2712\uFE0F"
-    "Plan \u263C": "Plan \U0001F4D0"
-    "Paused \u23F8": "Paused \u23F8\uFE0F"
-    "Edit \U0001F58D\uFE0F": "Review \U0001F58D\uFE0F"
     "3. Analyse \U0001F50D": "Analyse \U0001F50D"
+    "Plan \u263C": "Plan \U0001F4D0"
+    "4. Write \u2712\uFE0F": "Write \u2712\uFE0F"
+    "paused \u23F8\uFE0F": "Paused \u23F8\uFE0F"
+    "Paused \u23F8": "Paused \u23F8\uFE0F"
+    "Plan \U0001F4A1": "Plan \U0001F4D0"
+    "Edit \U0001F58D\uFE0F": "Review \U0001F58D\uFE0F"
     "Paused \u23F8\uFE0E": "Paused \u23F8\uFE0F"
     "active \U0001F6A7": "Active \U0001F6A7"
-    "paused \u23F8\uFE0F": "Paused \u23F8\uFE0F"
 gtd:
   contexts:
   - office
@@ -73,6 +73,10 @@ gtd:
 workspace_tags:
 - work
 project_areas:
+  admin:
+  - Collaborations
+  - Studentships
+  - Writing tips
   research:
   - Apodemus RNA vax - BBSRC
   - Apodemus ageing - Tom's WT
@@ -102,10 +106,6 @@ project_areas:
   - Mozzies-AI_MIRS_Royal_Society
   - Viruses-ViralHostPredictor
   - Sunfish - NERC EOI
-  admin:
-  - Collaborations
-  - Studentships
-  - Writing tips
   teaching: []
 terminal: auto
 project_tag: "\U0001F525 Forge"
