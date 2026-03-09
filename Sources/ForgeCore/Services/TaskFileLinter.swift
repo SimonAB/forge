@@ -91,6 +91,7 @@ public struct TaskFileLinter: Sendable {
         let idPattern = /<!--\s*id:(\w+)\s*-->/
         let dateTagPattern = /@(due|defer|since|done)\(([^)]+)\)/
         let dateValuePattern = /^\d{4}-\d{2}-\d{2}$/
+        let bareMessagePattern = /message:%3C[^ \t)]+%3E/
 
         enum Section {
             case other
@@ -226,6 +227,19 @@ public struct TaskFileLinter: Sendable {
                     ))
                 }
                 checkDateTags(in: line, path: path, lineNum: lineNum, dateTagPattern: dateTagPattern, dateValuePattern: dateValuePattern, issues: &issues)
+
+                // Message URL formatting: detect bare "message:%3C...%3E" tokens that are not already inside a markdown link.
+                if line.firstMatch(of: bareMessagePattern) != nil,
+                   !line.contains("](message://") {
+                    issues.append(Issue(
+                        path: path,
+                        line: lineNum,
+                        ruleID: "message_url_format",
+                        message: "Format bare Mail message URLs as markdown links, e.g. [email](message://…).",
+                        severity: .warning,
+                        fixable: true
+                    ))
+                }
             }
 
             i += 1
@@ -353,9 +367,12 @@ public struct TaskFileLinter: Sendable {
         let (_, updatedBody) = markdownIO.parseTasksReturningUpdatedBody(from: content)
         var workingBody = updatedBody ?? body
         workingBody = moveCheckedTasksToCompleted(in: workingBody, path: path)
+        workingBody = fixBareMessageURLs(in: workingBody)
         var result = workingBody
         result = normaliseCheckboxCasing(in: result)
         result = ensureTitleHeading(in: result, path: path)
+        result = reorderCanonicalSections(in: result)
+        result = sortCompletedSectionByDoneDate(in: result)
         result = normaliseHeadingAndListSpacing(in: result)
         if !result.hasSuffix("\n") {
             result += "\n"
@@ -551,8 +568,21 @@ public struct TaskFileLinter: Sendable {
                     result.append("")
                 }
 
+                // Normalise canonical section headings (e.g. "Next Action" -> "Next Actions").
+                let normalisedHeading: String
+                if trimmed.hasPrefix("## ") {
+                    let title = String(trimmed.dropFirst(3)).trimmingCharacters(in: .whitespaces)
+                    if let canonical = Self.canonicalSection(for: title) {
+                        normalisedHeading = "## \(canonical.title)"
+                    } else {
+                        normalisedHeading = line
+                    }
+                } else {
+                    normalisedHeading = line
+                }
+
                 // Add the heading itself.
-                result.append(line)
+                result.append(normalisedHeading)
 
                 // Skip any blank lines following the heading in the source.
                 i += 1
@@ -609,6 +639,277 @@ public struct TaskFileLinter: Sendable {
         }
 
         return result.joined(separator: "\n")
+    }
+
+    /// Reorder canonical sections into the standard order:
+    /// # Title
+    /// ## Next Actions
+    /// ## Waiting For
+    /// ## Completed
+    /// while keeping each section's content attached to its heading.
+    private func reorderCanonicalSections(in body: String) -> String {
+        let lines = body.components(separatedBy: .newlines)
+        guard !lines.isEmpty else { return body }
+
+        // Identify section blocks: heading line index + lines until next heading or EOF.
+        struct SectionBlock {
+            let canonicalIndex: Int?  // 0: Next Actions, 1: Waiting For, 2: Completed, nil: other
+            let start: Int
+            let end: Int   // inclusive
+        }
+
+        var blocks: [SectionBlock] = []
+        var i = 0
+        while i < lines.count {
+            let trimmed = lines[i].trimmingCharacters(in: .whitespaces)
+            if trimmed.hasPrefix("## ") {
+                let title = String(trimmed.dropFirst(3)).trimmingCharacters(in: .whitespaces)
+                let canonical = Self.canonicalSection(for: title)?.index
+                var end = i
+                var j = i + 1
+                while j < lines.count {
+                    let t = lines[j].trimmingCharacters(in: .whitespaces)
+                    if t.hasPrefix("## ") { break }
+                    end = j
+                    j += 1
+                }
+                blocks.append(SectionBlock(canonicalIndex: canonical, start: i, end: end))
+                i = end + 1
+            } else {
+                i += 1
+            }
+        }
+
+        guard !blocks.isEmpty else { return body }
+
+        // Collect pre-section content (everything before first section heading).
+        let firstBlockStart = blocks[0].start
+        let preSectionLines: [String] = Array(lines[0..<firstBlockStart])
+
+        // Group blocks by canonical index, preserving original order within each group.
+        var byCanonical: [Int: [SectionBlock]] = [:]
+        var others: [SectionBlock] = []
+        for block in blocks {
+            if let idx = block.canonicalIndex {
+                byCanonical[idx, default: []].append(block)
+            } else {
+                others.append(block)
+            }
+        }
+
+        // Build new body: pre-section content + canonical sections in order + other sections.
+        var newLines: [String] = preSectionLines
+
+        func appendBlock(_ block: SectionBlock) {
+            if !newLines.isEmpty,
+               !newLines.last!.trimmingCharacters(in: .whitespaces).isEmpty {
+                newLines.append("")
+            }
+            for idx in block.start...block.end {
+                newLines.append(lines[idx])
+            }
+        }
+
+        // Canonical order: Next Actions (0), Waiting For (1), Completed (2)
+        for canonicalIndex in 0...2 {
+            if let group = byCanonical[canonicalIndex] {
+                for block in group {
+                    appendBlock(block)
+                }
+            }
+        }
+
+        // Append all non-canonical sections in their original order.
+        for block in others {
+            appendBlock(block)
+        }
+
+        // Append any trailing content after the last section block (if any).
+        if let lastBlock = blocks.last, lastBlock.end + 1 < lines.count {
+            if !newLines.isEmpty,
+               !newLines.last!.trimmingCharacters(in: .whitespaces).isEmpty {
+                newLines.append("")
+            }
+            for idx in (lastBlock.end + 1)..<lines.count {
+                newLines.append(lines[idx])
+            }
+        }
+
+        return newLines.joined(separator: "\n")
+    }
+
+    /// Inside the Completed section, sort task blocks by @done(YYYY-MM-DD) date, most recent first.
+    /// Notes under each task are kept with their task.
+    private func sortCompletedSectionByDoneDate(in body: String) -> String {
+        let lines = body.components(separatedBy: .newlines)
+        guard !lines.isEmpty else { return body }
+
+        // Find the first Completed section heading.
+        var completedHeadingIndex: Int?
+        for (idx, line) in lines.enumerated() {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            guard trimmed.hasPrefix("## ") else { continue }
+            let title = String(trimmed.dropFirst(3)).trimmingCharacters(in: .whitespaces)
+            if let canonical = Self.canonicalSection(for: title), canonical.index == 2 {
+                completedHeadingIndex = idx
+                break
+            }
+        }
+        guard let headerIndex = completedHeadingIndex else { return body }
+
+        // Determine the range of the Completed section (from the heading to just before the next heading or EOF).
+        var sectionEnd = lines.count - 1
+        var i = headerIndex + 1
+        while i < lines.count {
+            let trimmed = lines[i].trimmingCharacters(in: .whitespaces)
+            if trimmed.hasPrefix("## ") {
+                sectionEnd = i - 1
+                break
+            }
+            i += 1
+        }
+        if sectionEnd < headerIndex + 1 {
+            return body
+        }
+
+        let completedBodyLines = Array(lines[(headerIndex + 1)...sectionEnd])
+        if completedBodyLines.isEmpty {
+            return body
+        }
+
+        struct TaskBlock {
+            let lines: [String]
+            let doneDate: Date?
+            let order: Int
+        }
+
+        var blocks: [TaskBlock] = []
+        var prefixLines: [String] = []
+
+        let df = DateFormatter()
+        df.dateFormat = "yyyy-MM-dd"
+        df.locale = Locale(identifier: "en_GB")
+
+        var idx = 0
+        var blockOrder = 0
+        while idx < completedBodyLines.count {
+            let line = completedBodyLines[idx]
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if trimmed.hasPrefix("- [") {
+                var block: [String] = [line]
+                var j = idx + 1
+                while j < completedBodyLines.count {
+                    let next = completedBodyLines[j]
+                    let nextTrimmed = next.trimmingCharacters(in: .whitespaces)
+                    if nextTrimmed.hasPrefix("- [") || nextTrimmed.hasPrefix("## ") {
+                        break
+                    }
+                    block.append(next)
+                    j += 1
+                }
+
+                // Extract @done date from the task line (first line of the block).
+                let donePattern = /@done\(([^)]+)\)/
+                var doneDate: Date? = nil
+                if let match = line.firstMatch(of: donePattern) {
+                    let value = String(match.1)
+                    doneDate = df.date(from: value)
+                }
+
+                blocks.append(TaskBlock(lines: block, doneDate: doneDate, order: blockOrder))
+                blockOrder += 1
+                idx = j
+            } else {
+                if blocks.isEmpty {
+                    prefixLines.append(line)
+                } else {
+                    // Lines after the first block that are not part of a task are left as-is for now.
+                    prefixLines.append(line)
+                }
+                idx += 1
+            }
+        }
+
+        guard !blocks.isEmpty else { return body }
+
+        // Sort blocks by done date (most recent first); tasks without dates go last, preserving relative order.
+        blocks.sort { lhs, rhs in
+            switch (lhs.doneDate, rhs.doneDate) {
+            case let (l?, r?):
+                if l != r { return l > r } // descending
+                return lhs.order < rhs.order
+            case (nil, nil):
+                return lhs.order < rhs.order
+            case (nil, _?):
+                return false
+            case (_?, nil):
+                return true
+            }
+        }
+
+        var newLines: [String] = []
+        // Content before the Completed heading.
+        if headerIndex > 0 {
+            newLines.append(contentsOf: lines[0..<headerIndex])
+        }
+        // The Completed heading itself.
+        newLines.append(lines[headerIndex])
+
+        // Rebuild the Completed section body.
+        var completedNew: [String] = prefixLines
+        for (index, block) in blocks.enumerated() {
+            if !completedNew.isEmpty,
+               !completedNew.last!.trimmingCharacters(in: .whitespaces).isEmpty {
+                completedNew.append("")
+            }
+            completedNew.append(contentsOf: block.lines)
+            if index != blocks.count - 1 {
+                completedNew.append("")
+            }
+        }
+
+        newLines.append(contentsOf: completedNew)
+
+        // Append any content after the Completed section.
+        if sectionEnd + 1 < lines.count {
+            if !newLines.isEmpty,
+               !newLines.last!.trimmingCharacters(in: .whitespaces).isEmpty {
+                newLines.append("")
+            }
+            newLines.append(contentsOf: lines[(sectionEnd + 1)...])
+        }
+
+        return newLines.joined(separator: "\n")
+    }
+
+    /// Convert bare Mail message URLs of the form `message:%3C...%3E` into markdown links:
+    /// - [email](message://%3C...%3E)
+    /// Skips lines where the URL is already inside a markdown link.
+    private func fixBareMessageURLs(in body: String) -> String {
+        let pattern = /message:%3C[^ \t)]+%3E/
+        var changed = false
+        let lines = body.components(separatedBy: .newlines)
+        var newLines: [String] = []
+
+        for line in lines {
+            if line.contains("](message://") {
+                newLines.append(line)
+                continue
+            }
+            if let match = line.firstMatch(of: pattern) {
+                let token = String(match.0)
+                let suffix = token.dropFirst("message:".count)
+                let converted = "message://\(suffix)"
+                let replacement = "[email](\(converted))"
+                let updated = line.replacingOccurrences(of: token, with: replacement)
+                newLines.append(updated)
+                if updated != line { changed = true }
+            } else {
+                newLines.append(line)
+            }
+        }
+
+        return changed ? newLines.joined(separator: "\n") : body
     }
 
     private func isListLine(_ line: String) -> Bool {
