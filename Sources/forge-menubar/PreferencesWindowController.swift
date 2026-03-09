@@ -501,8 +501,21 @@ private final class PreferencesShortcutsView: NSView {
         sub.translatesAutoresizingMaskIntoConstraints = false
         addSubview(sub)
 
+        let headerAction = NSTextField(labelWithString: "Action")
+        headerAction.font = .systemFont(ofSize: 11, weight: .semibold)
+        headerAction.textColor = .secondaryLabelColor
+        headerAction.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(headerAction)
+
+        let headerShortcut = NSTextField(labelWithString: "Shortcut")
+        headerShortcut.font = .systemFont(ofSize: 11, weight: .semibold)
+        headerShortcut.textColor = .secondaryLabelColor
+        headerShortcut.alignment = .right
+        headerShortcut.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(headerShortcut)
+
         stackView.orientation = .vertical
-        stackView.spacing = 8
+        stackView.spacing = 6
         stackView.alignment = .leading
         stackView.translatesAutoresizingMaskIntoConstraints = false
         addSubview(stackView)
@@ -539,9 +552,13 @@ private final class PreferencesShortcutsView: NSView {
             sub.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
             sub.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -20),
             sub.topAnchor.constraint(equalTo: label.bottomAnchor, constant: 6),
+            headerAction.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            headerAction.topAnchor.constraint(equalTo: sub.bottomAnchor, constant: 16),
+            headerShortcut.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20 + 220 + 12),
+            headerShortcut.centerYAnchor.constraint(equalTo: headerAction.centerYAnchor),
             stackView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
             stackView.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -20),
-            stackView.topAnchor.constraint(equalTo: sub.bottomAnchor, constant: 16),
+            stackView.topAnchor.constraint(equalTo: headerAction.bottomAnchor, constant: 6),
             accessibilityLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
             accessibilityLabel.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -20),
             accessibilityLabel.topAnchor.constraint(equalTo: stackView.bottomAnchor, constant: 20),
@@ -637,6 +654,7 @@ private final class ShortcutRowView: NSView {
 
         shortcutField = NSTextField(labelWithString: shortcutDisplay)
         shortcutField.font = .monospacedSystemFont(ofSize: 12, weight: .medium)
+        shortcutField.alignment = .right
         shortcutField.translatesAutoresizingMaskIntoConstraints = false
 
         changeButton = NSButton(title: "Change…", target: nil, action: nil)
@@ -661,6 +679,7 @@ private final class ShortcutRowView: NSView {
             shortcutField.widthAnchor.constraint(greaterThanOrEqualToConstant: 100),
             changeButton.leadingAnchor.constraint(equalTo: shortcutField.trailingAnchor, constant: 12),
             changeButton.centerYAnchor.constraint(equalTo: centerYAnchor),
+            changeButton.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor),
         ])
     }
 
