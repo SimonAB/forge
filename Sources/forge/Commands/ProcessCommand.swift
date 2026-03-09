@@ -14,6 +14,10 @@ struct ProcessCommand: AsyncParsableCommand {
         let inboxPath = ConfigLoader.inboxPath(forgeDir: forgeDir)
         let markdownIO = MarkdownIO()
 
+        func readTrimmedLine() -> String? {
+            readLine()?.trimmingCharacters(in: .whitespaces)
+        }
+
         guard FileManager.default.fileExists(atPath: inboxPath) else {
             print("Inbox is empty.")
             return
@@ -38,15 +42,18 @@ struct ProcessCommand: AsyncParsableCommand {
         let reset = "\u{1B}[0m"
 
         print("\(bold)Processing \(pending.count) inbox items\(reset)")
-        print("\(dim)For each item: assign to a project, defer to someday, or delete.\(reset)\n")
+        print("\(dim)For each item: do now, file as a next action, defer to someday, delegate (waiting for), delete, or keep in the inbox.\(reset)\n")
 
         print("\(bold)Active projects:\(reset)")
         for (i, project) in activeProjects.enumerated() {
             let col = project.column ?? "Untagged"
             print("  \(dim)\(i + 1).\(reset) \(project.name) \(dim)(\(col))\(reset)")
         }
+        print("  \(dim)d.\(reset) Done now (complete in inbox)")
+        print("  \(dim)n.\(reset) Next action (move to project)")
+        print("  \(dim)w.\(reset) Waiting for (move to project)")
         print("  \(dim)s.\(reset) Someday/Maybe")
-        print("  \(dim)d.\(reset) Delete")
+        print("  \(dim)t.\(reset) Trash (delete from inbox)")
         print("  \(dim)k.\(reset) Keep in inbox")
         print()
 
@@ -54,23 +61,89 @@ struct ProcessCommand: AsyncParsableCommand {
 
         for task in pending {
             print("\(bold)→ \(task.text)\(reset)")
-            print("  \(dim)Assign to project (number), s=someday, d=delete, k=keep:\(reset) ", terminator: "")
+            print("  \(dim)Choose: number=move to project, d=done now, n=next, w=waiting, s=someday, t=trash, k=keep:\(reset) ", terminator: "")
 
-            guard let input = readLine()?.trimmingCharacters(in: .whitespaces) else {
+            guard let input = readTrimmedLine(), !input.isEmpty else {
                 continue
             }
 
-            if input.lowercased() == "d" {
+            let lower = input.lowercased()
+
+            if lower == "d" {
+                if try markdownIO.completeTask(withID: task.id, inFileAt: inboxPath) {
+                    print("  Marked done in inbox.\n")
+                }
+            } else if lower == "t" {
                 if try markdownIO.completeTask(withID: task.id, inFileAt: inboxPath) {
                     print("  Deleted.\n")
                 }
-            } else if input.lowercased() == "s" {
+            } else if lower == "s" {
                 let somedayPath = ConfigLoader.somedayPath(forgeDir: forgeDir)
                 try markdownIO.appendTask(task, toFileAt: somedayPath)
                 _ = try markdownIO.completeTask(withID: task.id, inFileAt: inboxPath)
                 print("  Moved to someday/maybe.\n")
-            } else if input.lowercased() == "k" {
+            } else if lower == "k" {
                 print("  Kept in inbox.\n")
+            } else if lower == "n" {
+                print("  Project number for next action: ", terminator: "")
+                guard
+                    let projInput = readTrimmedLine(),
+                    let num = Int(projInput),
+                    num >= 1, num <= activeProjects.count
+                else {
+                    print("  \(dim)Invalid project selection, keeping in inbox.\(reset)\n")
+                    continue
+                }
+
+                var nextTask = task
+                nextTask.section = .nextActions
+
+                print("  Context (optional, e.g. email, home): ", terminator: "")
+                if let ctx = readTrimmedLine(), !ctx.isEmpty {
+                    nextTask.context = ctx
+                }
+
+                print("  Due date (YYYY-MM-DD, optional): ", terminator: "")
+                if let dateString = readTrimmedLine(), !dateString.isEmpty {
+                    let formatter = DateFormatter()
+                    formatter.dateFormat = "yyyy-MM-dd"
+                    if let date = formatter.date(from: dateString) {
+                        nextTask.dueDate = date
+                    } else {
+                        print("  \(dim)Could not parse date, leaving without due date.\(reset)")
+                    }
+                }
+
+                let target = activeProjects[num - 1]
+                let tasksPath = (target.path as NSString).appendingPathComponent("TASKS.md")
+                try markdownIO.appendTask(nextTask, toFileAt: tasksPath)
+                _ = try markdownIO.completeTask(withID: task.id, inFileAt: inboxPath)
+                print("  Filed as next action in \(target.name).\n")
+            } else if lower == "w" {
+                print("  Project number for waiting item: ", terminator: "")
+                guard
+                    let projInput = readTrimmedLine(),
+                    let num = Int(projInput),
+                    num >= 1, num <= activeProjects.count
+                else {
+                    print("  \(dim)Invalid project selection, keeping in inbox.\(reset)\n")
+                    continue
+                }
+
+                var waitingTask = task
+                waitingTask.section = .waitingFor
+
+                print("  Waiting on (person or dependency, optional): ", terminator: "")
+                if let who = readTrimmedLine(), !who.isEmpty {
+                    waitingTask.waitingOn = who
+                    waitingTask.sinceDate = Date()
+                }
+
+                let target = activeProjects[num - 1]
+                let tasksPath = (target.path as NSString).appendingPathComponent("TASKS.md")
+                try markdownIO.appendTask(waitingTask, toFileAt: tasksPath)
+                _ = try markdownIO.completeTask(withID: task.id, inFileAt: inboxPath)
+                print("  Filed under Waiting For in \(target.name).\n")
             } else if let num = Int(input), num >= 1, num <= activeProjects.count {
                 let target = activeProjects[num - 1]
                 let tasksPath = (target.path as NSString).appendingPathComponent("TASKS.md")
