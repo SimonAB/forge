@@ -23,6 +23,12 @@ enum SelectionCapture {
         if bundleId == "com.apple.finder" {
             return captureFinderSelection()
         }
+        if bundleId == "com.sonnysoftware.Bookends" {
+            return captureBookendsSelection()
+        }
+        if bundleId == "md.obsidian" {
+            return captureObsidianSelection()
+        }
         return nil
     }
 
@@ -92,5 +98,78 @@ enum SelectionCapture {
         let link = fileURL.absoluteString
         let label = name.isEmpty ? fileURL.lastPathComponent : name
         return CapturedItem(label: label, link: link)
+    }
+
+    /// Uses AppleScript to get the first selected publication in Bookends and builds a bookends:// URL.
+    /// Falls back to using the bare URL as label if the title cannot be read.
+    private static func captureBookendsSelection() -> CapturedItem? {
+        let script = """
+        tell application "Bookends"
+            if not (exists front library window) then return ""
+            tell front library window
+                if (count of selected publication items) < 1 then return ""
+                set aPub to item 1 of selected publication items
+                set theTitle to title of aPub
+                set theID to id of aPub
+            end tell
+        end tell
+        if theID is missing value then return ""
+        set theLink to "bookends://sonnysoftware.com/" & theID
+        return theLink & "\\n" & theTitle
+        """
+        var error: NSDictionary?
+        guard let result = NSAppleScript(source: script)?.executeAndReturnError(&error),
+              result.stringValue?.isEmpty == false else {
+            return nil
+        }
+        let parts = result.stringValue!.split(separator: "\n", maxSplits: 1, omittingEmptySubsequences: false)
+        let link = String(parts[0]).trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !link.isEmpty else { return nil }
+        let label = parts.count > 1
+            ? String(parts[1]).trimmingCharacters(in: .whitespacesAndNewlines)
+            : link
+        return CapturedItem(label: label.isEmpty ? link : label, link: link)
+    }
+
+    /// Uses AppleScript and window title parsing to build an obsidian://open URL for the current note.
+    /// Assumes window title in the form "Note – Vault – Obsidian …".
+    private static func captureObsidianSelection() -> CapturedItem? {
+        let script = """
+        tell application "System Events"
+            if not (exists process "Obsidian") then return ""
+            tell process "Obsidian"
+                if not (exists front window) then return ""
+                set t to name of front window
+            end tell
+        end tell
+        if t is "" then return ""
+        set AppleScript's text item delimiters to " - "
+        set parts to text items of t
+        if (count of parts) < 2 then return ""
+        set noteTitle to item 1 of parts
+        set vaultName to item 2 of parts
+        set AppleScript's text item delimiters to ""
+        return vaultName & "\\n" & noteTitle
+        """
+        var error: NSDictionary?
+        guard let result = NSAppleScript(source: script)?.executeAndReturnError(&error),
+              result.stringValue?.isEmpty == false else {
+            return nil
+        }
+        let parts = result.stringValue!.split(separator: "\n", maxSplits: 1, omittingEmptySubsequences: false)
+        guard parts.count >= 2 else { return nil }
+        let vault = String(parts[0]).trimmingCharacters(in: .whitespacesAndNewlines)
+        let note = String(parts[1]).trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !vault.isEmpty, !note.isEmpty else { return nil }
+
+        var components = URLComponents()
+        components.scheme = "obsidian"
+        components.host = "open"
+        components.queryItems = [
+            URLQueryItem(name: "vault", value: vault),
+            URLQueryItem(name: "file", value: note),
+        ]
+        guard let url = components.url?.absoluteString else { return nil }
+        return CapturedItem(label: note, link: url)
     }
 }
