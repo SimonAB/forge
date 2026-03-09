@@ -90,20 +90,19 @@ public final class SyncEngine: @unchecked Sendable {
         let projectTaskFiles = findAllProjectTaskFiles()
         let linter = TaskFileLinter()
         var lintPaths = Set<String>()
-        lintPaths.formUnion(areaFiles.map(\.path))
-        lintPaths.formUnion(projectTaskFiles.map(\.path))
 
-        // Also include inbox and someday-maybe in the task files root when present.
+        // All markdown files in the task files root (Forge/tasks/*.md), including inbox and someday-maybe.
         let paths = ForgePaths(forgeDir: forgeDir)
         let fm = FileManager.default
-        let inboxPath = paths.inboxPath
-        if fm.fileExists(atPath: inboxPath) {
-            lintPaths.insert(inboxPath)
+        if let entries = try? fm.contentsOfDirectory(atPath: paths.taskFilesRoot) {
+            for entry in entries where entry.hasSuffix(".md") {
+                let fullPath = (paths.taskFilesRoot as NSString).appendingPathComponent(entry)
+                lintPaths.insert(fullPath)
+            }
         }
-        let somedayPath = paths.somedayPath
-        if fm.fileExists(atPath: somedayPath) {
-            lintPaths.insert(somedayPath)
-        }
+
+        // All project TASKS.md discovered under project_roots.
+        lintPaths.formUnion(projectTaskFiles.map(\.path))
 
         for path in lintPaths {
             _ = try? linter.fix(path: path)
