@@ -107,8 +107,9 @@ public final class SyncEngine: @unchecked Sendable {
     ///
     /// **Deduplication order:** Reminders are deduplicated first by Forge ID (same task synced to
     /// multiple lists), then by content (same logical task with different IDs; one is kept and
-    /// non-canonical markdown tasks are removed). Events are deduplicated only by Forge ID.
-    /// All downstream steps (indices, push to Reminders/Calendar, pull to markdown) use these
+    /// non-canonical markdown tasks are removed). Events are deduplicated first by Forge ID and
+    /// then by content (same logical event with different IDs in the Forge calendar). All
+    /// downstream steps (indices, push to Reminders/Calendar, pull to markdown) use these
     /// deduplicated lists so we never push or pull duplicates.
     public func sync() async throws -> SyncReport {
         var report = SyncReport()
@@ -171,6 +172,7 @@ public final class SyncEngine: @unchecked Sendable {
 
         var eventsAfterDedup = events
         eventsAfterDedup = deduplicateEventsByForgeID(eventsAfterDedup, sourceByID: sourceByID, report: &report)
+        eventsAfterDedup = deduplicateEventsByContent(eventsAfterDedup, tasksByID: tasksByID, report: &report)
 
         var remindersByID = buildReminderIndex(remindersAfterDedup)
         let eventsByID = buildEventIndex(eventsAfterDedup)
@@ -394,6 +396,39 @@ public final class SyncEngine: @unchecked Sendable {
         )
     }
 
+    /// Content signature for grouping calendar events that are the same logical item (for content-based deduplication).
+    private struct EventContentSignature: Hashable {
+        let normalisedTitle: String
+        let calendarIdentifier: String
+        let startDay: String?
+        let isAllDay: Bool
+        let recurrenceString: String
+    }
+
+    private func eventContentSignature(_ event: EKEvent) -> EventContentSignature {
+        let title = event.title
+            .trimmingCharacters(in: .whitespaces)
+            .replacingOccurrences(of: "  ", with: " ")
+        let calendarId = event.calendar.calendarIdentifier
+        let startDay: String? = {
+            guard let date = event.startDate else { return nil }
+            return Self.dayString(date)
+        }()
+        let recurrenceString: String
+        if let rule = event.recurrenceRules?.first {
+            recurrenceString = "\(rule.frequency.rawValue)-\(rule.interval)"
+        } else {
+            recurrenceString = ""
+        }
+        return EventContentSignature(
+            normalisedTitle: title,
+            calendarIdentifier: calendarId,
+            startDay: startDay,
+            isAllDay: event.isAllDay,
+            recurrenceString: recurrenceString
+        )
+    }
+
     private func buildReminderIndex(_ reminders: [EKReminder]) -> [String: EKReminder] {
         var index: [String: EKReminder] = [:]
         for reminder in reminders {
@@ -555,6 +590,51 @@ public final class SyncEngine: @unchecked Sendable {
                 report.eventsDeduplicated += 1
             }
         }
+        return result
+    }
+
+    /// Deduplicate events that have the same content but different forge IDs or missing IDs.
+    private func deduplicateEventsByContent(
+        _ events: [EKEvent],
+        tasksByID: [String: ForgeTask],
+        report: inout SyncReport
+    ) -> [EKEvent] {
+        var bySig: [EventContentSignature: [EKEvent]] = [:]
+        for e in events {
+            bySig[eventContentSignature(e), default: []].append(e)
+        }
+
+        var result: [EKEvent] = []
+        for (_, group) in bySig {
+            if group.count == 1 {
+                result.append(group[0])
+                continue
+            }
+
+            let taskIDsInGroup = group.compactMap { calendarBridge.extractForgeID(from: $0)?.taskID }
+            let canonicalID: String? = taskIDsInGroup.isEmpty ? nil
+                : (taskIDsInGroup.filter { tasksByID[$0] != nil }.sorted().first
+                    ?? taskIDsInGroup.min()
+                    ?? taskIDsInGroup.first)
+
+            let keeperIndex: Int
+            if let canonicalID = canonicalID,
+               let idx = group.firstIndex(where: { calendarBridge.extractForgeID(from: $0)?.taskID == canonicalID }) {
+                keeperIndex = idx
+            } else {
+                keeperIndex = 0
+            }
+
+            let keeper = group[keeperIndex]
+            result.append(keeper)
+
+            for (idx, ev) in group.enumerated() {
+                if idx == keeperIndex { continue }
+                try? calendarBridge.removeEvent(ev)
+                report.eventsDeduplicated += 1
+            }
+        }
+
         return result
     }
 
