@@ -34,40 +34,40 @@ public struct TaskFileFinder: Sendable {
         if normalisedRoot.hasSuffix("/") {
             normalisedRoot = String(normalisedRoot.dropLast())
         }
-        guard let enumerator = fm.enumerator(
-            at: URL(fileURLWithPath: normalisedRoot),
-            includingPropertiesForKeys: nil,
-            options: []
-        ) else { return [] }
 
         let skipNames: Set<String> = [
             ".build", ".git", "node_modules", ".Trash",
             "Library", ".cursor", ".cargo", ".rustup",
         ]
 
+        guard let enumerator = fm.enumerator(atPath: normalisedRoot) else {
+            return []
+        }
+
         var results: [TaskFile] = []
 
-        for case let url as URL in enumerator {
+        for case let subpath as String in enumerator {
             if let cap = maxFiles, results.count >= cap { break }
 
-            let depth = enumerator.level
-            if let maxD = maxDepth, depth > maxD {
-                enumerator.skipDescendants()
+            let components = (subpath as NSString).pathComponents
+
+            if components.contains(where: { part in
+                part.hasPrefix(".") || skipNames.contains(part)
+            }) {
                 continue
             }
 
-            let name = url.lastPathComponent
-
-            if name.hasPrefix(".") || skipNames.contains(name) {
-                enumerator.skipDescendants()
+            if let maxD = maxDepth, components.count - 1 > maxD {
                 continue
             }
 
+            let name = (subpath as NSString).lastPathComponent
             guard name == "TASKS.md" else { continue }
 
-            let dirURL = url.deletingLastPathComponent()
-            let label = dirURL.lastPathComponent
-            results.append(TaskFile(path: url.path, label: label))
+            let fullPath = (normalisedRoot as NSString).appendingPathComponent(subpath)
+            let dirPath = (fullPath as NSString).deletingLastPathComponent
+            let label = (dirPath as NSString).lastPathComponent
+            results.append(TaskFile(path: fullPath, label: label))
         }
 
         return results
