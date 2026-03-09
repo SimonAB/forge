@@ -204,16 +204,17 @@ forge done a1b2c3
 ## forge due
 
 Show overdue and upcoming due tasks across all `TASKS.md` files found
-anywhere under `~/Documents`, regardless of nesting depth.
+under your configured `project_roots`, regardless of nesting depth.
 
 ```
-forge due [--days <n>] [--areas]
+forge due [--days <n>] [--areas] [--markdown]
 ```
 
 | Option | Short | Description |
 |--------|-------|-------------|
 | `--days` | `-d` | Lookahead window in days (default: 7) |
 | `--areas` | `-a` | Also include tasks from Forge area markdown files |
+| `--markdown` | `-m` | Also write a markdown summary to `Forge/tasks/due.md` |
 
 Tasks are grouped into three sections:
 
@@ -231,10 +232,12 @@ in the terminal.
 **Examples:**
 
 ```bash
-forge due                   # Overdue + due within 7 days (TASKS.md only)
-forge due -d 30             # Wider 30-day horizon
-forge due --areas           # Include area files (inbox, home, etc.)
-forge due -d 14 --areas     # 14-day horizon across everything
+forge due                         # Overdue + due within 7 days (TASKS.md only)
+forge due -d 30                   # Wider 30-day horizon
+forge due --areas                 # Include area files (inbox, home, etc.)
+forge due -d 14 --areas           # 14-day horizon across everything
+forge due --markdown              # Also write Forge/tasks/due.md with clickable links
+forge due -d 14 --areas -m        # Markdown summary including area files
 ```
 
 ---
@@ -307,6 +310,10 @@ forge sync [--verbose]
 
 The sync targets are configured in `config.yaml` under `gtd.reminders_list`
 and `gtd.calendar_name`.
+
+Each sync also refreshes the read-only due summary at `Forge/tasks/due.md`
+using a 7-day horizon and including both project and area tasks, so that
+file always reflects the latest synced state.
 
 ---
 

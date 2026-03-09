@@ -30,9 +30,9 @@ enum ConfigLoader {
         ForgePaths(forgeDir: forgeDir).somedayPath
     }
 
-    /// Files that are not treated as GTD area files (inbox, someday, config when in root).
+    /// Files that are not treated as GTD area files (inbox, someday, config when in root, generated summaries).
     private static let excludedFiles: Set<String> = [
-        "config.yaml", "someday-maybe.md", "inbox.md",
+        "config.yaml", "someday-maybe.md", "inbox.md", "due.md",
     ]
 
     /// Search upward from the current directory for a Forge/config.yaml file.
