@@ -96,6 +96,8 @@ public final class SyncEngine: @unchecked Sendable {
         let fm = FileManager.default
         if let entries = try? fm.contentsOfDirectory(atPath: paths.taskFilesRoot) {
             for entry in entries where entry.hasSuffix(".md") {
+                // Skip generated summaries such as due.md.
+                if entry == "due.md" { continue }
                 let fullPath = (paths.taskFilesRoot as NSString).appendingPathComponent(entry)
                 lintPaths.insert(fullPath)
             }
@@ -161,6 +163,9 @@ public final class SyncEngine: @unchecked Sendable {
 
         await applyFinderTags(sourced: sourced, areaFiles: areaFiles)
 
+        // Refresh the read-only due summary markdown with the default 7-day horizon, including areas.
+        await refreshDueMarkdownSummary()
+
         if !config.projectAreas.isEmpty {
             let rollup = RollupGenerator(config: config, forgeDir: forgeDir, taskFilesRoot: taskFilesRoot)
             if let rollupReport = try? rollup.generateAll() {
@@ -173,6 +178,60 @@ public final class SyncEngine: @unchecked Sendable {
         try calendarBridge.commit()
 
         return report
+    }
+
+    /// Regenerate the read-only due markdown summary (due.md) in the task files root.
+    ///
+    /// Uses a fixed 7-day horizon and includes both project and area tasks so the summary always
+    /// reflects the latest synced state.
+    private func refreshDueMarkdownSummary() async {
+        let horizonDays = 7
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        guard let horizon = calendar.date(byAdding: .day, value: horizonDays, to: today) else { return }
+
+        let updatedAreaFiles = scanAreaFiles()
+        guard let updatedSourced = try? await collectAllTasks(areaFiles: updatedAreaFiles) else { return }
+
+        var overdueItems: [DueSummaryGenerator.Item] = []
+        var dueTodayItems: [DueSummaryGenerator.Item] = []
+        var upcomingItems: [DueSummaryGenerator.Item] = []
+
+        for st in updatedSourced {
+            let task = st.task
+            guard !task.isCompleted, let due = task.dueDate else { continue }
+
+            let fileURL = URL(fileURLWithPath: st.filePath)
+            let label: String
+            if st.isAreaTask {
+                label = fileURL.deletingPathExtension().lastPathComponent.capitalized
+            } else {
+                label = fileURL.deletingLastPathComponent().lastPathComponent
+            }
+
+            let item = DueSummaryGenerator.Item(task: task, label: label, sourcePath: st.filePath)
+
+            if task.isOverdue {
+                overdueItems.append(item)
+            } else if task.isDueToday {
+                dueTodayItems.append(item)
+            } else if due <= horizon {
+                upcomingItems.append(item)
+            }
+        }
+
+        overdueItems.sort { ($0.task.dueDate ?? .distantPast) < ($1.task.dueDate ?? .distantPast) }
+        dueTodayItems.sort { $0.task.text.lowercased() < $1.task.text.lowercased() }
+        upcomingItems.sort { ($0.task.dueDate ?? .distantFuture) < ($1.task.dueDate ?? .distantFuture) }
+
+        let generator = DueSummaryGenerator()
+        generator.writeMarkdownSummary(
+            overdueTasks: overdueItems,
+            dueTodayTasks: dueTodayItems,
+            upcomingTasks: upcomingItems,
+            days: horizonDays,
+            taskFilesRoot: taskFilesRoot
+        )
     }
 
     // MARK: - Collect Tasks
@@ -225,7 +284,7 @@ public final class SyncEngine: @unchecked Sendable {
     /// Scan area markdown files in the task files directory with their frontmatter and body (for task parsing).
     private func scanAreaFiles() -> [(path: String, name: String, frontmatter: Frontmatter?, body: String)] {
         let fm = FileManager.default
-        let excluded: Set<String> = ["config.yaml", "someday-maybe.md", "inbox.md"]
+        let excluded: Set<String> = ["config.yaml", "someday-maybe.md", "inbox.md", "due.md"]
         guard let entries = try? fm.contentsOfDirectory(atPath: taskFilesRoot) else { return [] }
         var result: [(path: String, name: String, frontmatter: Frontmatter?, body: String)] = []
         for entry in entries.sorted() where entry.hasSuffix(".md") {

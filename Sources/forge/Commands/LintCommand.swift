@@ -25,6 +25,8 @@ struct LintCommand: AsyncParsableCommand {
 
         if pathArguments.isEmpty {
             for (path, _) in ConfigLoader.allTaskFilesInTaskRoot(forgeDir: forgeDir) {
+                // Skip generated summaries such as due.md.
+                if (path as NSString).lastPathComponent == "due.md" { continue }
                 allPaths.append(path)
             }
             let scanner = WorkspaceScanner(config: config)
