@@ -26,6 +26,10 @@ This document explains how Forge fits together and how to use it day-to-day.
   - `inbox.md` is the capture point for quick notes and imported Reminders.
 - **Sync engine**:
   - `SyncEngine.sync()` is responsible for keeping markdown, Reminders, and Calendar in agreement.
+- **Privacy**:
+  - All project and area content is stored as plain-text markdown under your Forge directory.
+  - Forge maintains a small local SQLite cache at `Forge/.cache/tasks.db` for file metadata and counts only; task text remains in markdown.
+  - There are no Forge-hosted services: all synchronisation happens locally between your files and macOS Reminders/Calendar on your machine.
 
 ## Components
 
