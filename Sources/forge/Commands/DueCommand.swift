@@ -23,7 +23,8 @@ struct DueCommand: ParsableCommand {
         let forgeDir = ConfigLoader.forgeDirectory(for: config)
         let markdownIO = MarkdownIO()
         let taskFilesRoot = ConfigLoader.taskFilesRoot(forgeDir: forgeDir)
-         let taskIndex = FileTaskIndex.shared
+        let db = try TaskFileDatabase(forgeDir: forgeDir)
+        let taskIndex = DatabaseTaskIndex(database: db)
 
         let bold = "\u{1B}[1m"
         let dim = "\u{1B}[2m"
