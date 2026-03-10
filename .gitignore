@@ -26,3 +26,7 @@ __pycache__/
 # Task files and caches (workspace-specific, may contain private data)
 tasks/
 .cache/
+
+# Local configuration (contains machine- and person-specific paths/projects)
+config.yaml
+config.real.yaml
