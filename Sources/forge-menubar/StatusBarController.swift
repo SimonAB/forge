@@ -390,8 +390,8 @@ final class StatusBarController: NSObject {
         NSLayoutConstraint.activate([
             iconView.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
             iconView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 24),
-            iconView.widthAnchor.constraint(equalToConstant: 48),
-            iconView.heightAnchor.constraint(equalToConstant: 48),
+            iconView.widthAnchor.constraint(equalToConstant: 96),
+            iconView.heightAnchor.constraint(equalToConstant: 96),
             label.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
             label.topAnchor.constraint(equalTo: iconView.bottomAnchor, constant: 8),
             spinner.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
