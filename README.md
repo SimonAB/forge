@@ -93,7 +93,8 @@ tasks live in a `TASKS.md` file inside the project directory.
 
 ## Configuration
 
-See [`config.yaml`](config.yaml) for the full configuration. Key sections:
+Start from [`config.sample.yaml`](config.sample.yaml) and copy it to
+`config.yaml`, then adjust paths and names to match your setup. Key sections:
 
 - **`workspace`** — path to the directory containing project folders.
 - **`board.columns`** — ordered kanban columns, each mapped to a Finder tag.

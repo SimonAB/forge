@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+### [0.6.1] – 2026-03-10
+
+#### Privacy, licensing, and install UX
+
+- Clarify Forge’s **local-first, privacy-respecting** data model in the README and manual, including how markdown files, the task file database, and Reminders/Calendar sync fit together.
+- Add a dedicated `PRIVACY.md` describing what Forge stores, how sync works via macOS frameworks, and how to run in markdown-only or local-only modes.
+- Add an Apache-2.0 `LICENSE` file and link it from the README.
+- Update `.gitignore` to exclude `tasks/`, `.cache/`, and local `config.yaml` files so private task content, caches, and machine-specific configuration are not committed.
+- Replace the tracked `config.yaml` with a sanitised `config.sample.yaml` that new users can copy and edit locally.
+
+#### Build script and menubar polish
+
+- Harden `build.sh` with a Swift toolchain check and clearer messaging, and warn when the chosen install directory for `forge` is not on `PATH`.
+- Improve the Forge.app About panel copy to emphasise that all data stays in your own files.
+- Add a small initial-sync window in the menubar app so the first background sync is visible without being modal.
+
 ### [0.6.0] – 2026-03-10
 
 #### Delegated projects and tasks
