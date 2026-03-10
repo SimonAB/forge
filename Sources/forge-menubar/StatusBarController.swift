@@ -330,6 +330,7 @@ final class StatusBarController: NSObject {
                 lastSyncDate = Date()
                 hideSyncProgressWindow()
                 refreshCounts()
+                boardWindowController?.refreshBoardIfNeeded()
 
                 if report.inboxItemsAdded > 0 {
                     sendNotification(
