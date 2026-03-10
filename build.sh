@@ -37,7 +37,13 @@ if [ ! -L "$FORGE_DIR/.build" ]; then
     echo "✓ Symlinked .build → $BUILD_DIR"
 fi
 
-# 2. Build
+# 2. Check toolchain prerequisites, then build
+if ! command -v swift >/dev/null 2>&1; then
+    echo "Error: Swift toolchain not found."
+    echo "Install Xcode (or the Command Line Tools via 'xcode-select --install') and re-run this script."
+    exit 1
+fi
+
 echo ""
 echo "Building Forge (menubar app and board app first; CLI may take longer due to dependency plugins)..."
 cd "$FORGE_DIR"
@@ -67,6 +73,15 @@ fi
 
 ln -sf "$BIN_PATH/forge" "$BIN_DIR/forge"
 echo "✓ Symlinked forge → $BIN_DIR/forge"
+
+case ":$PATH:" in
+    *":$BIN_DIR:"*)
+        ;;
+    *)
+        echo "Note: $BIN_DIR is not currently in your PATH."
+        echo "Add it to your shell configuration so 'forge' is available from any terminal."
+        ;;
+esac
 
 # 4. Create Forge.app bundle in /Applications
 APP_DIR="/Applications/Forge.app"

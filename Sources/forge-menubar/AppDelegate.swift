@@ -218,7 +218,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
 
     @objc private func showAbout(_ sender: Any?) {
         NSApp.orderFrontStandardAboutPanel(options: [
-            NSApplication.AboutPanelOptionKey.credits: NSAttributedString(string: "GTD-style task management with markdown and native tags."),
+            NSApplication.AboutPanelOptionKey.credits: NSAttributedString(string: "Local-first, GTD-style task management with markdown and native macOS tags. All data stays in your own files."),
             NSApplication.AboutPanelOptionKey(rawValue: "Copyright"): "© Forge",
         ])
     }

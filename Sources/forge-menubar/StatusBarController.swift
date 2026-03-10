@@ -14,6 +14,9 @@ final class StatusBarController: NSObject {
     private var capturePanel: CapturePanel?
     private var boardWindowController: BoardWindowController?
 
+    private var syncProgressWindow: NSWindow?
+    private var hasShownInitialSyncWindow = false
+
     private var overdueCount = 0
     private var dueTodayCount = 0
     private var inboxCount = 0
@@ -304,6 +307,12 @@ final class StatusBarController: NSObject {
     private func performBackgroundSync() {
         guard let config = config else { return }
 
+        // On first sync after launch, show a small non-blocking window so it is clear that
+        // Forge is performing an initial background sync with Reminders and Calendar.
+        if lastSyncDate == nil {
+            showInitialSyncWindowIfNeeded()
+        }
+
         Task { @MainActor in
             do {
                 guard let forgeDir = self.forgeDir else { return }
@@ -319,6 +328,7 @@ final class StatusBarController: NSObject {
                 )
                 let report = try await engine.sync()
                 lastSyncDate = Date()
+                hideSyncProgressWindow()
                 refreshCounts()
 
                 if report.inboxItemsAdded > 0 {
@@ -328,9 +338,81 @@ final class StatusBarController: NSObject {
                     )
                 }
             } catch {
+                hideSyncProgressWindow()
                 rebuildMenu()
             }
         }
+    }
+
+    private func showInitialSyncWindowIfNeeded() {
+        guard !hasShownInitialSyncWindow else { return }
+        hasShownInitialSyncWindow = true
+
+        let contentRect = NSRect(x: 0, y: 0, width: 220, height: 220)
+        let window = NSWindow(
+            contentRect: contentRect,
+            styleMask: [.borderless],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "Forge"
+        window.isReleasedWhenClosed = false
+        window.level = .floating
+        window.isOpaque = false
+        window.backgroundColor = .clear
+
+        let label = NSTextField(labelWithString: "Initial sync in progress…")
+        label.alignment = .center
+        label.translatesAutoresizingMaskIntoConstraints = false
+
+        let iconView = NSImageView()
+        iconView.image = NSApp.applicationIconImage
+        iconView.imageScaling = .scaleProportionallyUpOrDown
+        iconView.translatesAutoresizingMaskIntoConstraints = false
+
+        let spinner = NSProgressIndicator()
+        spinner.style = .spinning
+        spinner.controlSize = .regular
+        spinner.translatesAutoresizingMaskIntoConstraints = false
+        spinner.startAnimation(nil)
+
+        let contentView = NSView(frame: contentRect)
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+        contentView.wantsLayer = true
+        contentView.layer?.cornerRadius = 16
+        contentView.layer?.masksToBounds = true
+        contentView.layer?.backgroundColor = NSColor.windowBackgroundColor.withAlphaComponent(0.97).cgColor
+        contentView.addSubview(iconView)
+        contentView.addSubview(label)
+        contentView.addSubview(spinner)
+        window.contentView = contentView
+
+        NSLayoutConstraint.activate([
+            iconView.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
+            iconView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 24),
+            iconView.widthAnchor.constraint(equalToConstant: 48),
+            iconView.heightAnchor.constraint(equalToConstant: 48),
+            label.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
+            label.topAnchor.constraint(equalTo: iconView.bottomAnchor, constant: 8),
+            spinner.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
+            spinner.topAnchor.constraint(equalTo: label.bottomAnchor, constant: 8)
+        ])
+
+        if let screen = NSScreen.main {
+            let frame = screen.visibleFrame
+            let x = frame.midX - contentRect.width / 2
+            let y = frame.midY - contentRect.height / 2
+            window.setFrameOrigin(NSPoint(x: x, y: y))
+        }
+
+        syncProgressWindow = window
+        NSApp.activate(ignoringOtherApps: true)
+        window.makeKeyAndOrderFront(nil)
+    }
+
+    private func hideSyncProgressWindow() {
+        syncProgressWindow?.orderOut(nil)
+        syncProgressWindow = nil
     }
 
     // MARK: - Refresh Counts

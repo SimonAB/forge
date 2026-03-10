@@ -168,6 +168,18 @@ On first launch, macOS will prompt for access to:
 Grant both for full functionality. These are declared in the app's
 `Info.plist`.
 
+### Privacy and data flow
+
+- Forge.app reads and writes only the Forge directory on your disk
+  (configuration, inbox and area files, and project `TASKS.md` files).
+- Background sync uses macOS frameworks (EventKit and related APIs) to talk to
+  **your** Reminders and Calendar accounts; no data is sent to any Forge
+  server.
+- The task index at `Forge/.cache/tasks.db` stores file paths, timestamps, and
+  cached counts, not full task text.
+- You keep full control over where the Forge directory lives (for example on an
+  encrypted volume, in a git repository, or in a local-only folder).
+
 ---
 
 ## Configuration resolution

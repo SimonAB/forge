@@ -23,5 +23,6 @@ __pycache__/
 .cursor/
 .focus
 
-# Task files (workspace-specific)
+# Task files and caches (workspace-specific, may contain private data)
 tasks/
+.cache/

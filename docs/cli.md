@@ -1,7 +1,9 @@
 # Forge CLI
 
 The `forge` command-line tool manages your kanban board and GTD tasks from the
-terminal.
+terminal, operating directly on the plain-text markdown files in your Forge
+directory. There are no remote services; all commands read and write your local
+files and, for sync, talk to macOS Reminders and Calendar on your machine.
 
 ```
 forge <command> [options]

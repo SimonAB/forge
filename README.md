@@ -24,7 +24,35 @@ zsh ~/Documents/Forge/build.sh
 
 This builds the Swift project, installs the `forge` binary, creates
 `/Applications/Forge.app`, and registers a Launch Agent so the menu bar app
-starts at login. See [setup details](docs/app.md#setup).
+starts at login. The script only touches the Forge source directory,
+`~/.forge-build`, and your local application and binary folders; it never sends
+any data off your Mac. See [setup details](docs/app.md#setup).
+
+### Requirements
+
+- macOS 14 or later.
+- Xcode or Xcode Command Line Tools (for the Swift toolchain).
+- Python 3 with Pillow (`pip3 install Pillow`) if you want the generated app icon
+  (Forge will still work without this; a default icon is used).
+
+Run `build.sh` once per Mac after your Forge directory has synchronised (for
+example via iCloud Drive or git). Your tasks and configuration remain plain-text
+files in the Forge directory, shared across machines however you choose to sync.
+
+## Privacy and data model
+
+- All projects, areas, and tasks live as plain-text markdown files in your
+  Forge directory (`config.yaml`, `tasks/*.md`, and project `TASKS.md` files).
+- Forge keeps a small local cache in `.cache/tasks.db` for performance; this
+  stores only file paths, counts, and timestamps, not task text.
+- There are **no Forge servers**: the CLI, board, and menu bar app read and
+  write only your local files and talk to macOS Reminders and Calendar via
+  system APIs on your machine.
+- You are free to keep the Forge directory under git, on an encrypted volume,
+  or in a local-only folder if you prefer not to sync via any cloud service.
+
+See `PRIVACY.md` for a fuller description of what Forge stores, how sync works,
+and how to run in markdown-only or local-only modes.
 
 ## Directory layout
 
@@ -185,3 +213,8 @@ Repeat rules sync to Apple Reminders as native recurrence rules.
 Source code and markdown files sync automatically via **iCloud Drive**. The
 compiled `.build` directory is kept outside iCloud at `~/.forge-build` (symlinked
 into the source tree). Run `build.sh` on each new Mac to build locally.
+
+## Licence
+
+Forge is distributed under the Apache License, Version 2.0. See the `LICENSE`
+file in this repository for the full text.
