@@ -110,6 +110,11 @@ final class BoardWindowController: NSObject, NSWindowDelegate {
         NSApp.activate(ignoringOtherApps: true)
     }
 
+    /// Refreshes the board's project list (e.g. after a sync so new tags/columns appear).
+    func refreshBoardIfNeeded() {
+        viewModel.refresh()
+    }
+
     private func saveWindowFrame() {
         guard let window = window, window.isVisible else { return }
         let rect = window.frame

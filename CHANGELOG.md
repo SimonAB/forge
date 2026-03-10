@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+### [0.6.2] – 2026-03-10
+
+#### Menubar and board
+
+- Refresh the kanban board view after each background sync (or “Sync Now”) so that newly applied Finder tags (e.g. column tags) and meta tags appear without reopening the board or restarting the app.
+
 ### [0.6.1] – 2026-03-10
 
 #### Privacy, licensing, and install UX
