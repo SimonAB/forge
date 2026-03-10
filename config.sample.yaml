@@ -1,0 +1,71 @@
+project_roots:
+  - ~/Documents/Work/Projects
+  - ~/Documents/Home
+
+board:
+  columns:
+    - name: Plan
+      tag: "Plan 📐"
+      colour: 4
+    - name: Active
+      tag: "Active 🚧"
+      colour: 2
+    - name: Analyse
+      tag: "Analyse 🔍"
+      colour: 5
+    - name: Write
+      tag: "Write ✒️"
+      colour: 6
+    - name: Review
+      tag: "Review 🖍️"
+      colour: 7
+    - name: Shipped
+      tag: "Shipped 🚀"
+      colour: 3
+    - name: Paused
+      tag: "Paused ⏸️"
+      colour: 1
+
+  meta_tags:
+    - "URGENT ⚠️"
+    - "Collab 🤝"
+    - "Student 🎓"
+
+  tag_aliases: {}
+
+gtd:
+  contexts:
+    - office
+    - home
+    - errands
+    - writing
+    - review
+    - analysis
+    - planning
+    - deep-work
+    - low-energy
+    - email
+    - calls
+    - computer
+    - reading
+    - anywhere
+  reminders_list: Forge
+  calendar_name: Forge
+
+workspace_tags:
+  - work
+
+project_areas:
+  admin:
+    - Admin
+    - Finances
+    - Teaching-admin
+  research:
+    - Project Alpha
+    - Project Beta
+    - Project Gamma
+  teaching: []
+
+terminal: auto
+project_tag: "🔥 Forge"
+
