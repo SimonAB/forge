@@ -318,16 +318,21 @@ final class StatusBarController: NSObject {
         let markdownIO = MarkdownIO()
         let fm = FileManager.default
 
-        let taskFiles: [TaskFileFinder.TaskFile]
+        let taskFiles: [(path: String, label: String)]
         if let config = config {
-            var seenPaths = Set<String>()
-            taskFiles = config.resolvedProjectRoots.flatMap { root in
-                TaskFileFinder.findAll(under: root).filter { file in
-                    seenPaths.insert(file.path).inserted
-                }
+            // Use the shared task index to avoid repeatedly walking the entire project tree on
+            // every menubar refresh. The index caches discovered TASKS.md files per project root.
+            let taskIndex = FileTaskIndex.shared
+            if let forgeDir = forgeDir {
+                try? taskIndex.refreshIfNeeded(config: config, forgeDir: forgeDir)
+            }
+            taskFiles = taskIndex.projectTaskFiles(for: config).map { info in
+                (path: info.path, label: info.projectName)
             }
         } else {
-            taskFiles = TaskFileFinder.findAllUnderDocuments()
+            taskFiles = TaskFileFinder.findAllUnderDocuments().map { file in
+                (path: file.path, label: file.label)
+            }
         }
 
         var overdue = 0
