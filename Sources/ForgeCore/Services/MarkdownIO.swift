@@ -528,6 +528,12 @@ public struct MarkdownIO: Sendable {
             RepeatRule.parse($0)
         }
 
+        var assignees: [String] = []
+        if let rawPerson = extractValue(tag: "person", from: text),
+           let normalised = ForgeTask.normalisedAssigneeIdentifier(fromRawTag: rawPerson) {
+            assignees.append(normalised)
+        }
+
         let cleanText = text
             .replacing(/@\w+\([^)]*\)/, with: "")
             .trimmingCharacters(in: .whitespaces)
@@ -546,7 +552,8 @@ public struct MarkdownIO: Sendable {
             source: source,
             deferDate: deferDate,
             repeatRule: repeatRule,
-            projectName: projectName
+            projectName: projectName,
+            assignees: assignees.isEmpty ? nil : assignees
         )
         return (task, idWasGenerated)
     }
@@ -598,6 +605,10 @@ public struct MarkdownIO: Sendable {
         }
         if let done = task.doneDate {
             parts.append("@done(\(Self.dateFormatter.string(from: done)))")
+        }
+        if let assignees = task.assignees, let first = assignees.first,
+           !first.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            parts.append("@person(#\(first))")
         }
 
         parts.append("<!-- id:\(task.id) -->")

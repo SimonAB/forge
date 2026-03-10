@@ -20,13 +20,19 @@ public struct Project: Sendable {
     /// Meta tags (e.g. Mine, Collab, Student) present on the directory.
     public let metaTags: [String]
 
+    /// Assignees derived from person Finder tags (e.g. #PeggySue) on the project directory.
+    /// Each entry is a normalised identifier with the leading # removed and surrounding
+    /// whitespace trimmed.
+    public let assignees: [String]
+
     public init(
         name: String,
         path: String,
         tags: [String],
         workflowTag: String?,
         column: String?,
-        metaTags: [String]
+        metaTags: [String],
+        assignees: [String] = []
     ) {
         self.name = name
         self.path = path
@@ -34,6 +40,7 @@ public struct Project: Sendable {
         self.workflowTag = workflowTag
         self.column = column
         self.metaTags = metaTags
+        self.assignees = assignees
     }
 }
 
@@ -41,6 +48,7 @@ extension Project: CustomStringConvertible {
     public var description: String {
         let col = column ?? "Untagged"
         let meta = metaTags.isEmpty ? "" : " [\(metaTags.joined(separator: ", "))]"
-        return "\(name) (\(col))\(meta)"
+        let people = assignees.isEmpty ? "" : " {\(assignees.joined(separator: ", "))}"
+        return "\(name) (\(col))\(meta)\(people)"
     }
 }

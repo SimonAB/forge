@@ -11,6 +11,9 @@ struct WaitingCommand: AsyncParsableCommand {
     @Option(name: .long, help: "Focus on a specific tag (e.g. work, personal). Overrides persistent focus.")
     var focus: String?
 
+    @Option(name: .long, help: "Filter to items waiting on a specific person (matches name, case-insensitive).")
+    var assignee: String?
+
     mutating func run() async throws {
         let config = try ConfigLoader.load()
         let forgeDir = ConfigLoader.forgeDirectory(for: config)
@@ -62,7 +65,18 @@ struct WaitingCommand: AsyncParsableCommand {
         _ tasks: [ForgeTask], heading: String,
         bold: String, dim: String, yellow: String, reset: String
     ) -> Int {
-        let waiting = tasks.filter { !$0.isCompleted && $0.section == .waitingFor && !$0.isDeferred }
+        let waiting: [ForgeTask]
+        if let assigneeFilter = assignee, !assigneeFilter.isEmpty {
+            let needle = assigneeFilter.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            waiting = tasks.filter {
+                !$0.isCompleted
+                && $0.section == .waitingFor
+                && !$0.isDeferred
+                && ($0.waitingOn?.lowercased() == needle)
+            }
+        } else {
+            waiting = tasks.filter { !$0.isCompleted && $0.section == .waitingFor && !$0.isDeferred }
+        }
         guard !waiting.isEmpty else { return 0 }
 
         print("\(bold)\(heading)\(reset)")

@@ -23,6 +23,9 @@ struct NextCommand: AsyncParsableCommand {
     @Option(name: .long, help: "Focus on a specific tag (e.g. work, personal). Overrides persistent focus.")
     var focus: String?
 
+    @Option(name: .long, help: "Filter by assignee name (matches #Person tags and waiting-on names, case-insensitive).")
+    var assignee: String?
+
     mutating func run() async throws {
         let config = try ConfigLoader.load()
         let forgeDir = ConfigLoader.forgeDirectory(for: config)
@@ -72,6 +75,15 @@ struct NextCommand: AsyncParsableCommand {
                     relevantTasks = relevantTasks.filter { $0.context?.lowercased() == ctx.lowercased() }
                 }
 
+                if let assigneeFilter = assignee, !assigneeFilter.isEmpty {
+                    let needle = assigneeFilter.trimmingCharacters(in: .whitespacesAndNewlines)
+                        .trimmingCharacters(in: CharacterSet(charactersIn: "#"))
+                        .lowercased()
+                    relevantTasks = relevantTasks.filter { task in
+                        task.allAssigneeIdentifiers.contains { $0.lowercased() == needle }
+                    }
+                }
+
                 guard !relevantTasks.isEmpty else { continue }
 
                 print("\(bold)\(proj.name)\(reset) \(dim)(\(proj.column ?? "Untagged"))\(reset)")
@@ -94,6 +106,14 @@ struct NextCommand: AsyncParsableCommand {
                 }
                 if let ctx = context {
                     relevantTasks = relevantTasks.filter { $0.context?.lowercased() == ctx.lowercased() }
+                }
+                if let assigneeFilter = assignee, !assigneeFilter.isEmpty {
+                    let needle = assigneeFilter.trimmingCharacters(in: .whitespacesAndNewlines)
+                        .trimmingCharacters(in: CharacterSet(charactersIn: "#"))
+                        .lowercased()
+                    relevantTasks = relevantTasks.filter { task in
+                        task.allAssigneeIdentifiers.contains { $0.lowercased() == needle }
+                    }
                 }
                 guard !relevantTasks.isEmpty else { continue }
 
@@ -138,6 +158,21 @@ struct NextCommand: AsyncParsableCommand {
 
             let ctxLabel = task.context.map { " \(dim)@\($0)\(reset)" } ?? ""
             let waitLabel = task.waitingOn.map { " \(dim)⏳\($0)\(reset)" } ?? ""
+            let explicitAssignees = task.assignees ?? []
+            let assigneeNamesToShow: [String]
+            if let waiting = task.waitingOn,
+               explicitAssignees.contains(where: { $0.caseInsensitiveCompare(waiting) == .orderedSame }) {
+                assigneeNamesToShow = explicitAssignees
+            } else {
+                assigneeNamesToShow = explicitAssignees
+            }
+            let assigneeLabel: String
+            if assigneeNamesToShow.isEmpty {
+                assigneeLabel = ""
+            } else {
+                let joined = assigneeNamesToShow.map { "@\($0)" }.joined(separator: ", ")
+                assigneeLabel = " \(dim)\(joined)\(reset)"
+            }
             let repeatLabel = task.repeatRule.map { " \(dim)↻\($0.serialise())\(reset)" } ?? ""
             let cyan = "\u{1B}[36m"
             let deferLabel: String
@@ -150,7 +185,7 @@ struct NextCommand: AsyncParsableCommand {
             }
             let idLabel = " \(dim)[\(task.id)]\(reset)"
 
-            print("\(prefix) \(task.text)\(dueLabel)\(deferLabel)\(ctxLabel)\(waitLabel)\(repeatLabel)\(idLabel)")
+            print("\(prefix) \(task.text)\(dueLabel)\(deferLabel)\(ctxLabel)\(waitLabel)\(assigneeLabel)\(repeatLabel)\(idLabel)")
         }
     }
 }

@@ -4,6 +4,33 @@ All notable changes to this project will be documented in this file.
 
 The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+### [0.6.0] – 2026-03-10
+
+#### Delegated projects and tasks
+
+- Treat Finder tags starting with `#` on project folders (for example `#PeggySue`) as person tags and surface them as `assignees` on `Project` values.
+- Extend the kanban board UI to show assignees on project cards and add an **Assignee** filter alongside existing column/meta/domain filters.
+- Add assignee support to the board CLI:
+  - `forge board --assignee Name` filters projects by `#Name`.
+  - The list view shows both meta tags and `@Name` assignees.
+
+#### Task-level delegation and CLI filters
+
+- Extend `ForgeTask` and `MarkdownIO` to support task-level assignees via an inline `@person(#Name)` tag, in addition to existing `@waiting(Name)` semantics.
+- Add a shared helper on `ForgeTask` so CLI commands can match both explicit assignees and `waitingOn` names consistently.
+- Add `--assignee` filters to:
+  - `forge next` – filter next actions and waiting-for items by assignee and show `@Name` alongside existing due/context/waiting labels.
+  - `forge due` – filter due and upcoming tasks by assignee and show assignees in the output.
+  - `forge waiting` – narrow waiting-for items to a specific person.
+
+#### Delegated overview and menubar integration
+
+- Add a new `forge delegated` command that lists all delegated tasks (non-completed, non-deferred with an assignee) grouped by assignee and then by project/area.
+- Extend the menubar app with a Delegation submenu (backed by a small list of favourite assignees) which can open:
+  - `forge board --assignee Name`
+  - `forge next --assignee Name`
+  - `forge waiting --assignee Name`
+
 ### [0.5.0] – 2026-03-10
 
 #### Performance
