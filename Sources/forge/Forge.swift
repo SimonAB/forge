@@ -21,6 +21,7 @@ struct Forge: AsyncParsableCommand {
             SyncCommand.self,
             ProcessCommand.self,
             WaitingCommand.self,
+            DelegatedCommand.self,
             ContextsCommand.self,
             ReviewCommand.self,
             RollupCommand.self,

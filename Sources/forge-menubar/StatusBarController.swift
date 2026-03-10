@@ -25,6 +25,10 @@ final class StatusBarController: NSObject {
     /// Sync interval in seconds (default: 5 minutes).
     private let syncInterval: TimeInterval = 300
 
+    /// Favourite assignees for quick delegation-related menu entries. These should match
+    /// the canonical person identifiers derived from #Person Finder tags (without the #).
+    private let favouriteAssignees: [String] = []
+
     private static let relativeDateFormatter: RelativeDateTimeFormatter = {
         let f = RelativeDateTimeFormatter()
         f.unitsStyle = .abbreviated
@@ -205,6 +209,43 @@ final class StatusBarController: NSObject {
             boardItem.keyEquivalentModifierMask = boardSpec.modifierFlags
             boardItem.target = self
             menu.addItem(boardItem)
+
+            let delegationMenu = NSMenu()
+            for name in favouriteAssignees {
+                let boardForAssignee = NSMenuItem(
+                    title: "Board for #\(name)",
+                    action: #selector(openBoardForAssignee(_:)),
+                    keyEquivalent: ""
+                )
+                boardForAssignee.representedObject = name
+                boardForAssignee.target = self
+                delegationMenu.addItem(boardForAssignee)
+
+                let nextForAssignee = NSMenuItem(
+                    title: "Next actions for #\(name)",
+                    action: #selector(openNextForAssignee(_:)),
+                    keyEquivalent: ""
+                )
+                nextForAssignee.representedObject = name
+                nextForAssignee.target = self
+                delegationMenu.addItem(nextForAssignee)
+
+                let waitingForAssignee = NSMenuItem(
+                    title: "Waiting for #\(name)",
+                    action: #selector(openWaitingForAssignee(_:)),
+                    keyEquivalent: ""
+                )
+                waitingForAssignee.representedObject = name
+                waitingForAssignee.target = self
+                delegationMenu.addItem(waitingForAssignee)
+
+                delegationMenu.addItem(NSMenuItem.separator())
+            }
+            if !favouriteAssignees.isEmpty {
+                let delegationItem = NSMenuItem(title: "Delegation", action: nil, keyEquivalent: "")
+                delegationItem.submenu = delegationMenu
+                menu.addItem(delegationItem)
+            }
         }
 
         let boardTerminalItem = NSMenuItem(
@@ -511,6 +552,30 @@ final class StatusBarController: NSObject {
         NSApp.activate(ignoringOtherApps: true)
         let launcher = TerminalLauncher(config: config, openURL: { NSWorkspace.shared.open($0) })
         launcher.run("forge board", workingDirectory: config.resolvedWorkspacePath)
+    }
+
+    @objc private func openBoardForAssignee(_ sender: NSMenuItem) {
+        guard let config = config,
+              let name = sender.representedObject as? String else { return }
+        NSApp.activate(ignoringOtherApps: true)
+        let launcher = TerminalLauncher(config: config, openURL: { NSWorkspace.shared.open($0) })
+        launcher.run("forge board --assignee \(name)", workingDirectory: config.resolvedWorkspacePath)
+    }
+
+    @objc private func openNextForAssignee(_ sender: NSMenuItem) {
+        guard let config = config,
+              let name = sender.representedObject as? String else { return }
+        NSApp.activate(ignoringOtherApps: true)
+        let launcher = TerminalLauncher(config: config, openURL: { NSWorkspace.shared.open($0) })
+        launcher.run("forge next --assignee \(name)", workingDirectory: config.resolvedWorkspacePath)
+    }
+
+    @objc private func openWaitingForAssignee(_ sender: NSMenuItem) {
+        guard let config = config,
+              let name = sender.representedObject as? String else { return }
+        NSApp.activate(ignoringOtherApps: true)
+        let launcher = TerminalLauncher(config: config, openURL: { NSWorkspace.shared.open($0) })
+        launcher.run("forge waiting --assignee \(name)", workingDirectory: config.resolvedWorkspacePath)
     }
 
     @objc private func openProcess() {

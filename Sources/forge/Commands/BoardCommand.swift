@@ -14,6 +14,9 @@ struct BoardCommand: AsyncParsableCommand {
     @Option(name: .shortAndLong, help: "Filter to a specific column.")
     var column: String?
 
+    @Option(name: .shortAndLong, help: "Filter to projects assigned to a person (matches #Person tags, case-insensitive).")
+    var assignee: String?
+
     mutating func run() async throws {
         let config = try ConfigLoader.load()
         let scanner = WorkspaceScanner(config: config)
@@ -23,6 +26,13 @@ struct BoardCommand: AsyncParsableCommand {
             let lowerFilter = columnFilter.lowercased()
             projects = projects.filter {
                 $0.column?.lowercased() == lowerFilter
+            }
+        }
+
+        if let assigneeFilter = assignee, !assigneeFilter.isEmpty {
+            let needle = assigneeFilter.trimmingCharacters(in: .whitespacesAndNewlines).trimmingCharacters(in: CharacterSet(charactersIn: "#")).lowercased()
+            projects = projects.filter { project in
+                project.assignees.contains { $0.lowercased() == needle }
             }
         }
 

@@ -25,6 +25,9 @@ public final class BoardViewModel {
     /// When non-empty, only projects matching this regex (against name, path, tags) are shown. Case-insensitive.
     public var searchFilter: String? = nil
 
+    /// When set, only projects that have this assignee (derived from #Person Finder tags) are shown. Nil = show all.
+    public var assigneeFilter: String? = nil
+
     /// When non-nil and non-empty, only these meta tags appear in the board filter picker; otherwise all from config.
     private let filterMetaTags: [String]?
 
@@ -33,7 +36,7 @@ public final class BoardViewModel {
 
     /// Cache for filtered projects and grouped columns to avoid recomputing on every body read.
     private var boardCache: (
-        key: (projectCount: Int, columnFilter: String?, metaTagFilter: String?, pathSegmentFilter: String?, searchFilter: String?),
+        key: (projectCount: Int, columnFilter: String?, metaTagFilter: String?, pathSegmentFilter: String?, searchFilter: String?, assigneeFilter: String?),
         filtered: [Project],
         grouped: [(column: ColumnConfig, projects: [Project])]
     )?
@@ -58,6 +61,13 @@ public final class BoardViewModel {
         let all = config.board.metaTags
         guard let selected = filterMetaTags, !selected.isEmpty else { return all }
         return all.filter { selected.contains($0) }
+    }
+
+    /// All distinct assignees present in the current project list, sorted for stable display.
+    public var assigneesForFilter: [String] {
+        let values = projects.flatMap { $0.assignees }
+        let unique = Set(values)
+        return unique.sorted()
     }
 
     /// Load projects from the injected fetch closure and update state on the main actor.
@@ -102,20 +112,26 @@ public final class BoardViewModel {
     /// Grouped columns: config columns in order plus "Untagged" if any project has no column.
     /// Respects columnFilter (single column) and metaTagFilter (projects must have that meta tag).
     public var groupedColumns: [(column: ColumnConfig, projects: [Project])] {
-        let key: (Int, String?, String?, String?, String?) = (
+        let key: (Int, String?, String?, String?, String?, String?) = (
             projects.count,
             columnFilter,
             metaTagFilter,
             pathSegmentFilter,
-            searchFilter
+            searchFilter,
+            assigneeFilter
         )
-        if let cache = boardCache, cache.key.projectCount == key.0, cache.key.columnFilter == key.1,
-           cache.key.metaTagFilter == key.2, cache.key.pathSegmentFilter == key.3, cache.key.searchFilter == key.4 {
+        if let cache = boardCache,
+           cache.key.projectCount == key.0,
+           cache.key.columnFilter == key.1,
+           cache.key.metaTagFilter == key.2,
+           cache.key.pathSegmentFilter == key.3,
+           cache.key.searchFilter == key.4,
+           cache.key.assigneeFilter == key.5 {
             return cache.grouped
         }
         let filtered = computeFilteredProjects()
         let grouped = computeGroupedColumns(from: filtered)
-        boardCache = ((key.0, key.1, key.2, key.3, key.4), filtered, grouped)
+        boardCache = ((key.0, key.1, key.2, key.3, key.4, key.5), filtered, grouped)
         return grouped
     }
 
@@ -156,6 +172,9 @@ public final class BoardViewModel {
         }
         if let tag = metaTagFilter, !tag.isEmpty {
             list = list.filter { $0.metaTags.contains(tag) }
+        }
+        if let assignee = assigneeFilter, !assignee.isEmpty {
+            list = list.filter { $0.assignees.contains(assignee) }
         }
         if let query = searchFilter, !query.isEmpty {
             let (regex, literalLower) = compiledSearchRegex(for: query)

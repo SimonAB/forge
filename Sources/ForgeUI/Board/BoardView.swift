@@ -89,6 +89,18 @@ public struct BoardView: View {
                 .pickerStyle(.menu)
                 .frame(maxWidth: 100)
 
+                Picker("Assignee", selection: Binding(
+                    get: { viewModel.assigneeFilter ?? "" },
+                    set: { viewModel.assigneeFilter = $0.isEmpty ? nil : $0 }
+                )) {
+                    Text("All").tag("")
+                    ForEach(viewModel.assigneesForFilter, id: \.self) { name in
+                        Text(name).tag(name)
+                    }
+                }
+                .pickerStyle(.menu)
+                .frame(maxWidth: 110)
+
                 Picker("Domain", selection: Binding(
                     get: { viewModel.pathSegmentFilter ?? "" },
                     set: { viewModel.pathSegmentFilter = $0.isEmpty ? nil : $0 }

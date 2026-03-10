@@ -18,8 +18,11 @@ struct ProjectCardView: View {
                     .fontWeight(.medium)
                     .lineLimit(1)
                     .truncationMode(.tail)
-                if !project.metaTags.isEmpty {
-                    Text(project.metaTags.joined(separator: " "))
+                if !project.metaTags.isEmpty || !project.assignees.isEmpty {
+                    let meta = project.metaTags.joined(separator: " ")
+                    let people = project.assignees.map { "@\($0)" }.joined(separator: " ")
+                    let combined = [meta, people].filter { !$0.isEmpty }.joined(separator: " ")
+                    Text(combined)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)

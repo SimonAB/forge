@@ -18,6 +18,9 @@ struct DueCommand: ParsableCommand {
     @Flag(name: .shortAndLong, inversion: .prefixedNo, help: "Include tasks from the Forge directory (area files). Default: on.")
     var areas = true
 
+    @Option(name: .long, help: "Filter to tasks assigned to a person (matches #Person tags and waiting-on names, case-insensitive).")
+    var assignee: String?
+
     mutating func run() throws {
         let config = try ConfigLoader.load()
         let forgeDir = ConfigLoader.forgeDirectory(for: config)
@@ -49,10 +52,21 @@ struct DueCommand: ParsableCommand {
         var dueTodayTasks: [DueSummaryGenerator.Item] = []
         var upcomingTasks: [DueSummaryGenerator.Item] = []
 
+        let assigneeNeedle: String? = {
+            guard let value = assignee, !value.isEmpty else { return nil }
+            return value.trimmingCharacters(in: .whitespacesAndNewlines)
+                .trimmingCharacters(in: CharacterSet(charactersIn: "#"))
+                .lowercased()
+        }()
+
         for file in indexedProjectFiles {
             let tasks = (try? markdownIO.parseTasks(at: file.path, projectName: file.projectName)) ?? []
             for task in tasks where !task.isCompleted {
                 guard let due = task.dueDate else { continue }
+                if let needle = assigneeNeedle {
+                    let matches = task.allAssigneeIdentifiers.contains { $0.lowercased() == needle }
+                    if !matches { continue }
+                }
                 let item = DueSummaryGenerator.Item(task: task, label: file.projectName, sourcePath: file.path)
                 if task.isOverdue {
                     overdueTasks.append(item)
@@ -72,6 +86,10 @@ struct DueCommand: ParsableCommand {
                 let tasks = markdownIO.parseTasks(from: content, projectName: area.name)
                 for task in tasks where !task.isCompleted {
                     guard let due = task.dueDate else { continue }
+                    if let needle = assigneeNeedle {
+                        let matches = task.allAssigneeIdentifiers.contains { $0.lowercased() == needle }
+                        if !matches { continue }
+                    }
                     let item = DueSummaryGenerator.Item(task: task, label: area.name, sourcePath: area.path)
                     if task.isOverdue {
                         overdueTasks.append(item)
@@ -169,8 +187,16 @@ struct DueCommand: ParsableCommand {
         let dueStr = task.dueDateString ?? ""
         let ctxLabel = task.context.map { " \(dim)@\($0)\(reset)" } ?? ""
         let waitLabel = task.waitingOn.map { " \(dim)⏳\($0)\(reset)" } ?? ""
+        let assigneeNames = task.assignees ?? []
+        let assigneeLabel: String
+        if assigneeNames.isEmpty {
+            assigneeLabel = ""
+        } else {
+            let joined = assigneeNames.map { "@\($0)" }.joined(separator: ", ")
+            assigneeLabel = " \(dim)\(joined)\(reset)"
+        }
         let repeatLabel = task.repeatRule.map { " \(dim)↻\($0.serialise())\(reset)" } ?? ""
         let idLabel = " \(dim)[\(task.id)]\(reset)"
-        print("  \(task.text) \(dim)due \(dueStr)\(reset) \(dim)← \(item.label)\(reset)\(ctxLabel)\(waitLabel)\(repeatLabel)\(idLabel)")
+        print("  \(task.text) \(dim)due \(dueStr)\(reset) \(dim)← \(item.label)\(reset)\(ctxLabel)\(waitLabel)\(assigneeLabel)\(repeatLabel)\(idLabel)")
     }
 }

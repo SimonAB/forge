@@ -119,6 +119,26 @@ to see overdue and upcoming tasks across all projects, and to update `tasks/due.
   - Tasks due today.
   - Open inbox items.
 
+### 2.1 Delegated work and assignees
+
+- Use **Finder tags starting with `#`** on project folders (for example `#PeggySue`) to mark who a project is delegated to.
+- In the **board app**:
+  - Use the **Assignee** picker in the toolbar to filter projects by these `#Person` tags.
+  - Each project card shows both meta tags and assignee names (as `@Name`).
+- In the **CLI**:
+  - `forge board --assignee PeggySue` shows only projects tagged with `#PeggySue`.
+  - `forge next --assignee PeggySue` shows next actions assigned to PeggySue (including waiting-for items with `@waiting(PeggySue)`).
+  - `forge due --assignee PeggySue` lists due and upcoming items for that person.
+  - `forge waiting --assignee PeggySue` narrows the waiting-for list to a single person.
+
+For individual tasks you can also add an explicit assignee in markdown:
+
+```markdown
+- [ ] Follow up with Dawn @person(#PeggySue) <!-- id:abc123 -->
+```
+
+This keeps the task’s assignee aligned with the same `#Person` convention used for projects.
+
 ### 3. Working from the board
 
 - Use `forge board` in the terminal or the Forge board app to see your work laid out in columns.

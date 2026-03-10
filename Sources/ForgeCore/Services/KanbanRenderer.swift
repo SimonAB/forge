@@ -44,8 +44,11 @@ public struct KanbanRenderer: Sendable {
                 print("  \(Self.dim)(empty)\(Self.reset)")
             } else {
                 for project in columnProjects {
-                    let meta = project.metaTags.isEmpty ? "" : " \(Self.dim)\(project.metaTags.joined(separator: " "))\(Self.reset)"
-                    print("  • \(project.name)\(meta)")
+                    let metaText = project.metaTags.joined(separator: " ")
+                    let peopleText = project.assignees.map { "@\($0)" }.joined(separator: " ")
+                    let tagsCombined = [metaText, peopleText].filter { !$0.isEmpty }.joined(separator: " ")
+                    let tagsLabel = tagsCombined.isEmpty ? "" : " \(Self.dim)\(tagsCombined)\(Self.reset)"
+                    print("  • \(project.name)\(tagsLabel)")
                 }
             }
             print()
@@ -136,8 +139,10 @@ public struct KanbanRenderer: Sendable {
                 let colour = ansiColour(for: column, config: config)
                 if row < projects.count {
                     let project = projects[row]
-                    let meta = project.metaTags.isEmpty ? "" : " •"
-                    let label = truncate(project.name + meta, to: columnWidth - 2)
+                    let hasMeta = !project.metaTags.isEmpty
+                    let hasAssignees = !project.assignees.isEmpty
+                    let suffix = (hasMeta || hasAssignees) ? " •" : ""
+                    let label = truncate(project.name + suffix, to: columnWidth - 2)
                     let padded = pad(" \(label)", to: columnWidth)
                     line += "│\(colour)\(padded)\(Self.reset)"
                 } else {

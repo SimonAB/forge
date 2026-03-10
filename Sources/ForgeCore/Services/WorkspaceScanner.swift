@@ -76,10 +76,16 @@ public struct WorkspaceScanner: Sendable {
         var workflowTag: String?
         var columnName: String?
         var metaTags: [String] = []
+        var assignees: [String] = []
 
         let metaTagSet = Set(config.board.metaTags)
 
         for tag in tags {
+            if let person = ForgeTask.normalisedAssigneeIdentifier(fromRawTag: tag) {
+                assignees.append(person)
+                continue
+            }
+
             if metaTagSet.contains(tag) {
                 metaTags.append(tag)
                 continue
@@ -97,7 +103,8 @@ public struct WorkspaceScanner: Sendable {
             tags: tags,
             workflowTag: workflowTag,
             column: columnName,
-            metaTags: metaTags
+            metaTags: metaTags,
+            assignees: assignees
         )
     }
 }

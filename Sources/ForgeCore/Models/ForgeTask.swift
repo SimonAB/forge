@@ -47,6 +47,11 @@ public struct ForgeTask: Sendable, Identifiable {
     /// The project directory name this task belongs to.
     public var projectName: String?
 
+    /// Assignees for this task, derived from inline person annotations such as @person(#Name).
+    /// Each entry is a normalised identifier with the leading # removed and surrounding
+    /// whitespace trimmed.
+    public var assignees: [String]?
+
     public enum Section: String, Sendable, CaseIterable {
         case nextActions = "Next Actions"
         case waitingFor = "Waiting For"
@@ -69,7 +74,8 @@ public struct ForgeTask: Sendable, Identifiable {
         deferDate: Date? = nil,
         repeatRule: RepeatRule? = nil,
         notes: String? = nil,
-        projectName: String? = nil
+        projectName: String? = nil,
+        assignees: [String]? = nil
     ) {
         self.id = id
         self.text = text
@@ -86,6 +92,7 @@ public struct ForgeTask: Sendable, Identifiable {
         self.repeatRule = repeatRule
         self.notes = notes
         self.projectName = projectName
+        self.assignees = assignees
     }
 
     /// Generate a new random 6-character hex ID.
@@ -135,4 +142,30 @@ public struct ForgeTask: Sendable, Identifiable {
         f.dateFormat = "yyyy-MM-dd"
         return f
     }()
+
+    /// Normalise a raw person tag (for example a Finder tag such as "#PeggySue")
+    /// into an identifier that can be used consistently across projects and tasks.
+    /// Returns nil when the string does not look like a person tag.
+    public static func normalisedAssigneeIdentifier(fromRawTag raw: String) -> String? {
+        guard raw.hasPrefix("#") else {
+            return nil
+        }
+        let name = raw.dropFirst()
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            return nil
+        }
+        return trimmed
+    }
+
+    /// All assignee identifiers associated with this task, combining explicit assignees
+    /// and the waiting-on person when present. Useful for CLI filtering.
+    public var allAssigneeIdentifiers: [String] {
+        var result: [String] = assignees ?? []
+        if let waiting = waitingOn?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !waiting.isEmpty {
+            result.append(waiting)
+        }
+        return result
+    }
 }
