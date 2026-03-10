@@ -80,7 +80,7 @@ public final class SyncEngine: @unchecked Sendable {
         forgeDir: String? = nil,
         taskFilesRoot: String? = nil,
         options: Options = .full,
-        taskIndex: TaskIndex = FileTaskIndex.shared
+        taskIndex: TaskIndex
     ) {
         self.config = config
         self.forgeDir = forgeDir ?? (config.resolvedWorkspacePath as NSString).appendingPathComponent("Forge")

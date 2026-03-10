@@ -267,11 +267,14 @@ final class StatusBarController: NSObject {
             do {
                 guard let forgeDir = self.forgeDir else { return }
                 let paths = ForgePaths(forgeDir: forgeDir)
+                let db = try TaskFileDatabase(forgeDir: forgeDir)
+                let index = DatabaseTaskIndex(database: db)
                 let engine = SyncEngine(
                     config: config,
                     forgeDir: forgeDir,
                     taskFilesRoot: paths.taskFilesRoot,
-                    options: .background
+                    options: .background,
+                    taskIndex: index
                 )
                 let report = try await engine.sync()
                 lastSyncDate = Date()
@@ -320,14 +323,15 @@ final class StatusBarController: NSObject {
 
         let taskFiles: [(path: String, label: String)]
         if let config = config {
-            // Use the shared task index to avoid repeatedly walking the entire project tree on
-            // every menubar refresh. The index caches discovered TASKS.md files per project root.
-            let taskIndex = FileTaskIndex.shared
-            if let forgeDir = forgeDir {
-                try? taskIndex.refreshIfNeeded(config: config, forgeDir: forgeDir)
-            }
-            taskFiles = taskIndex.projectTaskFiles(for: config).map { info in
-                (path: info.path, label: info.projectName)
+            if let forgeDir = forgeDir,
+               let db = try? TaskFileDatabase(forgeDir: forgeDir) {
+                let index = DatabaseTaskIndex(database: db)
+                try? index.refreshIfNeeded(config: config, forgeDir: forgeDir)
+                taskFiles = index.projectTaskFiles(for: config).map { info in
+                    (path: info.path, label: info.projectName)
+                }
+            } else {
+                taskFiles = []
             }
         } else {
             taskFiles = TaskFileFinder.findAllUnderDocuments().map { file in

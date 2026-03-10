@@ -5,7 +5,7 @@ import Foundation
 /// The index stores these records so that Forge does not need to recursively walk the entire
 /// directory tree on every sync or due run. Each record corresponds to a single `TASKS.md`
 /// file and the project label inferred from its parent directory.
-public struct TaskIndexProjectFile: Codable {
+public struct TaskIndexProjectFile: Codable, Equatable {
 
     /// Absolute path to the `TASKS.md` file.
     public var path: String
@@ -58,116 +58,36 @@ public protocol TaskIndex {
     func projectTaskFiles(for config: ForgeConfig) -> [(path: String, projectName: String)]
 }
 
-/// JSON-backed implementation of `TaskIndex` that stores its snapshot under `Forge/.cache`.
-///
-/// This implementation is intentionally simple: it discovers project `TASKS.md` files the first
-/// time it sees a project root, and then reuses those paths on subsequent runs. This removes
-/// the dominant cost seen in profiling, which came from repeatedly walking large directory
-/// trees with `FileManager` enumerators.
-public final class FileTaskIndex: TaskIndex {
+/// Database-backed implementation of `TaskIndex` that uses `TaskFileDatabase` and
+/// `TaskDiscoveryService` for discovery.
+public final class DatabaseTaskIndex: TaskIndex {
 
-    /// Shared singleton used by default in callers that do not need custom instances.
-    nonisolated(unsafe) public static let shared = FileTaskIndex()
+    private let database: TaskFileDatabase
+    private let discovery: TaskDiscoveryService
 
-    private let fileManager: FileManager
-    private var snapshot: TaskIndexSnapshot
-    private var loadedForForgeDir: String?
-    private let queue = DispatchQueue(label: "TaskIndex.FileTaskIndex", qos: .utility)
-
-    /// Create a new file-backed task index.
+    /// Create a new database-backed task index.
     ///
-    /// - Parameter fileManager: File manager used for filesystem access.
-    public init(fileManager: FileManager = .default) {
-        self.fileManager = fileManager
-        self.snapshot = TaskIndexSnapshot()
-    }
-
-    /// Ensure the snapshot has been loaded from disk for the given Forge directory.
-    ///
-    /// - Parameter forgeDir: Absolute path to the Forge directory.
-    private func loadSnapshotIfNeeded(forgeDir: String) {
-        if let loaded = loadedForForgeDir, loaded == forgeDir {
-            return
-        }
-
-        let cacheDir = (forgeDir as NSString).appendingPathComponent(".cache")
-        let indexPath = (cacheDir as NSString).appendingPathComponent("task-index.json")
-        var loadedSnapshot = TaskIndexSnapshot()
-
-        if fileManager.fileExists(atPath: indexPath),
-           let data = try? Data(contentsOf: URL(fileURLWithPath: indexPath)) {
-            let decoder = JSONDecoder()
-            if let decoded = try? decoder.decode(TaskIndexSnapshot.self, from: data) {
-                loadedSnapshot = decoded
-            }
-        }
-
-        snapshot = loadedSnapshot
-        loadedForForgeDir = forgeDir
-    }
-
-    /// Persist the current snapshot to disk for the given Forge directory.
-    ///
-    /// - Parameter forgeDir: Absolute path to the Forge directory.
-    private func saveSnapshot(forgeDir: String) {
-        let cacheDir = (forgeDir as NSString).appendingPathComponent(".cache")
-        let indexPath = (cacheDir as NSString).appendingPathComponent("task-index.json")
-        do {
-            try fileManager.createDirectory(atPath: cacheDir, withIntermediateDirectories: true)
-            let encoder = JSONEncoder()
-            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-            let data = try encoder.encode(snapshot)
-            try data.write(to: URL(fileURLWithPath: indexPath), options: .atomic)
-        } catch {
-            // The index is an optimisation. If persisting fails, ignore the error so that sync
-            // and CLI commands continue to work.
-        }
+    /// - Parameters:
+    ///   - database: Task file database used as the source of truth.
+    ///   - discovery: Service responsible for initial discovery of project task files.
+    public init(database: TaskFileDatabase, discovery: TaskDiscoveryService = TaskDiscoveryService()) {
+        self.database = database
+        self.discovery = discovery
     }
 
     public func refreshIfNeeded(config: ForgeConfig, forgeDir: String) throws {
-        queue.sync {
-            loadSnapshotIfNeeded(forgeDir: forgeDir)
-
-            var didChange = false
-            var projectFilesByRoot = snapshot.projectFilesByRoot
-
-            for root in config.resolvedProjectRoots {
-                let normalisedRoot = (root as NSString).standardizingPath
-                if projectFilesByRoot[normalisedRoot] != nil {
-                    continue
-                }
-                let discovered = TaskFileFinder.findAll(under: normalisedRoot)
-                let mapped = discovered.map { file in
-                    TaskIndexProjectFile(path: file.path, projectName: file.label)
-                }
-                projectFilesByRoot[normalisedRoot] = mapped
-                didChange = true
-            }
-
-            if didChange {
-                snapshot.projectFilesByRoot = projectFilesByRoot
-                saveSnapshot(forgeDir: forgeDir)
-            }
-        }
+        try discovery.ensureProjectTasksIndexed(config: config, forgeDir: forgeDir, database: database)
     }
 
     public func projectTaskFiles(for config: ForgeConfig) -> [(path: String, projectName: String)] {
-        var results: [(path: String, projectName: String)] = []
-        var seenPaths = Set<String>()
-
-        queue.sync {
-            for root in config.resolvedProjectRoots {
-                let normalisedRoot = (root as NSString).standardizingPath
-                guard let files = snapshot.projectFilesByRoot[normalisedRoot] else {
-                    continue
-                }
-                for file in files where seenPaths.insert(file.path).inserted {
-                    results.append((path: file.path, projectName: file.projectName))
-                }
-            }
+        let roots = config.resolvedProjectRoots.map { ($0 as NSString).standardizingPath }
+        guard !roots.isEmpty else { return [] }
+        let results: [TaskFileRecord]
+        do {
+            results = try database.projectTaskFiles(under: roots)
+        } catch {
+            return []
         }
-
-        return results
+        return results.map { ($0.path, $0.label) }
     }
 }
-
