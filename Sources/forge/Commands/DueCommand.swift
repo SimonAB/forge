@@ -23,6 +23,7 @@ struct DueCommand: ParsableCommand {
         let forgeDir = ConfigLoader.forgeDirectory(for: config)
         let markdownIO = MarkdownIO()
         let taskFilesRoot = ConfigLoader.taskFilesRoot(forgeDir: forgeDir)
+         let taskIndex = FileTaskIndex.shared
 
         let bold = "\u{1B}[1m"
         let dim = "\u{1B}[2m"
@@ -35,25 +36,23 @@ struct DueCommand: ParsableCommand {
         let today = calendar.startOfDay(for: Date())
         let horizon = calendar.date(byAdding: .day, value: days, to: today)!
 
-        // Collect tasks from all TASKS.md files under the configured project roots.
-        // This matches the menubar app's behaviour so badge counts and CLI output stay in sync.
-        var taskFiles: [TaskFileFinder.TaskFile] = []
-        var seenPaths = Set<String>()
-        for root in config.resolvedProjectRoots {
-            let files = TaskFileFinder.findAll(under: root)
-            for file in files where seenPaths.insert(file.path).inserted {
-                taskFiles.append(file)
-            }
-        }
+        // Prime the cached index of project TASKS.md files so that we do not need to walk the
+        // entire directory tree on every `forge due` run.
+        try? taskIndex.refreshIfNeeded(config: config, forgeDir: forgeDir)
+
+        // Collect tasks from all TASKS.md files under the configured project roots using the
+        // cached index. This matches the menubar app's behaviour so badge counts and CLI output
+        // stay in sync.
+        let indexedProjectFiles = taskIndex.projectTaskFiles(for: config)
         var overdueTasks: [DueSummaryGenerator.Item] = []
         var dueTodayTasks: [DueSummaryGenerator.Item] = []
         var upcomingTasks: [DueSummaryGenerator.Item] = []
 
-        for file in taskFiles {
-            let tasks = (try? markdownIO.parseTasks(at: file.path, projectName: file.label)) ?? []
+        for file in indexedProjectFiles {
+            let tasks = (try? markdownIO.parseTasks(at: file.path, projectName: file.projectName)) ?? []
             for task in tasks where !task.isCompleted {
                 guard let due = task.dueDate else { continue }
-                let item = DueSummaryGenerator.Item(task: task, label: file.label, sourcePath: file.path)
+                let item = DueSummaryGenerator.Item(task: task, label: file.projectName, sourcePath: file.path)
                 if task.isOverdue {
                     overdueTasks.append(item)
                 } else if task.isDueToday {

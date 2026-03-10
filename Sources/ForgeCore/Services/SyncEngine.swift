@@ -14,6 +14,9 @@ public final class SyncEngine: @unchecked Sendable {
     private let calendarBridge: CalendarBridge
     private let store: EKEventStore
 
+    /// Index of project task files used to avoid repeatedly walking large directory trees.
+    private let taskIndex: TaskIndex
+
     /// Summary of sync actions performed.
     public struct SyncReport: Sendable {
         public var remindersCreated: Int = 0
@@ -76,7 +79,8 @@ public final class SyncEngine: @unchecked Sendable {
         config: ForgeConfig,
         forgeDir: String? = nil,
         taskFilesRoot: String? = nil,
-        options: Options = .full
+        options: Options = .full,
+        taskIndex: TaskIndex = FileTaskIndex.shared
     ) {
         self.config = config
         self.forgeDir = forgeDir ?? (config.resolvedWorkspacePath as NSString).appendingPathComponent("Forge")
@@ -90,6 +94,7 @@ public final class SyncEngine: @unchecked Sendable {
         self.calendarBridge = CalendarBridge(
             store: store, calendarName: config.gtd.calendarName
         )
+        self.taskIndex = taskIndex
     }
 
     /// A task with its source metadata for sync purposes.
@@ -123,6 +128,10 @@ public final class SyncEngine: @unchecked Sendable {
         _ = try remindersBridge.findOrCreateList(context: nil)
         let forgeLists = remindersBridge.allForgeListCalendars()
         let calendar = try calendarBridge.findOrCreateCalendar()
+
+        // Ensure the project task file index is populated before we scan for tasks. This avoids
+        // paying the cost of a full recursive directory walk on every sync run.
+        try? taskIndex.refreshIfNeeded(config: config, forgeDir: forgeDir)
 
         // Lint and auto-fix task markdown files before collecting tasks so that
         // IDs, headings, spacing, inbox/completed placement, and titles are normalised.
@@ -287,17 +296,7 @@ public final class SyncEngine: @unchecked Sendable {
     /// Recursively find all TASKS.md files under each project root (not only direct children).
     /// This ensures nested project folders are included regardless of Finder tags.
     private func findAllProjectTaskFiles() -> [(path: String, projectName: String)] {
-        var result: [(path: String, projectName: String)] = []
-        var seenPaths = Set<String>()
-        for root in config.resolvedProjectRoots {
-            let taskFiles = TaskFileFinder.findAll(under: root)
-            for tf in taskFiles {
-                if seenPaths.insert(tf.path).inserted {
-                    result.append((path: tf.path, projectName: tf.label))
-                }
-            }
-        }
-        return result
+        return taskIndex.projectTaskFiles(for: config)
     }
 
     private func collectAllTasks(areaFiles: [(path: String, name: String, frontmatter: Frontmatter?, body: String)]) async throws -> [SourcedTask] {
