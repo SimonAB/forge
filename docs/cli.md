@@ -209,7 +209,7 @@ Show overdue and upcoming due tasks across all `TASKS.md` files found
 under your configured `project_roots`, regardless of nesting depth.
 
 ```
-forge due [--days <n>] [--areas] [--markdown]
+forge due [--days <n>] [--areas] [--markdown] [--rebuild-index]
 ```
 
 | Option | Short | Description |
@@ -217,6 +217,7 @@ forge due [--days <n>] [--areas] [--markdown]
 | `--days` | `-d` | Lookahead window in days (default: 7) |
 | `--areas` | `-a` | Also include tasks from Forge area markdown files |
 | `--markdown` | `-m` | Also write a markdown summary to `Forge/tasks/due.md` |
+| `--rebuild-index` | | Rebuild the task index database before computing due tasks (forces a full rescan of project roots) |
 
 Tasks are grouped into three sections:
 
@@ -283,12 +284,13 @@ forge status
 Two-way synchronisation with Apple Reminders and Calendar.
 
 ```
-forge sync [--verbose]
+forge sync [--verbose] [--rebuild-index]
 ```
 
 | Option | Description |
 |--------|-------------|
 | `--verbose` | Show detailed sync actions |
+| `--rebuild-index` | Rebuild the task index database before syncing (forces a full rescan of project roots) |
 
 **What gets synced:**
 
@@ -638,7 +640,7 @@ forge lint [paths ...] [--fix] [--severity error|warning]
 
 | Option | Description |
 |--------|--------------|
-| `--fix` | Apply fixes: add missing task IDs, normalise `- [X]` to `- [x]`, ensure trailing newline |
+| `--fix` | Apply fixes: add missing task IDs, normalise `- [X]` to `- [x]`, enforce heading and list spacing, remove trailing spaces, and ensure a single trailing blank line at EOF |
 | `--severity` | Report only this severity or higher: `error` or `warning` |
 
 If one or more `paths` are given (file or directory), only those are linted:
@@ -656,9 +658,13 @@ misses it (e.g. `forge lint /path/to/Teaching/2025-2026/PGT/TASKS.md --fix`).
 - **section_order** — Sections should appear in that order.
 - **unknown_section** — Section headers should be one of the four standard task sections.
 - **date_format** — Date tags (`@due`, `@defer`, `@since`, `@done`) should use `YYYY-MM-DD`.
+- **spacing_heading** — Headings should have exactly one empty line before and after when surrounded by content.
+- **spacing_list_items** — Do not insert empty lines between list items within the same section.
+- **trailing_whitespace** — Lines should not end with trailing spaces or tabs.
+- **trailing_blank_lines** — Documents should end with exactly one empty line (a single trailing blank line terminated by a newline).
 - **trailing_newline** — File should end with a newline.
 
-With `--fix`, the linter rewrites files to add missing IDs (via the same logic as sync), normalise checkbox casing, and add a trailing newline where missing. Section order and header wording are not auto-corrected.
+With `--fix`, the linter rewrites files to add missing IDs (via the same logic as sync), normalise checkbox casing, preserve and canonicalise standard sections (including `## Notes`), reorder them when needed, tidy heading and list spacing, remove trailing whitespace, and normalise the end-of-file blank line.
 
 ---
 
