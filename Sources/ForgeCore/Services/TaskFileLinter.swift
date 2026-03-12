@@ -332,6 +332,42 @@ public struct TaskFileLinter: Sendable {
             }
         }
 
+        // Trailing whitespace on any line.
+        for (idx, line) in lines.enumerated() {
+            if let lastChar = line.last, lastChar == " " || lastChar == "\t" {
+                issues.append(Issue(
+                    path: path,
+                    line: idx + 1,
+                    ruleID: "trailing_whitespace",
+                    message: "Remove trailing spaces from this line.",
+                    severity: .warning,
+                    fixable: true
+                ))
+            }
+        }
+
+        // Ensure documents end with exactly one empty line (single trailing blank line).
+        if !lines.isEmpty {
+            var trailingBlankCount = 0
+            for line in lines.reversed() {
+                if line.trimmingCharacters(in: .whitespaces).isEmpty {
+                    trailingBlankCount += 1
+                } else {
+                    break
+                }
+            }
+            if trailingBlankCount > 1 {
+                issues.append(Issue(
+                    path: path,
+                    line: lines.count,
+                    ruleID: "trailing_blank_lines",
+                    message: "Document should end with exactly one empty line; remove extra blank lines at the end.",
+                    severity: .warning,
+                    fixable: true
+                ))
+            }
+        }
+
         if let last = content.last, last != "\n" && !content.isEmpty {
             issues.append(Issue(
                 path: path, line: lines.count, ruleID: "trailing_newline",
@@ -374,9 +410,7 @@ public struct TaskFileLinter: Sendable {
         result = reorderCanonicalSections(in: result)
         result = sortCompletedSectionByDoneDate(in: result)
         result = normaliseHeadingAndListSpacing(in: result)
-        if !result.hasSuffix("\n") {
-            result += "\n"
-        }
+        result = normaliseTrailingWhitespaceAndEOF(in: result)
         let output = MarkdownIO.reassemble(frontmatter: frontmatter?.touchingModified(), body: result)
         try output.write(toFile: path, atomically: true, encoding: .utf8)
         return true
@@ -641,11 +675,47 @@ public struct TaskFileLinter: Sendable {
         return result.joined(separator: "\n")
     }
 
+    /// Remove trailing spaces from all lines and ensure the document ends with
+    /// exactly one empty line (a single trailing blank line terminated by a newline).
+    private func normaliseTrailingWhitespaceAndEOF(in body: String) -> String {
+        var lines = body.components(separatedBy: .newlines)
+
+        // Strip trailing spaces and tabs from each line.
+        for i in 0..<lines.count {
+            var line = lines[i]
+            while let last = line.last, last == " " || last == "\t" {
+                line.removeLast()
+            }
+            lines[i] = line
+        }
+
+        // Remove extra trailing blank lines, but keep at least one line.
+        while lines.count > 1,
+              let last = lines.last,
+              last.trimmingCharacters(in: .whitespaces).isEmpty {
+            lines.removeLast()
+        }
+
+        // Ensure the last line is empty so the document ends with exactly one blank line.
+        if lines.isEmpty {
+            lines = [""]
+        } else if !lines.last!.isEmpty {
+            lines.append("")
+        }
+
+        var result = lines.joined(separator: "\n")
+        if !result.hasSuffix("\n") {
+            result += "\n"
+        }
+        return result
+    }
+
     /// Reorder canonical sections into the standard order:
     /// # Title
     /// ## Next Actions
     /// ## Waiting For
     /// ## Completed
+    /// ## Notes
     /// while keeping each section's content attached to its heading.
     private func reorderCanonicalSections(in body: String) -> String {
         let lines = body.components(separatedBy: .newlines)
@@ -653,7 +723,7 @@ public struct TaskFileLinter: Sendable {
 
         // Identify section blocks: heading line index + lines until next heading or EOF.
         struct SectionBlock {
-            let canonicalIndex: Int?  // 0: Next Actions, 1: Waiting For, 2: Completed, nil: other
+            let canonicalIndex: Int?  // 0: Next Actions, 1: Waiting For, 2: Completed, 3: Notes, nil: other
             let start: Int
             let end: Int   // inclusive
         }
@@ -710,8 +780,8 @@ public struct TaskFileLinter: Sendable {
             }
         }
 
-        // Canonical order: Next Actions (0), Waiting For (1), Completed (2)
-        for canonicalIndex in 0...2 {
+        // Canonical order: Next Actions (0), Waiting For (1), Completed (2), Notes (3)
+        for canonicalIndex in 0...3 {
             if let group = byCanonical[canonicalIndex] {
                 for block in group {
                     appendBlock(block)
