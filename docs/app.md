@@ -177,6 +177,9 @@ Grant both for full functionality. These are declared in the app's
   server.
 - The task index at `Forge/.cache/tasks.db` stores file paths, timestamps, and
   cached counts, not full task text.
+- CLI commands such as `forge sync` and `forge due` use this index for discovery and expose
+  a `--rebuild-index` flag when you need to force a full rescan of the configured project
+  roots.
 - You keep full control over where the Forge directory lives (for example on an
   encrypted volume, in a git repository, or in a local-only folder).
 

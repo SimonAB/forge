@@ -154,11 +154,13 @@ This keeps the task’s assignee aligned with the same `#Person` convention used
   - Run `forge sync` from the terminal and inspect its output.
   - Check `config.yaml` to ensure project roots and lists/calendars are configured as expected.
   - Verify that the relevant `TASKS.md` or area file lives under a configured project root or `Forge/tasks`.
+  - If a new project `TASKS.md` file under an existing project root is not being picked up, run `forge sync --rebuild-index` once to force a full rescan of project roots.
 
 - **Menubar badge counts look wrong**:
   - Ensure Forge.app is allowed to access Reminders and Calendar in System Settings.
   - Wait for at least one background sync cycle (or use “Sync Now” from the menubar menu).
   - Compare output from `forge due` with the badge counts.
+  - If CLI due output seems to be missing projects entirely, run `forge due --rebuild-index` to rebuild the cached index of `TASKS.md` files.
 
 - **Performance issues**:
   - Follow the benchmark checklist in this document.
