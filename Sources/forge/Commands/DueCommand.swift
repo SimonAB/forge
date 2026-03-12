@@ -17,7 +17,14 @@ struct DueCommand: ParsableCommand {
 
     @Flag(
         name: .long,
-        help: "Rebuild the task index database before computing due tasks (forces a full rescan of project roots)."
+        help: ArgumentHelp(
+            "Rebuild the task index database before computing due tasks.",
+            discussion: """
+            Forces a full recursive rescan of all configured project roots, discarding any cached \
+            TASKS.md paths in .cache/tasks.db. Use this if new project TASKS.md files under an \
+            existing project root are not appearing in `forge due`.
+            """
+        )
     )
     var rebuildIndex = false
 
