@@ -11,12 +11,25 @@ struct SyncCommand: AsyncParsableCommand {
     @Flag(name: .long, help: "Show detailed sync actions.")
     var verbose = false
 
+    @Flag(
+        name: .long,
+        help: "Rebuild the task index database before syncing (forces a full rescan of project roots)."
+    )
+    var rebuildIndex = false
+
     mutating func run() async throws {
         let config = try ConfigLoader.load()
         let forgeDir = ConfigLoader.forgeDirectory(for: config)
         let taskFilesRoot = ConfigLoader.taskFilesRoot(forgeDir: forgeDir)
+
+        if rebuildIndex {
+            let cacheDir = (forgeDir as NSString).appendingPathComponent(".cache")
+            let dbPath = (cacheDir as NSString).appendingPathComponent("tasks.db")
+            try? FileManager.default.removeItem(atPath: dbPath)
+        }
+
         let db = try TaskFileDatabase(forgeDir: forgeDir)
-        let index = DatabaseTaskIndex(database: db)
+        let index = DatabaseTaskIndex(database: db, forceFullRescan: rebuildIndex)
         let engine = SyncEngine(
             config: config,
             forgeDir: forgeDir,

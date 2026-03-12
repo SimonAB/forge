@@ -15,6 +15,12 @@ struct DueCommand: ParsableCommand {
     @Option(name: .shortAndLong, help: "Show tasks due within the next N days (default: 7).")
     var days: Int = 7
 
+    @Flag(
+        name: .long,
+        help: "Rebuild the task index database before computing due tasks (forces a full rescan of project roots)."
+    )
+    var rebuildIndex = false
+
     @Flag(name: .shortAndLong, inversion: .prefixedNo, help: "Include tasks from the Forge directory (area files). Default: on.")
     var areas = true
 
@@ -26,8 +32,15 @@ struct DueCommand: ParsableCommand {
         let forgeDir = ConfigLoader.forgeDirectory(for: config)
         let markdownIO = MarkdownIO()
         let taskFilesRoot = ConfigLoader.taskFilesRoot(forgeDir: forgeDir)
+
+        if rebuildIndex {
+            let cacheDir = (forgeDir as NSString).appendingPathComponent(".cache")
+            let dbPath = (cacheDir as NSString).appendingPathComponent("tasks.db")
+            try? FileManager.default.removeItem(atPath: dbPath)
+        }
+
         let db = try TaskFileDatabase(forgeDir: forgeDir)
-        let taskIndex = DatabaseTaskIndex(database: db)
+        let taskIndex = DatabaseTaskIndex(database: db, forceFullRescan: rebuildIndex)
 
         let bold = "\u{1B}[1m"
         let dim = "\u{1B}[2m"
