@@ -11,8 +11,15 @@ public struct TaskDiscoveryService {
     public init() {}
 
     /// Ensure that all configured project roots have their `TASKS.md` files recorded in the
-    /// database. For each root, if the database already contains at least one project task file,
-    /// no further work is done for that root.
+    /// database.
+    ///
+    /// This method reconciles the database with the filesystem for each configured project root.
+    ///
+    /// For each root it will, when needed:
+    /// - Perform a recursive scan for `TASKS.md` files.
+    /// - Insert new task files.
+    /// - Update existing task files with latest metadata.
+    /// - Mark files that have been removed from disk as deleted.
     ///
     /// - Parameters:
     ///   - config: Loaded Forge configuration.
@@ -21,24 +28,34 @@ public struct TaskDiscoveryService {
     public func ensureProjectTasksIndexed(
         config: ForgeConfig,
         forgeDir: String,
-        database: TaskFileDatabase
+        database: TaskFileDatabase,
+        forceFullRescan: Bool = false
     ) throws {
         let fileManager = FileManager.default
         let now = Date().timeIntervalSinceReferenceDate
         let roots = config.resolvedProjectRoots.map { ($0 as NSString).standardizingPath }
 
-        // Query existing records once to avoid repeated round-trips.
         let existing = try database.projectTaskFiles(under: roots)
         let existingByRoot = Dictionary(grouping: existing, by: \.projectRoot)
 
-        var toInsert: [TaskFileRecord] = []
+        var toUpsert: [TaskFileRecord] = []
 
         for root in roots {
-            if let records = existingByRoot[root], !records.isEmpty {
+            let normalisedRoot = (root as NSString).standardizingPath
+            let existingForRoot = existingByRoot[normalisedRoot] ?? []
+
+            // Default behaviour: once we have at least one record for a root, avoid repeated
+            // full rescans on every run. A deep rescan is only performed when explicitly
+            // requested via `forceFullRescan`, or when the root has never been seen before.
+            if !forceFullRescan, !existingForRoot.isEmpty {
                 continue
             }
 
-            let taskFiles = TaskFileFinder.findAll(under: root)
+            let existingPaths = Set(existingForRoot.map(\.path))
+
+            let taskFiles = TaskFileFinder.findAll(under: normalisedRoot)
+            let foundPaths = Set(taskFiles.map(\.path))
+
             for tf in taskFiles {
                 let attrs = (try? fileManager.attributesOfItem(atPath: tf.path)) ?? [:]
                 let mtimeDate = (attrs[.modificationDate] as? Date) ?? .distantPast
@@ -48,7 +65,7 @@ public struct TaskDiscoveryService {
                     path: tf.path,
                     kind: .projectTasks,
                     label: tf.label,
-                    projectRoot: root,
+                    projectRoot: normalisedRoot,
                     mtime: mtimeDate.timeIntervalSinceReferenceDate,
                     size: sizeValue,
                     lastSeenAt: now,
@@ -58,12 +75,35 @@ public struct TaskDiscoveryService {
                     inboxOpenCount: 0,
                     isDeleted: false
                 )
-                toInsert.append(record)
+                toUpsert.append(record)
+            }
+
+            let removedPaths = existingPaths.subtracting(foundPaths)
+            if !removedPaths.isEmpty {
+                for path in removedPaths {
+                    let dirPath = (path as NSString).deletingLastPathComponent
+                    let label = (dirPath as NSString).lastPathComponent
+                    let record = TaskFileRecord(
+                        path: path,
+                        kind: .projectTasks,
+                        label: label,
+                        projectRoot: normalisedRoot,
+                        mtime: 0,
+                        size: 0,
+                        lastSeenAt: now,
+                        lastParsedAt: nil,
+                        overdueCount: 0,
+                        dueTodayCount: 0,
+                        inboxOpenCount: 0,
+                        isDeleted: true
+                    )
+                    toUpsert.append(record)
+                }
             }
         }
 
-        if !toInsert.isEmpty {
-            try database.upsertFiles(toInsert)
+        if !toUpsert.isEmpty {
+            try database.upsertFiles(toUpsert)
         }
     }
 }

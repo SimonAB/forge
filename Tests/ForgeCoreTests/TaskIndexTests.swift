@@ -33,19 +33,31 @@ struct TaskIndexTests {
 
         // Act: first refresh should discover both TASKS.md files.
         try index.refreshIfNeeded(config: config, forgeDir: forgeDir)
-        var files = index.projectTaskFiles(for: config)
+        let initialFiles = index.projectTaskFiles(for: config)
 
         // Assert: both TASKS.md files are present with the expected labels.
-        #expect(files.count == 2)
-        let paths = Set(files.map { $0.path })
+        #expect(initialFiles.count == 2)
+        let paths = Set(initialFiles.map { $0.path })
         #expect(paths.contains(tasksA.path))
         #expect(paths.contains(tasksB.path))
 
-        let labelsByPath = Dictionary(uniqueKeysWithValues: files.map { ($0.path, $0.projectName) })
+        let labelsByPath = Dictionary(uniqueKeysWithValues: initialFiles.map { ($0.path, $0.projectName) })
         #expect(labelsByPath[tasksA.path] == "ProjectA")
         #expect(labelsByPath[tasksB.path] == "ProjectB")
 
-        // Note: dynamic addition of new TASKS.md files under an existing root is handled by
-        // dedicated maintenance operations and file events rather than this index refresh path.
+        // Act: add a third project under the same root after the initial refresh.
+        let projectC = projectRoot.appendingPathComponent("Later/ProjectC")
+        try FileManager.default.createDirectory(at: projectC, withIntermediateDirectories: true)
+        let tasksC = projectC.appendingPathComponent("TASKS.md")
+        try "## Next Actions\n".write(to: tasksC, atomically: true, encoding: .utf8)
+
+        let rescanIndex = DatabaseTaskIndex(database: db, forceFullRescan: true)
+        try rescanIndex.refreshIfNeeded(config: config, forgeDir: forgeDir)
+        let updatedFiles = rescanIndex.projectTaskFiles(for: config)
+
+        // Assert: the new TASKS.md is discovered on the subsequent refresh.
+        #expect(updatedFiles.count == 3)
+        let updatedPaths = Set(updatedFiles.map { $0.path })
+        #expect(updatedPaths.contains(tasksC.path))
     }
 }

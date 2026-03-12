@@ -64,19 +64,32 @@ public final class DatabaseTaskIndex: TaskIndex {
 
     private let database: TaskFileDatabase
     private let discovery: TaskDiscoveryService
+    private let forceFullRescan: Bool
 
     /// Create a new database-backed task index.
     ///
     /// - Parameters:
     ///   - database: Task file database used as the source of truth.
     ///   - discovery: Service responsible for initial discovery of project task files.
-    public init(database: TaskFileDatabase, discovery: TaskDiscoveryService = TaskDiscoveryService()) {
+    ///   - forceFullRescan: When true, force a full recursive rescan of all project roots on the
+    ///     next refresh, regardless of existing records.
+    public init(
+        database: TaskFileDatabase,
+        discovery: TaskDiscoveryService = TaskDiscoveryService(),
+        forceFullRescan: Bool = false
+    ) {
         self.database = database
         self.discovery = discovery
+        self.forceFullRescan = forceFullRescan
     }
 
     public func refreshIfNeeded(config: ForgeConfig, forgeDir: String) throws {
-        try discovery.ensureProjectTasksIndexed(config: config, forgeDir: forgeDir, database: database)
+        try discovery.ensureProjectTasksIndexed(
+            config: config,
+            forgeDir: forgeDir,
+            database: database,
+            forceFullRescan: forceFullRescan
+        )
     }
 
     public func projectTaskFiles(for config: ForgeConfig) -> [(path: String, projectName: String)] {
