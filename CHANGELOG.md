@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+### [0.7.0] – 2026-03-12
+
+#### Linting and task discovery
+
+- Preserve `## Notes` sections in `TASKS.md` files when `forge lint --fix` runs and ensure canonical section order is `Next Actions`, `Waiting For`, `Completed`, `Notes`.
+- Tighten heading and list formatting rules:
+  - Enforce exactly one empty line above and below headings when surrounded by content.
+  - Disallow blank lines between consecutive list items within the same section.
+- Enforce trailing whitespace and EOF conventions:
+  - Remove trailing spaces and tabs from all lines.
+  - Require documents to end with exactly one empty line (a single trailing blank line terminated by a newline).
+- Extend the task index to support explicit full rescans:
+  - Add a `forceFullRescan` flag on `DatabaseTaskIndex` and thread it through `TaskDiscoveryService`.
+  - Expose `--rebuild-index` flags on `forge sync` and `forge due` to force a fresh recursive scan of project roots and rebuild the task index database.
+
 ### [0.6.2] – 2026-03-10
 
 #### Menubar and board
