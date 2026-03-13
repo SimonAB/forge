@@ -77,17 +77,17 @@ public struct BoardView: View {
                 .pickerStyle(.menu)
                 .frame(maxWidth: 120)
 
-                Picker("Delegation", selection: Binding(
-                    get: { viewModel.metaTagFilter ?? "" },
-                    set: { viewModel.metaTagFilter = $0.isEmpty ? nil : $0 }
+                Picker("Radar", selection: Binding(
+                    get: { viewModel.radarFilterKey ?? "" },
+                    set: { viewModel.radarFilterKey = $0.isEmpty ? nil : $0 }
                 )) {
-                    Text("All").tag("")
-                    ForEach(viewModel.metaTagsForFilter, id: \.self) { tag in
-                        Text(tag).tag(tag)
-                    }
+                    Text("Radar (all)").tag("")
+                    Text("Calm").tag("calm")
+                    Text("Watch").tag("watch")
+                    Text("Heat").tag("heat")
                 }
                 .pickerStyle(.menu)
-                .frame(maxWidth: 100)
+                .frame(maxWidth: 110)
 
                 Picker("Assignee", selection: Binding(
                     get: { viewModel.assigneeFilter ?? "" },

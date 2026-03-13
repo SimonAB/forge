@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+### [0.8.0] – 2026-03-13
+
+#### Board Radar and delegation polish
+
+- Add a **Radar** filter to the kanban board that slices projects into three buckets based on urgency and neglect:
+  - **Calm** – recently-touched, non-urgent projects.
+  - **Watch** – projects whose `TASKS.md` has not changed for roughly a week.
+  - **Heat** – projects tagged with an `URGENT…` meta tag (for example `URGENT ⚠️`), or projects whose `TASKS.md` has been neglected for several weeks.
+- Base neglect scoring on the last modification time of each project's `TASKS.md` file, falling back to the project directory when needed.
+- Refine the board toolbar:
+  - Replace the generic meta-tag picker with the Radar picker so urgency and neglect are first-class filters.
+  - Rename the top-level delegation filter label from "All" to "Delegation" while keeping assignee filtering unchanged.
+
 ### [0.7.1] – 2026-03-13
 
 #### Documentation

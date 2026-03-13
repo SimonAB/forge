@@ -169,6 +169,14 @@ This keeps the task’s assignee aligned with the same `#Person` convention used
 - Use `forge board` in the terminal or the Forge board app to see your work laid out in columns.
 - Moving tasks between columns updates the underlying markdown and will propagate to Reminders/Calendar on the next sync.
 
+### 3.1 Radar view for projects
+
+- The board toolbar includes a **Radar** picker that slices projects into three buckets:
+  - **Calm** – recently-touched, non-urgent projects.
+  - **Watch** – projects whose `TASKS.md` has not changed for roughly a week.
+  - **Heat** – explicitly urgent projects (tagged with an `URGENT…` meta tag such as `URGENT ⚠️`), or projects whose `TASKS.md` has been neglected for several weeks.
+- Radar combines these signals so you can quickly surface projects that are both **time-sensitive** and **at risk of being forgotten**, without changing any underlying tags or files.
+
 ## Where to look when something seems off
 
 - **Tasks missing from reminders or calendar**:
