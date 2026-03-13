@@ -119,7 +119,7 @@ Start from [`config.sample.yaml`](config.sample.yaml) and copy it to
 
 - **`workspace`** — path to the directory containing project folders.
 - **`board.columns`** — ordered kanban columns, each mapped to a Finder tag.
-- **`board.meta_tags`** — supplementary tags (e.g. Collab, Student, URGENT).
+- **`board.meta_tags`** — supplementary tags (e.g. Collab, Student, URGENT), used for per-project flags and for the board's Radar view.
 - **`gtd.contexts`** — allowed `@ctx()` values for filtering next actions.
 - **`gtd.reminders_list`** / **`gtd.calendar_name`** — Apple integration targets.
   Tasks with an `@ctx()` tag are synced into a separate Reminders list named

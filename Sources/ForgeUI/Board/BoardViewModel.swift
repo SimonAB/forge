@@ -15,10 +15,10 @@ public final class BoardViewModel {
 
     /// When set, only projects in this column are shown. Nil = show all columns.
     public var columnFilter: String? = nil
-
+    
     /// When set, only projects that have this meta tag (context/people) are shown. Nil = show all.
     public var metaTagFilter: String? = nil
-
+    
     /// When set, only projects whose path contains this domain segment (e.g. "Work", "Home", "Sanctum") are shown. Nil = show all.
     public var pathSegmentFilter: String? = nil
 
@@ -28,6 +28,10 @@ public final class BoardViewModel {
     /// When set, only projects that have this assignee (derived from #Person Finder tags) are shown. Nil = show all.
     public var assigneeFilter: String? = nil
 
+    /// When set, only projects whose "radar bucket" matches this key are shown. Nil = show all radar levels.
+    /// Radar buckets combine urgency (e.g. URGENT meta tag) and neglect (based on last modification time).
+    public var radarFilterKey: String? = nil
+    
     /// When non-nil and non-empty, only these meta tags appear in the board filter picker; otherwise all from config.
     private let filterMetaTags: [String]?
 
@@ -36,7 +40,7 @@ public final class BoardViewModel {
 
     /// Cache for filtered projects and grouped columns to avoid recomputing on every body read.
     private var boardCache: (
-        key: (projectCount: Int, columnFilter: String?, metaTagFilter: String?, pathSegmentFilter: String?, searchFilter: String?, assigneeFilter: String?),
+        key: (projectCount: Int, columnFilter: String?, metaTagFilter: String?, pathSegmentFilter: String?, searchFilter: String?, assigneeFilter: String?, radarFilterKey: String?),
         filtered: [Project],
         grouped: [(column: ColumnConfig, projects: [Project])]
     )?
@@ -110,15 +114,16 @@ public final class BoardViewModel {
     }
 
     /// Grouped columns: config columns in order plus "Untagged" if any project has no column.
-    /// Respects columnFilter (single column) and metaTagFilter (projects must have that meta tag).
+    /// Respects columnFilter (single column) and filters (meta tag, radar, domain, search, assignee).
     public var groupedColumns: [(column: ColumnConfig, projects: [Project])] {
-        let key: (Int, String?, String?, String?, String?, String?) = (
+        let key: (Int, String?, String?, String?, String?, String?, String?) = (
             projects.count,
             columnFilter,
             metaTagFilter,
             pathSegmentFilter,
             searchFilter,
-            assigneeFilter
+            assigneeFilter,
+            radarFilterKey
         )
         if let cache = boardCache,
            cache.key.projectCount == key.0,
@@ -126,12 +131,13 @@ public final class BoardViewModel {
            cache.key.metaTagFilter == key.2,
            cache.key.pathSegmentFilter == key.3,
            cache.key.searchFilter == key.4,
-           cache.key.assigneeFilter == key.5 {
+           cache.key.assigneeFilter == key.5,
+           cache.key.radarFilterKey == key.6 {
             return cache.grouped
         }
         let filtered = computeFilteredProjects()
         let grouped = computeGroupedColumns(from: filtered)
-        boardCache = ((key.0, key.1, key.2, key.3, key.4, key.5), filtered, grouped)
+        boardCache = ((key.0, key.1, key.2, key.3, key.4, key.5, key.6), filtered, grouped)
         return grouped
     }
 
@@ -164,7 +170,7 @@ public final class BoardViewModel {
         return result
     }
 
-    /// Projects filtered by metaTagFilter, pathSegmentFilter, and searchFilter (regex) when set.
+    /// Projects filtered by metaTagFilter, radarFilterKey, pathSegmentFilter, assigneeFilter, and searchFilter (regex) when set.
     private func computeFilteredProjects() -> [Project] {
         var list = projects
         if let segment = pathSegmentFilter, !segment.isEmpty {
@@ -172,6 +178,10 @@ public final class BoardViewModel {
         }
         if let tag = metaTagFilter, !tag.isEmpty {
             list = list.filter { $0.metaTags.contains(tag) }
+        }
+        if let radarKey = radarFilterKey, !radarKey.isEmpty {
+            let now = Date()
+            list = list.filter { radarBucket(for: $0, now: now) == radarKey }
         }
         if let assignee = assigneeFilter, !assignee.isEmpty {
             list = list.filter { $0.assignees.contains(assignee) }
@@ -219,5 +229,48 @@ public final class BoardViewModel {
         return match(project.name) || match(project.path)
             || project.metaTags.contains { match($0) }
             || project.tags.contains { match($0) }
+    }
+    /// Compute a simple "radar bucket" for a project combining urgency and neglect.
+    ///
+    /// - Parameters:
+    ///   - project: Project to score.
+    ///   - now: Current time (default is `Date()`; injected for testability).
+    /// - Returns: A string key representing the radar bucket: "calm", "watch", or "heat".
+    private func radarBucket(for project: Project, now: Date) -> String {
+        // Treat any meta tag whose base label starts with "URGENT" (e.g. "URGENT ⚠️") as urgent.
+        let hasUrgentTag = project.metaTags.contains { tag in
+            tag.uppercased().hasPrefix("URGENT")
+        }
+        
+        let fm = FileManager.default
+        let modificationDate: Date
+        // Prefer the TASKS.md file inside the project directory as the activity signal.
+        let tasksPath = (project.path as NSString).appendingPathComponent("TASKS.md")
+        if let attrs = try? fm.attributesOfItem(atPath: tasksPath),
+           let mtime = attrs[.modificationDate] as? Date {
+            modificationDate = mtime
+        } else if let attrs = try? fm.attributesOfItem(atPath: project.path),
+                  let mtime = attrs[.modificationDate] as? Date {
+            // Fallback: use the project folder itself if TASKS.md is missing.
+            modificationDate = mtime
+        } else {
+            modificationDate = .distantPast
+        }
+        
+        let secondsSinceChange = now.timeIntervalSince(modificationDate)
+        let daysSinceChange = secondsSinceChange / (60 * 60 * 24)
+        
+        // Primary heat: explicitly urgent projects, or very neglected ones.
+        if hasUrgentTag || daysSinceChange >= 21 {
+            return "heat"
+        }
+        
+        // Watch list: projects that have not moved for a week or more.
+        if daysSinceChange >= 7 {
+            return "watch"
+        }
+        
+        // Recently-touched, non-urgent projects.
+        return "calm"
     }
 }
