@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+### [0.7.1] – 2026-03-13
+
+#### Documentation
+
+- Add a “Who is Forge for?” section to the README and user manual, clarifying that Forge is a files-first, tag-driven system combining kanban-style project flow with GTD-inspired task management.
+
 ### [0.7.0] – 2026-03-12
 
 #### Linting and task discovery

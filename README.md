@@ -7,6 +7,27 @@ inspired by OmniFocus. Everything lives in plain-text markdown files, editable
 with any editor. Two-way synchronisation with Apple Reminders and Calendar keeps
 your tasks visible across all your devices.
 
+## Who is Forge for?
+
+Forge is for people who think in files and folders first, and who already use file attributes and tags to organise their projects and tasks. If you like being able to open a normal directory in Finder or your editor and see exactly where everything lives – with no opaque databases or cloud backends – Forge is designed for you.
+
+More specifically, Forge works well if you:
+
+- Prefer plain-text, markdown-based systems that you can read, search, and version-control with standard tools like git.
+- Use or want to use Finder tags (including people-tags like `#Alice`) to track project state, assignees, and meta information.
+- Want a files-first, open-source tool that never locks you into a particular app, subscription, or proprietary data format.
+- Like the idea of combining a kanban-style view for projects (columns such as Backlog, In Progress, Review, Done) with a GTD-style flow for tasks (inbox, clarify, organise, review, do).
+- Need your system to co-exist with other tools – editing markdown in Neovim or VS Code, browsing tasks in Finder, and seeing the same items mirrored into Apple Reminders and Calendar.
+- Care about local-first privacy: all of your projects and tasks stay on your Mac as markdown files, with only minimal metadata in a local cache for performance.
+
+In terms of management style, Forge borrows:
+
+- From GTD (Getting Things Done): clear inbox capture, next actions by context (via `@ctx()`), defer and due dates, waiting-for tracking, and regular reviews of areas and projects.
+- From kanban and visual flow management: column-based project states driven by Finder tags, explicit work-in-progress visualisation, and quick reassignment of focus by dragging cards between columns.
+- From “second brain” / personal knowledge management-style systems: everything lives in durable text files that you can link, reorganise, and refactor over time without losing history or being tied to a single application.
+
+If you want a flexible backbone that supports these paradigms but still allows you to evolve your own naming conventions, folder layouts, and tag schemes over time, Forge aims to give you that structure without forcing a single “correct” organisational system.
+
 ## Components
 
 | Component | Description |
