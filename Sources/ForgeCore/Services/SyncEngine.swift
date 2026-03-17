@@ -507,10 +507,15 @@ public final class SyncEngine: @unchecked Sendable {
                     }
                 }
                 remindersBridge.updateTags(on: reminder, tags: tags)
-                do {
-                    try remindersBridge.updateDueDate(reminder, to: task.dueDate, hasTime: task.dueHasTime)
-                } catch {
-                    report.errors.append("Failed to update reminder due date for \(task.id): \(error)")
+
+                // Due dates: treat Reminders as the source of truth for existing reminders.
+                // Only populate a due date from markdown when the reminder has no due date set.
+                if reminder.dueDateComponents == nil, task.dueDate != nil {
+                    do {
+                        try remindersBridge.updateDueDate(reminder, to: task.dueDate, hasTime: task.dueHasTime)
+                    } catch {
+                        report.errors.append("Failed to set reminder due date for \(task.id): \(error)")
+                    }
                 }
             }
         } else if !task.isCompleted {
