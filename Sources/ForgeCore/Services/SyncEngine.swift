@@ -566,36 +566,21 @@ public final class SyncEngine: @unchecked Sendable {
                 }
 
                 if !reminder.isCompleted {
-                    let policy = config.dueConflictPolicy
-                    let reminderDue = parseReminderDue(reminder)
+                    if let reminderDue = parseReminderDue(reminder) {
+                        let differs: Bool = {
+                            guard let existing = task.dueDate else { return true }
+                            if reminderDue.hasTime != task.dueHasTime { return true }
+                            if reminderDue.hasTime { return existing != reminderDue.date }
+                            return Calendar.current.startOfDay(for: existing) != Calendar.current.startOfDay(for: reminderDue.date)
+                        }()
 
-                    func differsFromReminder(_ reminderDue: ParsedReminderDue) -> Bool {
-                        guard let existing = task.dueDate else { return true }
-                        if reminderDue.hasTime != task.dueHasTime { return true }
-                        if reminderDue.hasTime { return existing != reminderDue.date }
-                        return Calendar.current.startOfDay(for: existing) != Calendar.current.startOfDay(for: reminderDue.date)
-                    }
-
-                    switch policy {
-                    case .reminders:
-                        if let reminderDue, differsFromReminder(reminderDue) {
-                            if try markdownIO.updateTaskDueDate(withID: ids.taskID, to: reminderDue.date, hasTime: reminderDue.hasTime, inFileAt: source.filePath) {
-                                report.tasksUpdated += 1
-                            }
-                        }
-                    case .markdown:
-                        if let due = task.dueDate,
-                           reminderDue == nil || differsFromReminder(reminderDue!) {
-                            do {
-                                try remindersBridge.updateDueDate(reminder, to: due, hasTime: task.dueHasTime)
-                            } catch {
-                                report.errors.append("Failed to update reminder due date for \(task.id): \(error)")
-                            }
-                        }
-                    case .newest:
-                        // For now, treat 'newest' the same as 'reminders' to avoid extra filesystem and EventKit metadata lookups.
-                        if let reminderDue, differsFromReminder(reminderDue) {
-                            if try markdownIO.updateTaskDueDate(withID: ids.taskID, to: reminderDue.date, hasTime: reminderDue.hasTime, inFileAt: source.filePath) {
+                        if differs {
+                            if try markdownIO.updateTaskDueDate(
+                                withID: ids.taskID,
+                                to: reminderDue.date,
+                                hasTime: reminderDue.hasTime,
+                                inFileAt: source.filePath
+                            ) {
                                 report.tasksUpdated += 1
                             }
                         }
