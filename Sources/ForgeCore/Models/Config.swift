@@ -124,6 +124,15 @@ public struct GTDConfig: Codable, Sendable {
 
 /// Top-level forge configuration, loaded from config.yaml.
 public struct ForgeConfig: Codable, Sendable {
+    public enum DueConflictPolicy: String, Codable, Sendable, CaseIterable {
+        /// Prefer due date/time from Reminders when both sides changed.
+        case reminders
+        /// Prefer due date/time from markdown when both sides changed.
+        case markdown
+        /// Prefer whichever side appears newer (Reminder lastModifiedDate vs task file mtime).
+        case newest
+    }
+
     /// Paths whose direct children are Forge projects. At least one is expected.
     /// Decodes from `project_roots`; if absent, falls back to legacy `workspace` (single path).
     public let projectRoots: [String]
@@ -143,6 +152,9 @@ public struct ForgeConfig: Codable, Sendable {
     /// If set, only directories that have this Finder tag are treated as Forge projects.
     public let projectTag: String?
 
+    /// How to resolve conflicts when both markdown and Reminders have a due date/time.
+    public let dueConflictPolicy: DueConflictPolicy
+
     enum CodingKeys: String, CodingKey {
         case workspace
         case board, gtd
@@ -151,6 +163,7 @@ public struct ForgeConfig: Codable, Sendable {
         case projectAreas = "project_areas"
         case terminal
         case projectTag = "project_tag"
+        case dueConflictPolicy = "due_conflict_policy"
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -162,6 +175,7 @@ public struct ForgeConfig: Codable, Sendable {
         try container.encode(projectAreas, forKey: .projectAreas)
         try container.encodeIfPresent(terminal, forKey: .terminal)
         try container.encodeIfPresent(projectTag, forKey: .projectTag)
+        try container.encode(dueConflictPolicy, forKey: .dueConflictPolicy)
     }
 
     public init(
@@ -171,7 +185,8 @@ public struct ForgeConfig: Codable, Sendable {
         workspaceTags: [String] = ["work"],
         projectAreas: [String: [String]] = [:],
         terminal: String? = nil,
-        projectTag: String? = nil
+        projectTag: String? = nil,
+        dueConflictPolicy: DueConflictPolicy = .newest
     ) {
         self.projectRoots = projectRoots
         self.board = board
@@ -180,6 +195,7 @@ public struct ForgeConfig: Codable, Sendable {
         self.projectAreas = projectAreas
         self.terminal = terminal
         self.projectTag = projectTag
+        self.dueConflictPolicy = dueConflictPolicy
     }
 
     /// Primary path (first project root). Used for Forge dir fallback and working directory.
@@ -226,6 +242,7 @@ extension ForgeConfig {
         projectAreas = try container.decodeIfPresent([String: [String]].self, forKey: .projectAreas) ?? [:]
         terminal = try container.decodeIfPresent(String.self, forKey: .terminal)
         projectTag = try container.decodeIfPresent(String.self, forKey: .projectTag)
+        dueConflictPolicy = try container.decodeIfPresent(DueConflictPolicy.self, forKey: .dueConflictPolicy) ?? .newest
     }
 
     /// Load configuration from a YAML file at the given path.
@@ -284,7 +301,8 @@ extension ForgeConfig {
             ),
             workspaceTags: ["work"],
             terminal: "auto",
-            projectTag: "🔥 Forge"
+            projectTag: "🔥 Forge",
+            dueConflictPolicy: .newest
         )
     }
 }

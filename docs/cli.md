@@ -711,5 +711,14 @@ Paths support `~` for the home directory. All commands that list projects
 (board, next, projects, due, done, sync, status, etc.) use the union of
 projects from every listed root.
 
+## Configuration: due conflict policy
+
+When both markdown and Reminders have a due date/time for the same task, Forge
+resolves conflicts using `due_conflict_policy`:
+
+- `reminders`: prefer Reminders due date/time
+- `markdown`: prefer markdown `@due(...)`
+- `newest`: prefer whichever side appears newer (Reminder `lastModifiedDate` vs task file modification time)
+
 **Legacy:** Configs that only have `workspace: <path>` (no `project_roots`)
 are still read; Forge treats it as `project_roots: [<path>]`.

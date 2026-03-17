@@ -16,6 +16,66 @@ public final class SyncEngine: @unchecked Sendable {
     /// Index of project task files used to avoid repeatedly walking large directory trees.
     private let taskIndex: TaskIndex
 
+    private struct ParsedReminderDue {
+        let date: Date
+        let hasTime: Bool
+    }
+
+    private func parseReminderDue(_ reminder: EKReminder) -> ParsedReminderDue? {
+        guard let comp = reminder.dueDateComponents,
+              let d = Calendar.current.date(from: comp) else { return nil }
+        let hasTime = (comp.hour != nil || comp.minute != nil)
+        return ParsedReminderDue(date: d, hasTime: hasTime)
+    }
+
+    private func taskFileMtime(_ path: String) -> Date {
+        let fm = FileManager.default
+        let attrs = (try? fm.attributesOfItem(atPath: path)) ?? [:]
+        return (attrs[.modificationDate] as? Date) ?? .distantPast
+    }
+
+    private func shouldPushDueFromMarkdownToReminder(
+        policy: ForgeConfig.DueConflictPolicy,
+        task: ForgeTask,
+        sourcePath: String,
+        reminder: EKReminder,
+        reminderDue: ParsedReminderDue?
+    ) -> Bool {
+        guard let _ = task.dueDate else { return false }
+        // If reminder has no due date, always seed it from markdown.
+        if reminderDue == nil { return true }
+        switch policy {
+        case .reminders:
+            return false
+        case .markdown:
+            return true
+        case .newest:
+            let reminderModified = reminder.lastModifiedDate ?? .distantPast
+            let fileModified = taskFileMtime(sourcePath)
+            return fileModified >= reminderModified
+        }
+    }
+
+    private func shouldPullDueFromReminderToMarkdown(
+        policy: ForgeConfig.DueConflictPolicy,
+        task: ForgeTask,
+        sourcePath: String,
+        reminder: EKReminder,
+        reminderDue: ParsedReminderDue?
+    ) -> Bool {
+        guard reminderDue != nil else { return false }
+        switch policy {
+        case .reminders:
+            return true
+        case .markdown:
+            return false
+        case .newest:
+            let reminderModified = reminder.lastModifiedDate ?? .distantPast
+            let fileModified = taskFileMtime(sourcePath)
+            return reminderModified > fileModified
+        }
+    }
+
     /// Summary of sync actions performed.
     public struct SyncReport: Sendable {
         public var remindersCreated: Int = 0
@@ -507,9 +567,9 @@ public final class SyncEngine: @unchecked Sendable {
                     }
                 }
                 remindersBridge.updateTags(on: reminder, tags: tags)
-
-                // Due dates: treat Reminders as the source of truth for existing reminders.
-                // Only populate a due date from markdown when the reminder has no due date set.
+                // Note: We don't have file paths here; due conflict handling is applied in the pull phase
+                // where the source path is known. Here we only seed missing due dates to avoid clobbering
+                // Reminders edits before the pull runs.
                 if reminder.dueDateComponents == nil, task.dueDate != nil {
                     do {
                         try remindersBridge.updateDueDate(reminder, to: task.dueDate, hasTime: task.dueHasTime)
@@ -553,22 +613,46 @@ public final class SyncEngine: @unchecked Sendable {
                     continue
                 }
 
-                // Two-way sync for due dates: if a reminder's due date changes in Reminders.app,
-                // reflect that back into the markdown task.
-                if !reminder.isCompleted, let comp = reminder.dueDateComponents,
-                   let reminderDue = Calendar.current.date(from: comp) {
-                    let hasTime = (comp.hour != nil || comp.minute != nil)
-                    let taskDue = task.dueDate
+                let reminderDue = parseReminderDue(reminder)
 
-                    let differs: Bool = {
-                        guard let existing = taskDue else { return true }
-                        if hasTime != task.dueHasTime { return true }
-                        if hasTime { return existing != reminderDue }
-                        return Calendar.current.startOfDay(for: existing) != Calendar.current.startOfDay(for: reminderDue)
-                    }()
+                func differsFromReminder(_ reminderDue: ParsedReminderDue) -> Bool {
+                    guard let existing = task.dueDate else { return true }
+                    if reminderDue.hasTime != task.dueHasTime { return true }
+                    if reminderDue.hasTime { return existing != reminderDue.date }
+                    return Calendar.current.startOfDay(for: existing) != Calendar.current.startOfDay(for: reminderDue.date)
+                }
 
-                    if differs {
-                        if try markdownIO.updateTaskDueDate(withID: ids.taskID, to: reminderDue, hasTime: hasTime, inFileAt: source.filePath) {
+                if !reminder.isCompleted {
+                    let policy = config.dueConflictPolicy
+
+                    // If policy says markdown wins (or markdown appears newer), push markdown -> reminder.
+                    if let _ = task.dueDate,
+                       shouldPushDueFromMarkdownToReminder(
+                        policy: policy,
+                        task: task,
+                        sourcePath: source.filePath,
+                        reminder: reminder,
+                        reminderDue: reminderDue
+                       ),
+                       let due = task.dueDate {
+                        do {
+                            try remindersBridge.updateDueDate(reminder, to: due, hasTime: task.dueHasTime)
+                        } catch {
+                            report.errors.append("Failed to update reminder due date for \(task.id): \(error)")
+                        }
+                    }
+
+                    // If policy says reminders win (or reminders appear newer), pull reminder -> markdown.
+                    if let reminderDue,
+                       shouldPullDueFromReminderToMarkdown(
+                        policy: policy,
+                        task: task,
+                        sourcePath: source.filePath,
+                        reminder: reminder,
+                        reminderDue: reminderDue
+                       ),
+                       differsFromReminder(reminderDue) {
+                        if try markdownIO.updateTaskDueDate(withID: ids.taskID, to: reminderDue.date, hasTime: reminderDue.hasTime, inFileAt: source.filePath) {
                             report.tasksUpdated += 1
                         }
                     }

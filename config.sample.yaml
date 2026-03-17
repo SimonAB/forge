@@ -50,7 +50,6 @@ gtd:
     - reading
     - anywhere
   reminders_list: Forge
-  calendar_name: Forge
 
 workspace_tags:
   - work
@@ -68,4 +67,11 @@ project_areas:
 
 terminal: auto
 project_tag: "🔥 Forge"
+
+# How to resolve conflicts when both markdown and Reminders change a task’s due date/time.
+# Options:
+# - reminders: prefer Reminders due date/time
+# - markdown: prefer markdown @due(...)
+# - newest: prefer whichever side appears newer (Reminder lastModifiedDate vs task file mtime)
+due_conflict_policy: newest
 
