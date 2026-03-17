@@ -227,8 +227,8 @@ Tasks are grouped into three sections:
 
 Each task shows its due date, source file label, context, and ID.
 
-The menu bar companion app uses the same recursive scanner, so the
-overdue/due-today badge counts in the menu bar always match `forge due`.
+The menu bar companion app uses the same task index and discovery rules, so
+the overdue/due-today badge counts in the menu bar should match `forge due`.
 Clicking the overdue or due-today item in the menu bar opens `forge due`
 in the terminal.
 
