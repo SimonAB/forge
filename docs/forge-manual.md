@@ -66,6 +66,7 @@ If you want a flexible backbone that supports these paradigms but still allows y
 
 - **Board app (`forge-board`)**:
   - A windowed kanban board backed by the same markdown task files.
+  - The toolbar refresh runs the same background sync as the menubar app, then reloads projects so Finder tag changes and due-date edits propagate quickly.
 
 ## How synchronisation works
 
@@ -95,6 +96,7 @@ Forge:
   - Reminders/Calendar → Markdown:
     - Marks tasks complete when reminders complete.
     - Imports new reminders into `inbox.md` when they do not yet exist in markdown.
+  - Updates markdown due dates when reminder due dates change.
     - Updates markdown due dates when events move.
 - Optionally regenerates `tasks/due.md` and rollup pages, then commits changes to Reminders and Calendar.
 

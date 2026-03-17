@@ -93,6 +93,7 @@ files and Apple's Reminders and Calendar:
 | Forge → Calendar | Due dates are mirrored as all-day Calendar events |
 | Reminders → Forge | New items added to the Reminders list are imported to `inbox.md` |
 | Reminders → Forge | Completing a Reminder marks the corresponding Forge task as done |
+| Reminders → Markdown | If you change a reminder’s due date in Reminders.app, the next sync updates the task’s `@due(...)` in the markdown file |
 | Forge → Reminders | Completing a Forge task marks the corresponding Reminder as complete |
 | **Calendar → Markdown** | If you change an event's date in Calendar, the next sync updates the task's `@due(...)` in the markdown file |
 | Forge → Finder | Area-level tags (e.g. `work`, `personal`) are applied as Finder tags on area `.md` files |
@@ -115,10 +116,12 @@ Project tasks inherit the `workspace_tags` from `config.yaml` (default: `[work]`
 
 ### Badge counts
 
-The overdue and due-today badge counts are calculated by **recursively
-scanning all `TASKS.md` files under `~/Documents`**. This means tasks in
-deeply nested project directories, or in directories outside the configured
-workspace, are still counted. This matches the behaviour of `forge due`.
+The overdue and due-today badge counts are calculated by scanning:
+
+- **Project task files** — all indexed `TASKS.md` files under the configured `project_roots`.
+- **Area files** — markdown files in `Forge/tasks` (excluding generated summaries such as `due.md`).
+
+This matches the task discovery behaviour of `forge due`.
 
 After each sync, the badge counts are refreshed. If new items were captured
 from Reminders, a macOS notification is displayed.

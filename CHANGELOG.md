@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+### [0.8.1] – 2026-03-17
+
+#### Menubar and sync correctness
+
+- Fix the menubar dropdown counts (overdue / due today) not always updating after a sync completes.
+- Pull reminder due-date changes from Reminders.app back into markdown during sync.
+- Ensure the board app’s toolbar refresh runs an in-process background sync (same as the menubar app) before reloading projects.
+
 ### [0.8.0] – 2026-03-13
 
 #### Board Radar and delegation polish
