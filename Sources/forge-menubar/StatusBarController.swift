@@ -320,7 +320,7 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         guard let config = config else { return }
 
         // On first sync after launch, show a small non-blocking window so it is clear that
-        // Forge is performing an initial background sync with Reminders and Calendar.
+        // Forge is performing an initial background sync with Reminders.
         if lastSyncDate == nil {
             showInitialSyncWindowIfNeeded()
         }

@@ -90,7 +90,7 @@ public struct TaskFileLinter: Sendable {
     public func lint(content: String, path: String = "") -> [Issue] {
         let idPattern = /<!--\s*id:(\w+)\s*-->/
         let dateTagPattern = /@(due|defer|since|done)\(([^)]+)\)/
-        let dateValuePattern = /^\d{4}-\d{2}-\d{2}$/
+        let dateValuePattern = /^\d{4}-\d{2}-\d{2}(?: \d{2}:\d{2})?$/
         let bareMessagePattern = /message:%3C[^ \t)]+%3E/
 
         enum Section {
@@ -386,7 +386,7 @@ public struct TaskFileLinter: Sendable {
             if value.firstMatch(of: dateValuePattern) == nil && !value.isEmpty {
                 issues.append(Issue(
                     path: path, line: lineNum, ruleID: "date_format",
-                    message: "\(tag) date should be YYYY-MM-DD (e.g. @\(tag)(2026-03-15)).",
+                    message: "\(tag) date should be YYYY-MM-DD or YYYY-MM-DD HH:mm (e.g. @\(tag)(2026-03-15) or @\(tag)(2026-03-15 17:00)).",
                     severity: .warning, fixable: false
                 ))
             }

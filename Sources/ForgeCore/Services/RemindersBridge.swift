@@ -114,9 +114,16 @@ public final class RemindersBridge: @unchecked Sendable {
         }
 
         if let dueDate = task.dueDate {
-            let components = Calendar.current.dateComponents(
-                [.year, .month, .day], from: dueDate
-            )
+            let components: DateComponents
+            if task.dueHasTime {
+                components = Calendar.current.dateComponents(
+                    [.year, .month, .day, .hour, .minute], from: dueDate
+                )
+            } else {
+                components = Calendar.current.dateComponents(
+                    [.year, .month, .day], from: dueDate
+                )
+            }
             reminder.dueDateComponents = components
         }
 
@@ -158,11 +165,19 @@ public final class RemindersBridge: @unchecked Sendable {
     }
 
     /// Update an existing reminder's due date.
-    public func updateDueDate(_ reminder: EKReminder, to date: Date?) throws {
+    ///
+    /// When `hasTime` is true, the reminder receives hour/minute components; otherwise it is date-only.
+    public func updateDueDate(_ reminder: EKReminder, to date: Date?, hasTime: Bool) throws {
         if let date = date {
-            reminder.dueDateComponents = Calendar.current.dateComponents(
-                [.year, .month, .day], from: date
-            )
+            if hasTime {
+                reminder.dueDateComponents = Calendar.current.dateComponents(
+                    [.year, .month, .day, .hour, .minute], from: date
+                )
+            } else {
+                reminder.dueDateComponents = Calendar.current.dateComponents(
+                    [.year, .month, .day], from: date
+                )
+            }
         } else {
             reminder.dueDateComponents = nil
         }

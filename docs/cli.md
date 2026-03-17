@@ -3,7 +3,7 @@
 The `forge` command-line tool manages your kanban board and GTD tasks from the
 terminal, operating directly on the plain-text markdown files in your Forge
 directory. There are no remote services; all commands read and write your local
-files and, for sync, talk to macOS Reminders and Calendar on your machine.
+files and, for sync, talk to macOS Reminders on your machine.
 
 ```
 forge <command> [options]
@@ -21,7 +21,7 @@ forge <command> [options]
 | `forge done` | Mark a task as completed |
 | `forge move` | Move a project between columns |
 | `forge status` | Summary dashboard of all projects |
-| `forge sync` | Two-way sync with Reminders & Calendar |
+| `forge sync` | Two-way sync with Reminders |
 | `forge process` | Interactively triage inbox items |
 | `forge review` | Guided weekly review checklist |
 | `forge waiting` | Show all waiting-for items |
@@ -138,6 +138,14 @@ forge inbox [text...]
 - **With text:** creates a new task in `inbox.md` with a generated ID.
 
 Inline tags are supported in the text: `@due(DATE)`, `@ctx(CONTEXT)`.
+
+Due tags accept either a date-only form:
+
+- `@due(YYYY-MM-DD)`
+
+or a timed form:
+
+- `@due(YYYY-MM-DD HH:mm)` (24-hour clock, local time)
 
 **Examples:**
 
@@ -281,7 +289,7 @@ forge status
 
 ## forge sync
 
-Two-way synchronisation with Apple Reminders and Calendar.
+Two-way synchronisation with Apple Reminders.
 
 ```
 forge sync [--verbose] [--rebuild-index]
@@ -295,7 +303,7 @@ forge sync [--verbose] [--rebuild-index]
 **What gets synced:**
 
 - All tasks from project `TASKS.md` files and area markdown files.
-- Tasks with `@due` dates are created as Reminders and Calendar events.
+- Tasks with `@due` dates are created as Reminders.
 - Completing a task in Forge marks the corresponding Reminder as complete.
 - Completing a Reminder marks the corresponding Forge task as done.
 - New items added to the "Forge" Reminders list are imported to the inbox.
@@ -305,15 +313,13 @@ forge sync [--verbose] [--rebuild-index]
   created on demand. This mirrors your GTD contexts as separate lists in the
   Reminders sidebar.
 - Completing a task in Forge marks the corresponding Reminder as complete.
-- **Calendar → Markdown:** If you change an event's date in Calendar.app, the next
-  sync updates the task's `@due(...)` in the markdown file so due dates stay
-  in sync both ways.
-- Area tags from YAML frontmatter are propagated to Reminders (notes field),
-  Calendar events (title prefix and notes), and Finder tags on area files.
+- **Reminders → Markdown:** If you change a reminder’s due date in Reminders.app, the next
+  sync updates the task’s `@due(...)` in the markdown file so due dates stay in sync both ways.
+- Area tags from YAML frontmatter are propagated to Reminders (notes field) and Finder tags on area files.
 - Project tasks inherit `workspace_tags` from `config.yaml`.
 
 The sync targets are configured in `config.yaml` under `gtd.reminders_list`
-and `gtd.calendar_name`.
+.
 
 Each sync also refreshes the read-only due summary at `Forge/tasks/due.md`
 using a 7-day horizon and including both project and area tasks, so that

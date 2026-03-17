@@ -65,7 +65,7 @@ Vertical terminal pane with insert mode for user input.
 
 | Key | Command | Description |
 |-----|---------|-------------|
-| `<leader>Fs` | `forge sync --verbose` | Sync with Reminders & Calendar |
+| `<leader>Fs` | `forge sync --verbose` | Sync with Reminders |
 
 ### Capture and complete
 
@@ -100,7 +100,7 @@ Available via the command line (`:ForgeXxx`) or from other plugins and scripts.
 | `:ForgeNext` | — | Show next actions |
 | `:ForgeBoard` | — | Show kanban board |
 | `:ForgeProjects [name]` | Optional project name | Tasks per project; filters by name if given |
-| `:ForgeSync` | — | Sync with Reminders & Calendar |
+| `:ForgeSync` | — | Sync with Reminders |
 | `:ForgeReview` | — | Guided weekly review (interactive) |
 | `:ForgeCapture [text]` | Optional task text | Capture to inbox; prompts if no text given |
 | `:ForgeDone [id]` | Optional 6-char hex ID | Complete a task; auto-detects ID from cursor line |
@@ -156,7 +156,7 @@ If no ID is found on the current line, you are prompted to enter one manually.
 4. Press `<leader>Fn` to see your next actions.
 5. Work on a task, then `<leader>Fd` on its line to mark it done.
 6. Press `<leader>Fc` to capture a new thought without leaving your editor.
-7. Press `<leader>Fs` to sync changes with Reminders and Calendar.
+7. Press `<leader>Fs` to sync changes with Reminders.
 8. Press `<leader>Fr` at the end of the week for a guided review.
 
 ---

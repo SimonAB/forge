@@ -14,8 +14,12 @@ public struct ForgeTask: Sendable, Identifiable {
     /// The section this task belongs to (e.g. "Next Actions", "Waiting For").
     public var section: Section
 
-    /// Due date parsed from @due(YYYY-MM-DD).
+    /// Due date parsed from @due(YYYY-MM-DD) or @due(YYYY-MM-DD HH:mm).
     public var dueDate: Date?
+
+    /// True when the due date was specified with a time component in markdown.
+    /// When false, the due date should be treated as date-only (day granularity).
+    public var dueHasTime: Bool
 
     /// Context parsed from @ctx(name).
     public var context: String?
@@ -65,6 +69,7 @@ public struct ForgeTask: Sendable, Identifiable {
         isCompleted: Bool = false,
         section: Section = .nextActions,
         dueDate: Date? = nil,
+        dueHasTime: Bool = false,
         context: String? = nil,
         energy: String? = nil,
         waitingOn: String? = nil,
@@ -82,6 +87,7 @@ public struct ForgeTask: Sendable, Identifiable {
         self.isCompleted = isCompleted
         self.section = section
         self.dueDate = dueDate
+        self.dueHasTime = dueHasTime
         self.context = context
         self.energy = energy
         self.waitingOn = waitingOn
@@ -104,12 +110,18 @@ public struct ForgeTask: Sendable, Identifiable {
     /// Format the due date for display.
     public var dueDateString: String? {
         guard let date = dueDate else { return nil }
+        if dueHasTime {
+            return Self.dateTimeFormatter.string(from: date)
+        }
         return Self.dateFormatter.string(from: date)
     }
 
     /// True if the task is overdue.
     public var isOverdue: Bool {
         guard let date = dueDate, !isCompleted else { return false }
+        if dueHasTime {
+            return date < Date()
+        }
         return date < Calendar.current.startOfDay(for: Date())
     }
 
@@ -140,6 +152,13 @@ public struct ForgeTask: Sendable, Identifiable {
     private static let dateFormatter: DateFormatter = {
         let f = DateFormatter()
         f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
+
+    private static let dateTimeFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd HH:mm"
+        f.locale = Locale(identifier: "en_GB")
         return f
     }()
 

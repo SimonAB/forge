@@ -5,7 +5,7 @@ import ForgeCore
 struct SyncCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "sync",
-        abstract: "Two-way sync tasks with Reminders.app and Calendar.app."
+        abstract: "Two-way sync tasks with Reminders.app."
     )
 
     @Flag(name: .long, help: "Show detailed sync actions.")
@@ -51,7 +51,7 @@ struct SyncCommand: AsyncParsableCommand {
         let red = "\u{1B}[31m"
         let reset = "\u{1B}[0m"
 
-        print("\(dim)Syncing with Reminders and Calendar...\(reset)")
+        print("\(dim)Syncing with Reminders...\(reset)")
 
         let report = try await engine.sync()
 
@@ -75,18 +75,6 @@ struct SyncCommand: AsyncParsableCommand {
         if report.tasksMergedInMarkdown > 0 {
             print("  ↓ \(report.tasksMergedInMarkdown) duplicate task\(report.tasksMergedInMarkdown == 1 ? "" : "s") removed from markdown")
         }
-        if report.eventsCreated > 0 {
-            print("\(green)  ↑\(reset) \(report.eventsCreated) calendar events created")
-        }
-        if report.eventsUpdated > 0 {
-            print("  ↔ \(report.eventsUpdated) calendar events updated")
-        }
-        if report.eventsRemoved > 0 {
-            print("  ↓ \(report.eventsRemoved) calendar events removed")
-        }
-        if report.eventsDeduplicated > 0 {
-            print("  ↓ \(report.eventsDeduplicated) duplicate calendar event\(report.eventsDeduplicated == 1 ? "" : "s") removed")
-        }
         if report.tasksCompleted > 0 {
             print("\(green)  ↓\(reset) \(report.tasksCompleted) tasks completed from Reminders")
         }
@@ -94,7 +82,7 @@ struct SyncCommand: AsyncParsableCommand {
             print("\(green)  ↓\(reset) \(report.inboxItemsAdded) items added to inbox from Reminders")
         }
         if report.tasksUpdated > 0 {
-            print("\(green)  ↓\(reset) \(report.tasksUpdated) task due date\(report.tasksUpdated == 1 ? "" : "s") updated from Calendar")
+            print("\(green)  ↓\(reset) \(report.tasksUpdated) task due date\(report.tasksUpdated == 1 ? "" : "s") updated from Reminders")
         }
         if report.rollupAreas > 0 {
             print("  ↔ \(report.rollupAreas) area rollup\(report.rollupAreas == 1 ? "" : "s") updated (\(report.rollupTasks) tasks linked)")
@@ -103,7 +91,6 @@ struct SyncCommand: AsyncParsableCommand {
         let totalActions = report.remindersCreated + report.remindersCompleted
             + report.remindersMoved + report.remindersDeduplicated + report.remindersMergedByContent
             + report.tasksMergedInMarkdown
-            + report.eventsCreated + report.eventsUpdated + report.eventsRemoved + report.eventsDeduplicated
             + report.tasksCompleted + report.inboxItemsAdded + report.tasksUpdated
 
         if totalActions == 0 {

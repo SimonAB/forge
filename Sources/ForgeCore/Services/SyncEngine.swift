@@ -1,7 +1,7 @@
 @preconcurrency import EventKit
 import Foundation
 
-/// Two-way sync engine that reconciles markdown tasks with Reminders and Calendar.
+/// Two-way sync engine that reconciles markdown tasks with Reminders.
 public final class SyncEngine: @unchecked Sendable {
 
     private let config: ForgeConfig
@@ -11,7 +11,6 @@ public final class SyncEngine: @unchecked Sendable {
     private let options: Options
     private let markdownIO: MarkdownIO
     private let remindersBridge: RemindersBridge
-    private let calendarBridge: CalendarBridge
     private let store: EKEventStore
 
     /// Index of project task files used to avoid repeatedly walking large directory trees.
@@ -25,10 +24,6 @@ public final class SyncEngine: @unchecked Sendable {
         public var remindersDeduplicated: Int = 0
         public var remindersMergedByContent: Int = 0
         public var tasksMergedInMarkdown: Int = 0
-        public var eventsCreated: Int = 0
-        public var eventsUpdated: Int = 0
-        public var eventsRemoved: Int = 0
-        public var eventsDeduplicated: Int = 0
         public var tasksCompleted: Int = 0
         public var tasksUpdated: Int = 0
         public var inboxItemsAdded: Int = 0
@@ -91,9 +86,6 @@ public final class SyncEngine: @unchecked Sendable {
         self.remindersBridge = RemindersBridge(
             store: store, listName: config.gtd.remindersList
         )
-        self.calendarBridge = CalendarBridge(
-            store: store, calendarName: config.gtd.calendarName
-        )
         self.taskIndex = taskIndex
     }
 
@@ -112,10 +104,8 @@ public final class SyncEngine: @unchecked Sendable {
     ///
     /// **Deduplication order:** Reminders are deduplicated first by Forge ID (same task synced to
     /// multiple lists), then by content (same logical task with different IDs; one is kept and
-    /// non-canonical markdown tasks are removed). Events are deduplicated first by Forge ID and
-    /// then by content (same logical event with different IDs in the Forge calendar). All
-    /// downstream steps (indices, push to Reminders/Calendar, pull to markdown) use these
-    /// deduplicated lists so we never push or pull duplicates.
+    /// non-canonical markdown tasks are removed). All downstream steps (indices, push to Reminders,
+    /// pull to markdown) use these deduplicated lists so we never push or pull duplicates.
     public func sync() async throws -> SyncReport {
         var report = SyncReport()
         var importedInboxSignatures: [ReminderContentSignature: String] = [:]
@@ -123,11 +113,9 @@ public final class SyncEngine: @unchecked Sendable {
         try? FileManager.default.createDirectory(atPath: taskFilesRoot, withIntermediateDirectories: true)
 
         try await remindersBridge.requestAccess()
-        try await calendarBridge.requestAccess()
 
         _ = try remindersBridge.findOrCreateList(context: nil)
         let forgeLists = remindersBridge.allForgeListCalendars()
-        let calendar = try calendarBridge.findOrCreateCalendar()
 
         // Ensure the project task file index is populated before we scan for tasks. This avoids
         // paying the cost of a full recursive directory walk on every sync run.
@@ -166,7 +154,6 @@ public final class SyncEngine: @unchecked Sendable {
         let allTasks = sourced.map(\.task)
 
         let reminders = try await remindersBridge.fetchReminders(from: forgeLists)
-        let events = await calendarBridge.fetchEvents(from: calendar)
 
         let tasksByID = Dictionary(allTasks.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         let sourceByID = Dictionary(sourced.map { ($0.task.id, $0) }, uniquingKeysWith: { first, _ in first })
@@ -179,14 +166,9 @@ public final class SyncEngine: @unchecked Sendable {
             remindersAfterDedup, tasksByID: tasksByID, sourceByID: sourceByID, report: &report
         )
 
-        var eventsAfterDedup = events
-        eventsAfterDedup = deduplicateEventsByForgeID(eventsAfterDedup, sourceByID: sourceByID, report: &report)
-        eventsAfterDedup = deduplicateEventsByContent(eventsAfterDedup, tasksByID: tasksByID, report: &report)
-
         var remindersByID = buildReminderIndex(remindersAfterDedup)
-        let eventsByID = buildEventIndex(eventsAfterDedup)
 
-        // When the same task ID appears more than once in markdown, only sync the first to avoid duplicate reminders/events.
+        // When the same task ID appears more than once in markdown, only sync the first to avoid duplicate reminders.
         var seenTaskIDs = Set<String>()
         for st in sourced {
             guard seenTaskIDs.insert(st.task.id).inserted else { continue }
@@ -196,22 +178,12 @@ public final class SyncEngine: @unchecked Sendable {
                 remindersByID: &remindersByID,
                 list: list, report: &report
             )
-            syncTaskToCalendar(
-                task: st.task, tags: st.areaTags,
-                eventsByID: eventsByID,
-                calendar: calendar, report: &report
-            )
         }
 
         try syncRemindersToMarkdown(
             reminders: remindersAfterDedup, tasksByID: tasksByID,
             sourceByID: sourceByID, report: &report,
             importedInboxSignatures: &importedInboxSignatures
-        )
-
-        try syncEventsToMarkdown(
-            events: eventsAfterDedup, tasksByID: tasksByID,
-            sourceByID: sourceByID, report: &report
         )
 
         if options.enableFinderTags {
@@ -232,7 +204,6 @@ public final class SyncEngine: @unchecked Sendable {
         }
 
         try remindersBridge.commit()
-        try calendarBridge.commit()
 
         return report
     }
@@ -395,54 +366,11 @@ public final class SyncEngine: @unchecked Sendable {
         )
     }
 
-    /// Content signature for grouping calendar events that are the same logical item (for content-based deduplication).
-    private struct EventContentSignature: Hashable {
-        let normalisedTitle: String
-        let calendarIdentifier: String
-        let startDay: String?
-        let isAllDay: Bool
-        let recurrenceString: String
-    }
-
-    private func eventContentSignature(_ event: EKEvent) -> EventContentSignature {
-        let title = event.title
-            .trimmingCharacters(in: .whitespaces)
-            .replacingOccurrences(of: "  ", with: " ")
-        let calendarId = event.calendar.calendarIdentifier
-        let startDay: String? = {
-            guard let date = event.startDate else { return nil }
-            return Self.dayString(date)
-        }()
-        let recurrenceString: String
-        if let rule = event.recurrenceRules?.first {
-            recurrenceString = "\(rule.frequency.rawValue)-\(rule.interval)"
-        } else {
-            recurrenceString = ""
-        }
-        return EventContentSignature(
-            normalisedTitle: title,
-            calendarIdentifier: calendarId,
-            startDay: startDay,
-            isAllDay: event.isAllDay,
-            recurrenceString: recurrenceString
-        )
-    }
-
     private func buildReminderIndex(_ reminders: [EKReminder]) -> [String: EKReminder] {
         var index: [String: EKReminder] = [:]
         for reminder in reminders {
             if let ids = remindersBridge.extractForgeID(from: reminder) {
                 index[ids.taskID] = reminder
-            }
-        }
-        return index
-    }
-
-    private func buildEventIndex(_ events: [EKEvent]) -> [String: EKEvent] {
-        var index: [String: EKEvent] = [:]
-        for event in events {
-            if let ids = calendarBridge.extractForgeID(from: event) {
-                index[ids.taskID] = event
             }
         }
         return index
@@ -551,91 +479,6 @@ public final class SyncEngine: @unchecked Sendable {
         return result
     }
 
-    /// Deduplicate events that share the same forge ID; keep one per (project, taskID), remove the rest.
-    private func deduplicateEventsByForgeID(
-        _ events: [EKEvent],
-        sourceByID: [String: SourcedTask],
-        report: inout SyncReport
-    ) -> [EKEvent] {
-        var withoutID: [EKEvent] = []
-        var byKey: [String: [EKEvent]] = [:]
-        for e in events {
-            if let ids = calendarBridge.extractForgeID(from: e) {
-                let key = "\(ids.project):\(ids.taskID)"
-                byKey[key, default: []].append(e)
-            } else {
-                withoutID.append(e)
-            }
-        }
-        var result: [EKEvent] = []
-        result.append(contentsOf: withoutID)
-        for (_, group) in byKey {
-            if group.count == 1 {
-                result.append(group[0])
-                continue
-            }
-            let taskID = calendarBridge.extractForgeID(from: group[0])!.taskID
-            let preferredStart = sourceByID[taskID]?.task.dueDate
-            let sorted = group.sorted { e1, e2 in
-                guard let pref = preferredStart else { return false }
-                let m1 = Calendar.current.isDate(e1.startDate, inSameDayAs: pref)
-                let m2 = Calendar.current.isDate(e2.startDate, inSameDayAs: pref)
-                if m1 != m2 { return m1 }
-                return false
-            }
-            result.append(sorted[0])
-            for i in 1..<sorted.count {
-                try? calendarBridge.removeEvent(sorted[i])
-                report.eventsDeduplicated += 1
-            }
-        }
-        return result
-    }
-
-    /// Deduplicate events that have the same content but different forge IDs or missing IDs.
-    private func deduplicateEventsByContent(
-        _ events: [EKEvent],
-        tasksByID: [String: ForgeTask],
-        report: inout SyncReport
-    ) -> [EKEvent] {
-        var bySig: [EventContentSignature: [EKEvent]] = [:]
-        for e in events {
-            bySig[eventContentSignature(e), default: []].append(e)
-        }
-
-        var result: [EKEvent] = []
-        for (_, group) in bySig {
-            if group.count == 1 {
-                result.append(group[0])
-                continue
-            }
-
-            let taskIDsInGroup = group.compactMap { calendarBridge.extractForgeID(from: $0)?.taskID }
-            let canonicalID: String? = taskIDsInGroup.isEmpty ? nil
-                : (taskIDsInGroup.filter { tasksByID[$0] != nil }.sorted().first
-                    ?? taskIDsInGroup.min()
-                    ?? taskIDsInGroup.first)
-
-            let keeperIndex: Int
-            if let canonicalID = canonicalID,
-               let idx = group.firstIndex(where: { calendarBridge.extractForgeID(from: $0)?.taskID == canonicalID }) {
-                keeperIndex = idx
-            } else {
-                keeperIndex = 0
-            }
-
-            let keeper = group[keeperIndex]
-            result.append(keeper)
-
-            for (idx, ev) in group.enumerated() {
-                if idx == keeperIndex { continue }
-                try? calendarBridge.removeEvent(ev)
-                report.eventsDeduplicated += 1
-            }
-        }
-
-        return result
-    }
 
     // MARK: - Markdown -> Reminders
 
@@ -664,6 +507,11 @@ public final class SyncEngine: @unchecked Sendable {
                     }
                 }
                 remindersBridge.updateTags(on: reminder, tags: tags)
+                do {
+                    try remindersBridge.updateDueDate(reminder, to: task.dueDate, hasTime: task.dueHasTime)
+                } catch {
+                    report.errors.append("Failed to update reminder due date for \(task.id): \(error)")
+                }
             }
         } else if !task.isCompleted {
             do {
@@ -675,45 +523,6 @@ public final class SyncEngine: @unchecked Sendable {
                 report.remindersCreated += 1
             } catch {
                 report.errors.append("Failed to create reminder for \(task.id): \(error)")
-            }
-        }
-    }
-
-    // MARK: - Markdown -> Calendar
-
-    private func syncTaskToCalendar(
-        task: ForgeTask,
-        tags: [String],
-        eventsByID: [String: EKEvent],
-        calendar: EKCalendar,
-        report: inout SyncReport
-    ) {
-        if let event = eventsByID[task.id] {
-            if task.isCompleted {
-                do {
-                    try calendarBridge.removeEvent(event)
-                    report.eventsRemoved += 1
-                } catch {
-                    report.errors.append("Failed to remove event for \(task.id): \(error)")
-                }
-            } else if let dueDate = task.dueDate,
-                      !Calendar.current.isDate(event.startDate, inSameDayAs: dueDate) {
-                do {
-                    try calendarBridge.updateEventDate(event, to: dueDate)
-                    report.eventsUpdated += 1
-                } catch {
-                    report.errors.append("Failed to update event for \(task.id): \(error)")
-                }
-            }
-        } else if !task.isCompleted && task.dueDate != nil {
-            do {
-                _ = try calendarBridge.createEvent(
-                    for: task, projectName: task.projectName ?? "Unknown",
-                    tags: tags, in: calendar
-                )
-                report.eventsCreated += 1
-            } catch {
-                report.errors.append("Failed to create event for \(task.id): \(error)")
             }
         }
     }
@@ -741,14 +550,20 @@ public final class SyncEngine: @unchecked Sendable {
 
                 // Two-way sync for due dates: if a reminder's due date changes in Reminders.app,
                 // reflect that back into the markdown task.
-                if !reminder.isCompleted {
-                    let reminderDue: Date? = reminder.dueDateComponents.flatMap { comp in
-                        Calendar.current.date(from: comp).map { Calendar.current.startOfDay(for: $0) }
-                    }
-                    let taskDue = task.dueDate.map { Calendar.current.startOfDay(for: $0) }
+                if !reminder.isCompleted, let comp = reminder.dueDateComponents,
+                   let reminderDue = Calendar.current.date(from: comp) {
+                    let hasTime = (comp.hour != nil || comp.minute != nil)
+                    let taskDue = task.dueDate
 
-                    if let reminderDue, reminderDue != taskDue {
-                        if try markdownIO.updateTaskDueDate(withID: ids.taskID, to: reminderDue, inFileAt: source.filePath) {
+                    let differs: Bool = {
+                        guard let existing = taskDue else { return true }
+                        if hasTime != task.dueHasTime { return true }
+                        if hasTime { return existing != reminderDue }
+                        return Calendar.current.startOfDay(for: existing) != Calendar.current.startOfDay(for: reminderDue)
+                    }()
+
+                    if differs {
+                        if try markdownIO.updateTaskDueDate(withID: ids.taskID, to: reminderDue, hasTime: hasTime, inFileAt: source.filePath) {
                             report.tasksUpdated += 1
                         }
                     }
@@ -770,10 +585,19 @@ public final class SyncEngine: @unchecked Sendable {
                 let incomingDefer: Date? = reminder.startDateComponents.flatMap {
                     Calendar.current.date(from: $0)
                 }
+                let incomingDue: (date: Date?, hasTime: Bool) = {
+                    guard let comp = reminder.dueDateComponents,
+                          let d = Calendar.current.date(from: comp) else { return (nil, false) }
+                    let hasTime = (comp.hour != nil || comp.minute != nil)
+                    return (d, hasTime)
+                }()
+
                 let task = ForgeTask(
                     id: ForgeTask.newID(),
                     text: reminder.title ?? "Untitled",
                     section: .nextActions,
+                    dueDate: incomingDue.date,
+                    dueHasTime: incomingDue.hasTime,
                     source: "reminders",
                     deferDate: incomingDefer,
                     repeatRule: incomingRepeat
@@ -834,33 +658,5 @@ public final class SyncEngine: @unchecked Sendable {
         }
     }
 
-    // MARK: - Calendar -> Markdown
-
-    private func syncEventsToMarkdown(
-        events: [EKEvent],
-        tasksByID: [String: ForgeTask],
-        sourceByID: [String: SourcedTask],
-        report: inout SyncReport
-    ) throws {
-        for event in events {
-            guard let ids = calendarBridge.extractForgeID(from: event),
-                  let task = tasksByID[ids.taskID] else { continue }
-
-            guard let source = sourceByID[ids.taskID] else { continue }
-
-            let newDate = Calendar.current.startOfDay(for: event.startDate)
-            if let taskDue = task.dueDate {
-                guard !Calendar.current.isDate(event.startDate, inSameDayAs: taskDue) else { continue }
-                if try markdownIO.updateTaskDueDate(withID: ids.taskID, to: newDate, inFileAt: source.filePath) {
-                    report.tasksUpdated += 1
-                }
-            } else {
-                // If a task had no due date but an event exists/was edited in Calendar.app,
-                // pull the event date into markdown so the two stay aligned.
-                if try markdownIO.updateTaskDueDate(withID: ids.taskID, to: newDate, inFileAt: source.filePath) {
-                    report.tasksUpdated += 1
-                }
-            }
-        }
-    }
+    // Calendar sync removed.
 }

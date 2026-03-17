@@ -85,21 +85,19 @@ Forge.app runs a sync cycle automatically:
 - **On demand** — via the "Sync Now" menu item.
 
 Each sync cycle performs **two-way synchronisation** between your markdown
-files and Apple's Reminders and Calendar:
+files and Apple's Reminders:
 
 | Direction | What happens |
 |-----------|--------------|
 | Forge → Reminders | Tasks are created or updated in the configured Reminders list (or in a context list "Forge • &lt;context&gt;" when the task has an @ctx tag) |
-| Forge → Calendar | Due dates are mirrored as all-day Calendar events |
 | Reminders → Forge | New items added to the Reminders list are imported to `inbox.md` |
 | Reminders → Forge | Completing a Reminder marks the corresponding Forge task as done |
 | Reminders → Markdown | If you change a reminder’s due date in Reminders.app, the next sync updates the task’s `@due(...)` in the markdown file |
 | Forge → Reminders | Completing a Forge task marks the corresponding Reminder as complete |
-| **Calendar → Markdown** | If you change an event's date in Calendar, the next sync updates the task's `@due(...)` in the markdown file |
 | Forge → Finder | Area-level tags (e.g. `work`, `personal`) are applied as Finder tags on area `.md` files |
 
 **Area tasks are included in sync.** Tasks from area files (admin.md,
-home.md, etc.) are synced to Reminders and Calendar alongside project tasks.
+home.md, etc.) are synced to Reminders alongside project tasks.
 
 ### Tag propagation
 
@@ -108,7 +106,6 @@ Area tags from YAML frontmatter are surfaced across all sync targets:
 | Surface | How tags appear |
 |---------|-----------------|
 | **Reminders** | Stored in the reminder's notes field (`tags: work, personal`) |
-| **Calendar** | Prefixed in the event title (`[work] [Admin] Task name`) and in the event notes |
 | **Finder** | Applied as Finder tags on the area `.md` files (visible in Finder, searchable via Spotlight) |
 | **Forge files** | Stored in YAML frontmatter (`tags: [work]`) |
 
@@ -133,10 +130,9 @@ Configured in `config.yaml`:
 ```yaml
 gtd:
   reminders_list: Forge       # Apple Reminders list name
-  calendar_name: Forge        # Apple Calendar name
 ```
 
-Create these in Reminders.app and Calendar.app before your first sync. Forge
+Create this list in Reminders.app before your first sync. Forge
 will create additional Reminders lists per context as needed (e.g. "Forge • email", "Forge • office") when you sync tasks that have an `@ctx()` tag.
 
 ---
@@ -166,9 +162,8 @@ Or from Neovim:
 On first launch, macOS will prompt for access to:
 
 - **Reminders** — required for two-way task sync.
-- **Calendar** — required for due-date event sync.
 
-Grant both for full functionality. These are declared in the app's
+Grant access for full functionality. This is declared in the app's
 `Info.plist`.
 
 ### Privacy and data flow
@@ -176,7 +171,7 @@ Grant both for full functionality. These are declared in the app's
 - Forge.app reads and writes only the Forge directory on your disk
   (configuration, inbox and area files, and project `TASKS.md` files).
 - Background sync uses macOS frameworks (EventKit and related APIs) to talk to
-  **your** Reminders and Calendar accounts; no data is sent to any Forge
+  **your** Reminders account; no data is sent to any Forge
   server.
 - The task index at `Forge/.cache/tasks.db` stores file paths, timestamps, and
   cached counts, not full task text.

@@ -29,6 +29,13 @@ public struct MarkdownIO: Sendable {
         return f
     }()
 
+    private static let dateTimeFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd HH:mm"
+        f.locale = Locale(identifier: "en_GB")
+        return f
+    }()
+
     public init() {}
 
     // MARK: - Parsing
@@ -408,9 +415,9 @@ public struct MarkdownIO: Sendable {
         return true
     }
 
-    /// Update a task's due date in a markdown file by its ID (e.g. when the date was changed in Calendar).
+    /// Update a task's due date in a markdown file by its ID.
     /// Updates the @due(...) tag and touches `date_modified` in frontmatter. Returns true if the task was found and updated.
-    public func updateTaskDueDate(withID taskID: String, to date: Date, inFileAt path: String) throws -> Bool {
+    public func updateTaskDueDate(withID taskID: String, to date: Date, hasTime: Bool, inFileAt path: String) throws -> Bool {
         let raw = try String(contentsOfFile: path, encoding: .utf8)
         let idMarker = "<!-- id:\(taskID) -->"
 
@@ -436,6 +443,7 @@ public struct MarkdownIO: Sendable {
             if line.contains(idMarker), let parsed = parseTaskLine(line, section: currentSection, projectName: nil) {
                 var revised = parsed.task
                 revised.dueDate = date
+                revised.dueHasTime = hasTime
                 newLines.append(formatTaskLine(revised))
                 updated = true
             } else {
@@ -449,6 +457,11 @@ public struct MarkdownIO: Sendable {
         let output = Self.reassemble(frontmatter: frontmatter?.touchingModified(), body: result)
         try output.write(toFile: path, atomically: true, encoding: .utf8)
         return true
+    }
+
+    /// Backwards-compatible helper: update due date as date-only.
+    public func updateTaskDueDate(withID taskID: String, to date: Date, inFileAt path: String) throws -> Bool {
+        try updateTaskDueDate(withID: taskID, to: date, hasTime: false, inFileAt: path)
     }
 
     /// Insert a line into a named section, or create the section if it does not exist.
@@ -516,7 +529,7 @@ public struct MarkdownIO: Sendable {
         text = text.replacing(/<!--\s*id:\w+\s*-->/, with: "")
         text = text.trimmingCharacters(in: .whitespaces)
 
-        let dueDate = extractDate(tag: "due", from: text)
+        let (dueDate, dueHasTime) = extractDue(from: text)
         let deferDate = extractDate(tag: "defer", from: text)
         let context = extractValue(tag: "ctx", from: text)
         let energy = extractValue(tag: "energy", from: text)
@@ -544,6 +557,7 @@ public struct MarkdownIO: Sendable {
             isCompleted: isCompleted,
             section: section,
             dueDate: dueDate,
+            dueHasTime: dueHasTime,
             context: context,
             energy: energy,
             waitingOn: waitingOn,
@@ -569,6 +583,21 @@ public struct MarkdownIO: Sendable {
         return Self.dateFormatter.date(from: value)
     }
 
+    /// Extract due date which may be date-only or date+time.
+    /// Accepts `@due(YYYY-MM-DD)` and `@due(YYYY-MM-DD HH:mm)`.
+    private func extractDue(from text: String) -> (date: Date?, hasTime: Bool) {
+        guard let raw = extractValue(tag: "due", from: text) else { return (nil, false) }
+        let value = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let dt = Self.dateTimeFormatter.date(from: value) {
+            return (dt, true)
+        }
+        if let d = Self.dateFormatter.date(from: value) {
+            // Preserve existing behaviour: date-only due dates are treated at day granularity.
+            return (d, false)
+        }
+        return (nil, false)
+    }
+
     /// Reassemble a markdown file from optional frontmatter and body content.
     static func reassemble(frontmatter: Frontmatter?, body: String) -> String {
         guard let fm = frontmatter else { return body }
@@ -586,7 +615,11 @@ public struct MarkdownIO: Sendable {
             parts.append("@defer(\(Self.dateFormatter.string(from: date)))")
         }
         if let date = task.dueDate {
-            parts.append("@due(\(Self.dateFormatter.string(from: date)))")
+            if task.dueHasTime {
+                parts.append("@due(\(Self.dateTimeFormatter.string(from: date)))")
+            } else {
+                parts.append("@due(\(Self.dateFormatter.string(from: date)))")
+            }
         }
         if let ctx = task.context {
             parts.append("@ctx(\(ctx))")

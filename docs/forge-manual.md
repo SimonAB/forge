@@ -8,7 +8,7 @@ Forge is a local-first project and task manager that combines:
 
 - Plain-text markdown files for projects and areas.
 - A kanban-style board for visualising work-in-progress.
-- Two-way synchronisation with Reminders and Calendar on macOS.
+- Two-way synchronisation with Reminders on macOS.
 - A small menubar app that keeps everything in sync in the background.
 
 This document explains how Forge fits together and how to use it day-to-day.
@@ -23,7 +23,7 @@ More specifically, Forge works well if you:
 - Use or want to use Finder tags (including people-tags like `#Alice`) to track project state, assignees, and meta information.
 - Want a files-first, open-source tool that never locks you into a particular app, subscription, or proprietary data format.
 - Like the idea of combining a kanban-style view for projects (columns such as Backlog, In Progress, Review, Done) with a GTD-style flow for tasks (inbox, clarify, organise, review, do).
-- Need your system to co-exist with other tools – editing markdown in Neovim or VS Code, browsing tasks in Finder, and seeing the same items mirrored into Apple Reminders and Calendar.
+- Need your system to co-exist with other tools – editing markdown in Neovim or VS Code, browsing tasks in Finder, and seeing the same items mirrored into Apple Reminders.
 - Care about local-first privacy: all of your projects and tasks stay on your Mac as markdown files, with only minimal metadata in a local cache for performance.
 
 In terms of management style, Forge borrows:
@@ -46,16 +46,16 @@ If you want a flexible backbone that supports these paradigms but still allows y
   - Area files live in `Forge/tasks/*.md` (excluding special files like `inbox.md`, `someday-maybe.md`, `due.md`).
   - `inbox.md` is the capture point for quick notes and imported Reminders.
 - **Sync engine**:
-  - `SyncEngine.sync()` is responsible for keeping markdown, Reminders, and Calendar in agreement.
+  - `SyncEngine.sync()` is responsible for keeping markdown and Reminders in agreement.
 - **Privacy**:
   - All project and area content is stored as plain-text markdown under your Forge directory.
   - Forge maintains a small local SQLite cache at `Forge/.cache/tasks.db` for file metadata and counts only; task text remains in markdown.
-  - There are no Forge-hosted services: all synchronisation happens locally between your files and macOS Reminders/Calendar on your machine.
+  - There are no Forge-hosted services: all synchronisation happens locally between your files and macOS Reminders on your machine.
 
 ## Components
 
 - **CLI (`forge` command)**:
-  - `forge sync` – run a full two-way sync between markdown, Reminders, and Calendar.
+  - `forge sync` – run a full two-way sync between markdown and Reminders.
   - `forge due` – list overdue and upcoming tasks from markdown (optionally writing `tasks/due.md`).
   - Other commands (`forge board`, `forge process`, etc.) provide various GTD and board views.
 
@@ -84,21 +84,17 @@ Forge:
 - Opens `Forge/.cache/tasks.db` (a small SQLite database that remembers which task files exist and their basic metadata).
 - Uses a task index backed by that database to enumerate project `TASKS.md` files under the configured roots.
 - Parses project and area markdown into `ForgeTask` objects.
-- Fetches Reminders and Calendar events from the configured list and calendar.
+- Fetches Reminders from the configured list (and any context lists it creates).
 - Reconciles in both directions:
   - Markdown → Reminders:
     - Creates reminders for new tasks.
     - Moves reminders to the correct context lists.
     - Marks reminders complete when their corresponding tasks complete in markdown.
-  - Markdown → Calendar:
-    - Creates or updates events for dated tasks.
-    - Removes events when tasks are completed or dates are cleared.
-  - Reminders/Calendar → Markdown:
+  - Reminders → Markdown:
     - Marks tasks complete when reminders complete.
     - Imports new reminders into `inbox.md` when they do not yet exist in markdown.
   - Updates markdown due dates when reminder due dates change.
-    - Updates markdown due dates when events move.
-- Optionally regenerates `tasks/due.md` and rollup pages, then commits changes to Reminders and Calendar.
+- Optionally regenerates `tasks/due.md` and rollup pages, then commits changes to Reminders.
 
 ### What the menubar app does
 
@@ -114,7 +110,7 @@ When Forge.app (the menubar app) is running:
 
 Practically, this means that if Forge.app is running:
 
-- Reminders and Calendar will be kept in sync with your markdown tasks without needing to run `forge sync` manually.
+- Reminders will be kept in sync with your markdown tasks without needing to run `forge sync` manually.
 - The CLI `forge sync` is still available when you want to force an immediate sync or measure timings from the terminal.
 
 ## Typical workflows
@@ -169,7 +165,7 @@ This keeps the task’s assignee aligned with the same `#Person` convention used
 ### 3. Working from the board
 
 - Use `forge board` in the terminal or the Forge board app to see your work laid out in columns.
-- Moving tasks between columns updates the underlying markdown and will propagate to Reminders/Calendar on the next sync.
+- Moving tasks between columns updates the underlying markdown and will propagate to Reminders on the next sync.
 
 ### 3.1 Radar view for projects
 
@@ -181,14 +177,14 @@ This keeps the task’s assignee aligned with the same `#Person` convention used
 
 ## Where to look when something seems off
 
-- **Tasks missing from reminders or calendar**:
+- **Tasks missing from reminders**:
   - Run `forge sync` from the terminal and inspect its output.
   - Check `config.yaml` to ensure project roots and lists/calendars are configured as expected.
   - Verify that the relevant `TASKS.md` or area file lives under a configured project root or `Forge/tasks`.
   - If a new project `TASKS.md` file under an existing project root is not being picked up, run `forge sync --rebuild-index` once to force a full rescan of project roots.
 
 - **Menubar badge counts look wrong**:
-  - Ensure Forge.app is allowed to access Reminders and Calendar in System Settings.
+  - Ensure Forge.app is allowed to access Reminders in System Settings.
   - Wait for at least one background sync cycle (or use “Sync Now” from the menubar menu).
   - Compare output from `forge due` with the badge counts.
   - If CLI due output seems to be missing projects entirely, run `forge due --rebuild-index` to rebuild the cached index of `TASKS.md` files.
