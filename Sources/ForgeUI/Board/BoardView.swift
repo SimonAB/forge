@@ -175,7 +175,7 @@ public struct BoardView: View {
                 }
 
                 Button {
-                    viewModel.refresh()
+                    viewModel.syncAndRefresh()
                 } label: {
                     Label("Refresh", systemImage: "arrow.clockwise")
                 }

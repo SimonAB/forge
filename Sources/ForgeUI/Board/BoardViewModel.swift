@@ -47,17 +47,20 @@ public final class BoardViewModel {
 
     private let fetchProjects: @Sendable () async throws -> [Project]
     private let moveProject: @Sendable (Project, ColumnConfig) throws -> Void
+    private let performSync: (@Sendable () async throws -> Void)?
 
     public init(
         config: ForgeConfig,
         fetchProjects: @escaping @Sendable () async throws -> [Project],
         moveProject: @escaping @Sendable (Project, ColumnConfig) throws -> Void,
-        filterMetaTags: [String]? = nil
+        filterMetaTags: [String]? = nil,
+        performSync: (@Sendable () async throws -> Void)? = nil
     ) {
         self.config = config
         self.fetchProjects = fetchProjects
         self.moveProject = moveProject
         self.filterMetaTags = filterMetaTags
+        self.performSync = performSync
     }
 
     /// Meta tags to show in the board filter picker. Subset of config when preference is set; otherwise all.
@@ -111,6 +114,36 @@ public final class BoardViewModel {
     /// Re-run the fetch to refresh the project list.
     public func refresh() {
         load()
+    }
+
+    /// Run a two-way sync (when available) then refresh the board.
+    ///
+    /// In the macOS apps, this should use the same sync engine/options as the menubar app,
+    /// so "Refresh" reflects any newly synced tags, dates, and tasks immediately.
+    public func syncAndRefresh() {
+        guard let performSync else {
+            load()
+            return
+        }
+
+        isLoading = true
+        error = nil
+
+        Task {
+            do {
+                try await performSync()
+                await MainActor.run {
+                    // `load()` will also flip isLoading, but keep the UI responsive by
+                    // showing the spinner immediately while sync runs.
+                    self.load()
+                }
+            } catch {
+                await MainActor.run {
+                    self.isLoading = false
+                    self.error = error.localizedDescription
+                }
+            }
+        }
     }
 
     /// Grouped columns: config columns in order plus "Untagged" if any project has no column.

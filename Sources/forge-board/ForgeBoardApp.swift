@@ -108,7 +108,7 @@ private struct BoardRootView: View {
     init(config: ForgeConfig, forgeDir: String? = nil) {
         self.config = config
         self.forgeDir = forgeDir
-        _viewModel = State(initialValue: Self.makeViewModel(config))
+        _viewModel = State(initialValue: Self.makeViewModel(config, forgeDir: forgeDir))
     }
 
     var body: some View {
@@ -196,7 +196,7 @@ private struct BoardRootView: View {
     }
     #endif
 
-    private static func makeViewModel(_ config: ForgeConfig) -> BoardViewModel {
+    private static func makeViewModel(_ config: ForgeConfig, forgeDir: String?) -> BoardViewModel {
         let scanner = WorkspaceScanner(config: config)
         let tagStore = FinderTagStore()
         let fetch: @Sendable () async throws -> [Project] = { try await scanner.scanProjects() }
@@ -206,11 +206,28 @@ private struct BoardRootView: View {
             }
             try tagStore.addTag(column.tag, at: project.path)
         }
+        let performSync: (@Sendable () async throws -> Void)? = forgeDir.map { forgeDir in
+            let c = config
+            return {
+                let paths = ForgePaths(forgeDir: forgeDir)
+                let db = try TaskFileDatabase(forgeDir: forgeDir)
+                let index = DatabaseTaskIndex(database: db)
+                let engine = SyncEngine(
+                    config: c,
+                    forgeDir: forgeDir,
+                    taskFilesRoot: paths.taskFilesRoot,
+                    options: .background,
+                    taskIndex: index
+                )
+                _ = try await engine.sync()
+            }
+        }
         return BoardViewModel(
             config: config,
             fetchProjects: fetch,
             moveProject: move,
-            filterMetaTags: BoardFilterPreferences.loadEnabledMetaTags()
+            filterMetaTags: BoardFilterPreferences.loadEnabledMetaTags(),
+            performSync: performSync
         )
     }
 

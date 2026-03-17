@@ -31,11 +31,29 @@ final class BoardWindowController: NSObject, NSWindowDelegate {
             try tagStore.addTag(column.tag, at: project.path)
         }
 
+        let performSync: (@Sendable () async throws -> Void)? = forgeDir.map { forgeDir in
+            let c = config
+            return {
+                let paths = ForgePaths(forgeDir: forgeDir)
+                let db = try TaskFileDatabase(forgeDir: forgeDir)
+                let index = DatabaseTaskIndex(database: db)
+                let engine = SyncEngine(
+                    config: c,
+                    forgeDir: forgeDir,
+                    taskFilesRoot: paths.taskFilesRoot,
+                    options: .background,
+                    taskIndex: index
+                )
+                _ = try await engine.sync()
+            }
+        }
+
         self.viewModel = BoardViewModel(
             config: config,
             fetchProjects: fetchProjects,
             moveProject: moveProject,
-            filterMetaTags: BoardFilterPreferences.loadEnabledMetaTags()
+            filterMetaTags: BoardFilterPreferences.loadEnabledMetaTags(),
+            performSync: performSync
         )
     }
 
