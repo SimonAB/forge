@@ -5,7 +5,7 @@ import UserNotifications
 
 /// Manages the menu bar status item, background sync timer, and menu actions.
 @MainActor
-final class StatusBarController: NSObject {
+final class StatusBarController: NSObject, NSMenuDelegate {
 
     private var statusItem: NSStatusItem!
     private var syncTimer: Timer?
@@ -13,6 +13,11 @@ final class StatusBarController: NSObject {
     private var forgeDir: String?
     private var capturePanel: CapturePanel?
     private var boardWindowController: BoardWindowController?
+
+    /// We keep a single menu instance and mutate it in-place. Replacing `statusItem.menu`
+    /// while the menu is open does not update the visible dropdown (macOS continues showing
+    /// the previously-tracked `NSMenu` instance).
+    private let statusMenu = NSMenu()
 
     private var syncProgressWindow: NSWindow?
     private var hasShownInitialSyncWindow = false
@@ -98,6 +103,8 @@ final class StatusBarController: NSObject {
             button.imagePosition = .imageLeading
         }
 
+        statusMenu.delegate = self
+        statusItem.menu = statusMenu
         rebuildMenu()
     }
 
@@ -124,7 +131,8 @@ final class StatusBarController: NSObject {
     }
 
     private func rebuildMenu() {
-        let menu = NSMenu()
+        let menu = statusMenu
+        menu.removeAllItems()
 
         if overdueCount > 0 {
             let item = NSMenuItem(
@@ -287,8 +295,12 @@ final class StatusBarController: NSObject {
         )
         quitItem.target = self
         menu.addItem(quitItem)
+    }
 
-        statusItem.menu = menu
+    func menuWillOpen(_ menu: NSMenu) {
+        // Ensure the dropdown always opens with fresh counts, even if a background sync
+        // has just completed while the menu was previously open.
+        refreshCounts()
     }
 
     // MARK: - Background Sync
