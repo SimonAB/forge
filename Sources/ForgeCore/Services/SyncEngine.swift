@@ -729,11 +729,27 @@ public final class SyncEngine: @unchecked Sendable {
     ) throws {
         for reminder in reminders {
             if let ids = remindersBridge.extractForgeID(from: reminder) {
-                if let task = tasksByID[ids.taskID],
-                   reminder.isCompleted && !task.isCompleted {
-                    if let source = sourceByID[ids.taskID] {
-                        if try markdownIO.completeTask(withID: ids.taskID, inFileAt: source.filePath) {
-                            report.tasksCompleted += 1
+                guard let task = tasksByID[ids.taskID] else { continue }
+                guard let source = sourceByID[ids.taskID] else { continue }
+
+                if reminder.isCompleted && !task.isCompleted {
+                    if try markdownIO.completeTask(withID: ids.taskID, inFileAt: source.filePath) {
+                        report.tasksCompleted += 1
+                    }
+                    continue
+                }
+
+                // Two-way sync for due dates: if a reminder's due date changes in Reminders.app,
+                // reflect that back into the markdown task.
+                if !reminder.isCompleted {
+                    let reminderDue: Date? = reminder.dueDateComponents.flatMap { comp in
+                        Calendar.current.date(from: comp).map { Calendar.current.startOfDay(for: $0) }
+                    }
+                    let taskDue = task.dueDate.map { Calendar.current.startOfDay(for: $0) }
+
+                    if let reminderDue, reminderDue != taskDue {
+                        if try markdownIO.updateTaskDueDate(withID: ids.taskID, to: reminderDue, inFileAt: source.filePath) {
+                            report.tasksUpdated += 1
                         }
                     }
                 }
@@ -830,13 +846,20 @@ public final class SyncEngine: @unchecked Sendable {
             guard let ids = calendarBridge.extractForgeID(from: event),
                   let task = tasksByID[ids.taskID] else { continue }
 
-            guard let taskDue = task.dueDate else { continue }
-            guard !Calendar.current.isDate(event.startDate, inSameDayAs: taskDue) else { continue }
-
             guard let source = sourceByID[ids.taskID] else { continue }
+
             let newDate = Calendar.current.startOfDay(for: event.startDate)
-            if try markdownIO.updateTaskDueDate(withID: ids.taskID, to: newDate, inFileAt: source.filePath) {
-                report.tasksUpdated += 1
+            if let taskDue = task.dueDate {
+                guard !Calendar.current.isDate(event.startDate, inSameDayAs: taskDue) else { continue }
+                if try markdownIO.updateTaskDueDate(withID: ids.taskID, to: newDate, inFileAt: source.filePath) {
+                    report.tasksUpdated += 1
+                }
+            } else {
+                // If a task had no due date but an event exists/was edited in Calendar.app,
+                // pull the event date into markdown so the two stay aligned.
+                if try markdownIO.updateTaskDueDate(withID: ids.taskID, to: newDate, inFileAt: source.filePath) {
+                    report.tasksUpdated += 1
+                }
             }
         }
     }
