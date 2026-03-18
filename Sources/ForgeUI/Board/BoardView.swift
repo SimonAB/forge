@@ -1,5 +1,9 @@
 import SwiftUI
+import Foundation
 import ForgeCore
+#if canImport(AppKit)
+import AppKit
+#endif
 
 /// Main Kanban board view: horizontal scroll of columns, each with header and project cards. Supports drag-and-drop between columns.
 /// When the window is narrower than `narrowWindowThreshold`, shows a list view instead.
@@ -7,9 +11,19 @@ public struct BoardView: View {
     @Bindable var viewModel: BoardViewModel
     @Environment(\.runForgeInTerminal) private var runForgeInTerminal
     @Environment(\.openTaskFilesFolder) private var openTaskFilesFolder
+    #if canImport(AppKit)
+    @State private var appKitSearchFieldShouldFocus = false
+    #else
+    @FocusState private var focusedField: FocusField?
+    #endif
+    @State private var keyDownMonitor: Any?
 
     /// Window width below which the list layout is shown instead of the board.
     private static let narrowWindowThreshold: CGFloat = 520
+
+    private enum FocusField {
+        case search
+    }
 
     public init(viewModel: BoardViewModel) {
         self.viewModel = viewModel
@@ -120,12 +134,21 @@ public struct BoardView: View {
                     Image(systemName: "magnifyingglass")
                         .foregroundStyle(.tertiary)
                         .font(.system(size: 11, weight: .medium))
+                    #if canImport(AppKit)
+                    ToolbarSearchField(text: Binding(
+                        get: { viewModel.searchFilter ?? "" },
+                        set: { viewModel.searchFilter = $0.isEmpty ? nil : $0 }
+                    ), shouldFocus: $appKitSearchFieldShouldFocus, placeholder: "Search")
+                    .frame(minWidth: 140, maxWidth: 220)
+                    #else
                     TextField("Search", text: Binding(
                         get: { viewModel.searchFilter ?? "" },
                         set: { viewModel.searchFilter = $0.isEmpty ? nil : $0 }
                     ))
+                    .focused($focusedField, equals: .search)
                     .textFieldStyle(.plain)
                     .frame(minWidth: 140, maxWidth: 220)
+                    #endif
                 }
                 .padding(.horizontal, 6)
                 .padding(.vertical, 4)
@@ -177,10 +200,47 @@ public struct BoardView: View {
                 Button {
                     viewModel.syncAndRefresh()
                 } label: {
-                    Label("Refresh", systemImage: "arrow.clockwise")
+                    Label("Sync", systemImage: "arrow.clockwise")
                 }
                 .disabled(viewModel.isLoading)
-                .keyboardShortcut("r", modifiers: .command)
+                .keyboardShortcut("s", modifiers: .command)
+            }
+        }
+        .onAppear {
+            #if canImport(AppKit)
+            guard keyDownMonitor == nil else { return }
+            keyDownMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown]) { event in
+                // macOS handles Cmd+F as "Find…". We intercept it so we can focus the board search field instead.
+                let chars = event.charactersIgnoringModifiers?.lowercased() ?? ""
+                // On macOS, keyCode 3 is typically the "f" physical key.
+                let isFKey = chars == "f" || event.keyCode == 3
+                let isCmdF = event.modifierFlags.contains(.command) && isFKey
+                if isCmdF {
+                    NotificationCenter.default.post(name: .forgeBoardFocusSearch, object: nil)
+                    return nil // Swallow so macOS doesn't take over with Find…
+                }
+                return event
+            }
+            #endif
+        }
+        .onDisappear {
+            #if canImport(AppKit)
+            if let keyDownMonitor {
+                NSEvent.removeMonitor(keyDownMonitor)
+                self.keyDownMonitor = nil
+            }
+            #endif
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .forgeBoardFocusSearch)) { _ in
+            // Toolbars sometimes need a "refocus" to update first-responder correctly.
+            Task { @MainActor in
+                #if canImport(AppKit)
+                appKitSearchFieldShouldFocus = false
+                appKitSearchFieldShouldFocus = true
+                #else
+                focusedField = nil
+                focusedField = .search
+                #endif
             }
         }
         .task {
@@ -188,6 +248,62 @@ public struct BoardView: View {
         }
     }
 }
+
+public extension Notification.Name {
+    static let forgeBoardFocusSearch = Notification.Name("forge.board.focus.search")
+}
+
+#if canImport(AppKit)
+/// SwiftUI toolbar-friendly search field that can be reliably focused via AppKit.
+private struct ToolbarSearchField: NSViewRepresentable {
+    @Binding var text: String
+    @Binding var shouldFocus: Bool
+    var placeholder: String
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(text: $text)
+    }
+
+    func makeNSView(context: Context) -> NSTextField {
+        let field = NSTextField(frame: .zero)
+        field.placeholderString = placeholder
+        field.isBordered = false
+        field.backgroundColor = .clear
+        field.drawsBackground = false
+        field.font = NSFont.systemFont(ofSize: 13)
+        field.delegate = context.coordinator
+        return field
+    }
+
+    func updateNSView(_ nsView: NSTextField, context: Context) {
+        if nsView.stringValue != text {
+            nsView.stringValue = text
+        }
+
+        // Make it first responder when requested.
+        if shouldFocus {
+            if nsView.window?.firstResponder as? NSTextField !== nsView {
+                _ = nsView.becomeFirstResponder()
+            }
+            // Avoid repeated refocusing on every state update, which resets selection/caret.
+            shouldFocus = false
+        }
+    }
+
+    final class Coordinator: NSObject, NSTextFieldDelegate {
+        private let text: Binding<String>
+
+        init(text: Binding<String>) {
+            self.text = text
+        }
+
+        func controlTextDidChange(_ obj: Notification) {
+            guard let field = obj.object as? NSTextField else { return }
+            text.wrappedValue = field.stringValue
+        }
+    }
+}
+#endif
 
 // MARK: - List layout (narrow window)
 

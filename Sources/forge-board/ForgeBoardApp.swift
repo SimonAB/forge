@@ -1,4 +1,5 @@
 import SwiftUI
+import Foundation
 import ForgeCore
 import ForgeUI
 
@@ -47,6 +48,15 @@ struct ForgeBoardApp: App {
                 }
                 .keyboardShortcut("e", modifiers: [.command, .shift])
                 .disabled(forgeDir == nil)
+            }
+
+            // Cmd+F is also used by macOS for system "Find…". We replace the `.textEditing`
+            // command group so our Cmd+F handler runs and focuses the board search field.
+            CommandGroup(replacing: .textEditing) {
+                Button("Find") {
+                    NotificationCenter.default.post(name: .forgeBoardFocusSearch, object: nil)
+                }
+                .keyboardShortcut("f", modifiers: .command)
             }
         }
         #endif
