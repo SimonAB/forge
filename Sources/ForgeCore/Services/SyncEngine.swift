@@ -405,19 +405,6 @@ public final class SyncEngine: @unchecked Sendable {
             }
         }
 
-        // Include inbox.md so completion in markdown can be pushed back to Reminders.
-        // Inbox tasks are first-class tasks and can be created either in markdown or imported from Reminders.
-        let inboxPath = (taskFilesRoot as NSString).appendingPathComponent("inbox.md")
-        if FileManager.default.fileExists(atPath: inboxPath) {
-            let inboxTasks = (try? markdownIO.parseTasksAtPathAndPersistIds(at: inboxPath, projectName: "Inbox")) ?? []
-            for task in inboxTasks {
-                result.append(SourcedTask(
-                    task: task, filePath: inboxPath,
-                    areaTags: config.workspaceTags, isAreaTask: true
-                ))
-            }
-        }
-
         for area in areaFiles {
             let tags = area.frontmatter?.tags ?? []
             let (tasks, updatedBody) = markdownIO.parseTasksReturningUpdatedBody(from: area.body, projectName: area.name)
@@ -439,7 +426,8 @@ public final class SyncEngine: @unchecked Sendable {
     /// Scan area markdown files in the task files directory with their frontmatter and body (for task parsing).
     private func scanAreaFiles() -> [(path: String, name: String, frontmatter: Frontmatter?, body: String)] {
         let fm = FileManager.default
-        let excluded: Set<String> = ["config.yaml", "someday-maybe.md", "inbox.md", "due.md"]
+        // Treat all markdown files in Forge/tasks as sync inputs, except generated outputs and config.
+        let excluded: Set<String> = ["config.yaml", "due.md"]
         guard let entries = try? fm.contentsOfDirectory(atPath: taskFilesRoot) else { return [] }
         var result: [(path: String, name: String, frontmatter: Frontmatter?, body: String)] = []
         for entry in entries.sorted() where entry.hasSuffix(".md") {
