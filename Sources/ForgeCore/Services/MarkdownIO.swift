@@ -36,6 +36,13 @@ public struct MarkdownIO: Sendable {
         return f
     }()
 
+    private static let dateTimeFormatterSingleHour: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd H:mm"
+        f.locale = Locale(identifier: "en_GB")
+        return f
+    }()
+
     public init() {}
 
     // MARK: - Parsing
@@ -589,6 +596,9 @@ public struct MarkdownIO: Sendable {
         guard let raw = extractValue(tag: "due", from: text) else { return (nil, false) }
         let value = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         if let dt = Self.dateTimeFormatter.date(from: value) {
+            return (dt, true)
+        }
+        if let dt = Self.dateTimeFormatterSingleHour.date(from: value) {
             return (dt, true)
         }
         if let d = Self.dateFormatter.date(from: value) {

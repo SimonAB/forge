@@ -125,6 +125,11 @@ public final class RemindersBridge: @unchecked Sendable {
                 )
             }
             reminder.dueDateComponents = components
+            if task.dueHasTime {
+                reminder.alarms = [EKAlarm(absoluteDate: dueDate)]
+            } else {
+                reminder.alarms = nil
+            }
         }
 
         if task.section == .waitingFor {
@@ -173,13 +178,16 @@ public final class RemindersBridge: @unchecked Sendable {
                 reminder.dueDateComponents = Calendar.current.dateComponents(
                     [.year, .month, .day, .hour, .minute], from: date
                 )
+                reminder.alarms = [EKAlarm(absoluteDate: date)]
             } else {
                 reminder.dueDateComponents = Calendar.current.dateComponents(
                     [.year, .month, .day], from: date
                 )
+                reminder.alarms = nil
             }
         } else {
             reminder.dueDateComponents = nil
+            reminder.alarms = nil
         }
         try store.save(reminder, commit: false)
     }
