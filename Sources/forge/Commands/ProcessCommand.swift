@@ -103,14 +103,14 @@ struct ProcessCommand: AsyncParsableCommand {
                     nextTask.context = ctx
                 }
 
-                print("  Due date (YYYY-MM-DD, optional): ", terminator: "")
+                print("  Due date (YYYY-MM-DD or YYYY-MM-DD HH:mm, optional): ", terminator: "")
                 if let dateString = readTrimmedLine(), !dateString.isEmpty {
-                    let formatter = DateFormatter()
-                    formatter.dateFormat = "yyyy-MM-dd"
-                    if let date = formatter.date(from: dateString) {
+                    let parsed = MarkdownIO.parseDueInput(dateString)
+                    if let date = parsed.date {
                         nextTask.dueDate = date
+                        nextTask.dueHasTime = parsed.hasTime
                     } else {
-                        print("  \(dim)Could not parse date, leaving without due date.\(reset)")
+                        print("  \(dim)Could not parse due date (expected YYYY-MM-DD or YYYY-MM-DD HH:mm), leaving without due date.\(reset)")
                     }
                 }
 

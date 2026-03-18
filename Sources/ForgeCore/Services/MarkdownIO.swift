@@ -45,6 +45,45 @@ public struct MarkdownIO: Sendable {
 
     public init() {}
 
+    // MARK: - User input parsing
+
+    /// Parse a user-entered due date string from interactive CLI prompts.
+    ///
+    /// Supported inputs:
+    /// - `YYYY-MM-DD` (date-only, day granularity; returns `hasTime=false`)
+    /// - `YYYY-MM-DD HH:mm` and `YYYY-MM-DD H:mm` (local time; returns `hasTime=true`)
+    public static func parseDueInput(_ raw: String, timeZone: TimeZone = .current)
+        -> (date: Date?, hasTime: Bool)
+    {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return (nil, false) }
+
+        func makeFormatter(dateFormat: String) -> DateFormatter {
+            let f = DateFormatter()
+            f.dateFormat = dateFormat
+            f.locale = Locale(identifier: "en_GB")
+            f.timeZone = timeZone
+            return f
+        }
+
+        let dateTimeFormatter = makeFormatter(dateFormat: "yyyy-MM-dd HH:mm")
+        if let dt = dateTimeFormatter.date(from: trimmed) {
+            return (dt, true)
+        }
+
+        let dateTimeFormatterSingleHour = makeFormatter(dateFormat: "yyyy-MM-dd H:mm")
+        if let dt = dateTimeFormatterSingleHour.date(from: trimmed) {
+            return (dt, true)
+        }
+
+        let dateOnlyFormatter = makeFormatter(dateFormat: "yyyy-MM-dd")
+        if let d = dateOnlyFormatter.date(from: trimmed) {
+            return (d, false)
+        }
+
+        return (nil, false)
+    }
+
     // MARK: - Parsing
 
     /// Parse a TASKS.md file and return all tasks found.

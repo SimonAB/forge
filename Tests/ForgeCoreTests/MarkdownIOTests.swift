@@ -82,6 +82,51 @@ struct MarkdownIOTests {
         #expect(result == content)
     }
 
+    @Test func parseDueInputParsesDateOnlyAsDayGranularity() throws {
+        let utc = TimeZone(identifier: "UTC")!
+        let result = MarkdownIO.parseDueInput("2026-03-18", timeZone: utc)
+        #expect(result.hasTime == false)
+
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = utc
+        let comps = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: result.date!)
+        #expect(comps.year == 2026)
+        #expect(comps.month == 3)
+        #expect(comps.day == 18)
+        #expect(comps.hour == 0)
+        #expect(comps.minute == 0)
+    }
+
+    @Test func parseDueInputParsesDateAndTime() throws {
+        let utc = TimeZone(identifier: "UTC")!
+        let result = MarkdownIO.parseDueInput("2026-03-18 14:30", timeZone: utc)
+        #expect(result.hasTime == true)
+
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = utc
+        let comps = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: result.date!)
+        #expect(comps.year == 2026)
+        #expect(comps.month == 3)
+        #expect(comps.day == 18)
+        #expect(comps.hour == 14)
+        #expect(comps.minute == 30)
+    }
+
+    @Test func parseDueInputParsesSingleDigitHour() throws {
+        let utc = TimeZone(identifier: "UTC")!
+        let result = MarkdownIO.parseDueInput("2026-03-18 9:05", timeZone: utc)
+        #expect(result.hasTime == true)
+
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = utc
+        let comps = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: result.date!)
+        #expect(comps.year == 2026)
+        #expect(comps.month == 3)
+        #expect(comps.day == 18)
+        #expect(comps.hour == 9)
+        #expect(comps.minute == 5)
+    }
+
     private func writeTempTasks(_ content: String) throws -> String {
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("ForgeCoreTests-\(UUID().uuidString)")
