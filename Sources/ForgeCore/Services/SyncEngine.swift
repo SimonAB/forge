@@ -15,10 +15,83 @@ public final class SyncEngine: @unchecked Sendable {
 
     /// Index of project task files used to avoid repeatedly walking large directory trees.
     private let taskIndex: TaskIndex
+    private let taskDatabase: TaskFileDatabase?
 
     private struct ParsedReminderDue {
         let date: Date
         let hasTime: Bool
+    }
+
+    private func computeTaskChangeState(sourced: [SourcedTask]) throws -> (changedAtByID: [String: Date], changedSinceLastSync: Set<String>) {
+        guard config.dueConflictPolicy == .newest, let db = taskDatabase else {
+            return ([:], [])
+        }
+
+        let now = Date().timeIntervalSinceReferenceDate
+        let fm = FileManager.default
+
+        var taskIDs: [String] = []
+        taskIDs.reserveCapacity(sourced.count)
+        for st in sourced {
+            taskIDs.append(st.task.id)
+        }
+
+        let existing = try db.taskFingerprints(for: taskIDs)
+
+        var updates: [TaskFileDatabase.TaskFingerprintRecord] = []
+        updates.reserveCapacity(sourced.count)
+
+        var changedAtByID: [String: Date] = [:]
+        changedAtByID.reserveCapacity(sourced.count)
+        var changedSinceLastSync = Set<String>()
+
+        for st in sourced {
+            let task = st.task
+            let fingerprint = Self.taskFingerprint(for: task)
+
+            let baselineMtime: TimeInterval = {
+                let attrs = try? fm.attributesOfItem(atPath: st.filePath)
+                if let d = attrs?[.modificationDate] as? Date {
+                    return d.timeIntervalSinceReferenceDate
+                }
+                return now
+            }()
+
+            if let ex = existing[task.id] {
+                if ex.fingerprint == fingerprint {
+                    updates.append(.init(taskID: task.id, fingerprint: fingerprint, lastChangedAt: ex.lastChangedAt))
+                    changedAtByID[task.id] = Date(timeIntervalSinceReferenceDate: ex.lastChangedAt)
+                } else {
+                    updates.append(.init(taskID: task.id, fingerprint: fingerprint, lastChangedAt: now))
+                    changedAtByID[task.id] = Date(timeIntervalSinceReferenceDate: now)
+                    changedSinceLastSync.insert(task.id)
+                }
+            } else {
+                updates.append(.init(taskID: task.id, fingerprint: fingerprint, lastChangedAt: baselineMtime))
+                changedAtByID[task.id] = Date(timeIntervalSinceReferenceDate: baselineMtime)
+            }
+        }
+
+        try db.upsertTaskFingerprints(updates)
+        return (changedAtByID, changedSinceLastSync)
+    }
+
+    private static func taskFingerprint(for task: ForgeTask) -> String {
+        let dueString: String
+        if let due = task.dueDate {
+            if task.dueHasTime {
+                dueString = ISO8601DateFormatter().string(from: due)
+            } else {
+                let cal = Calendar.current
+                let y = cal.component(.year, from: due)
+                let m = cal.component(.month, from: due)
+                let d = cal.component(.day, from: due)
+                dueString = String(format: "%04d-%02d-%02d", y, m, d)
+            }
+        } else {
+            dueString = ""
+        }
+        return "due=\(dueString)|hasTime=\(task.dueHasTime ? "1" : "0")"
     }
 
     private func parseReminderDue(_ reminder: EKReminder) -> ParsedReminderDue? {
@@ -33,6 +106,9 @@ public final class SyncEngine: @unchecked Sendable {
         public var remindersCreated: Int = 0
         public var remindersCompleted: Int = 0
         public var remindersMoved: Int = 0
+        public var remindersDueUpdated: Int = 0
+        public var remindersDueUpdatedTaskIDs: [String] = []
+        public var remindersDueUpdatedDetails: [String] = []
         public var remindersDeduplicated: Int = 0
         public var remindersMergedByContent: Int = 0
         public var tasksMergedInMarkdown: Int = 0
@@ -87,7 +163,8 @@ public final class SyncEngine: @unchecked Sendable {
         forgeDir: String? = nil,
         taskFilesRoot: String? = nil,
         options: Options = .full,
-        taskIndex: TaskIndex
+        taskIndex: TaskIndex,
+        taskDatabase: TaskFileDatabase? = nil
     ) {
         self.config = config
         self.forgeDir = forgeDir ?? (config.resolvedWorkspacePath as NSString).appendingPathComponent("Forge")
@@ -99,6 +176,7 @@ public final class SyncEngine: @unchecked Sendable {
             store: store, listName: config.gtd.remindersList
         )
         self.taskIndex = taskIndex
+        self.taskDatabase = taskDatabase
     }
 
     /// A task with its source metadata for sync purposes.
@@ -170,6 +248,10 @@ public final class SyncEngine: @unchecked Sendable {
         let tasksByID = Dictionary(allTasks.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         let sourceByID = Dictionary(sourced.map { ($0.task.id, $0) }, uniquingKeysWith: { first, _ in first })
 
+        let taskChangeState = try computeTaskChangeState(sourced: sourced)
+        let taskChangedAtByID = taskChangeState.changedAtByID
+        let taskChangedSinceLastSync = taskChangeState.changedSinceLastSync
+
         var remindersAfterDedup = reminders
         remindersAfterDedup = try deduplicateRemindersByForgeID(
             remindersAfterDedup, sourceByID: sourceByID, report: &report
@@ -186,7 +268,10 @@ public final class SyncEngine: @unchecked Sendable {
             guard seenTaskIDs.insert(st.task.id).inserted else { continue }
             let list = try remindersBridge.findOrCreateList(context: st.task.context)
             syncTaskToReminders(
-                task: st.task, tags: st.areaTags,
+                task: st.task,
+                taskChangedAt: taskChangedAtByID[st.task.id] ?? .distantPast,
+                taskChangedSinceLastSync: taskChangedSinceLastSync.contains(st.task.id),
+                tags: st.areaTags,
                 remindersByID: &remindersByID,
                 list: list, report: &report
             )
@@ -195,7 +280,9 @@ public final class SyncEngine: @unchecked Sendable {
         try syncRemindersToMarkdown(
             reminders: remindersAfterDedup, tasksByID: tasksByID,
             sourceByID: sourceByID, report: &report,
-            importedInboxSignatures: &importedInboxSignatures
+            importedInboxSignatures: &importedInboxSignatures,
+            taskChangedAtByID: taskChangedAtByID,
+            taskChangedSinceLastSync: taskChangedSinceLastSync
         )
 
         if options.enableFinderTags {
@@ -496,11 +583,15 @@ public final class SyncEngine: @unchecked Sendable {
 
     private func syncTaskToReminders(
         task: ForgeTask,
+        taskChangedAt: Date,
+        taskChangedSinceLastSync: Bool,
         tags: [String],
         remindersByID: inout [String: EKReminder],
         list: EKCalendar,
         report: inout SyncReport
     ) {
+        let policy = config.dueConflictPolicy
+
         if let reminder = remindersByID[task.id] {
             if task.isCompleted && !reminder.isCompleted {
                 do {
@@ -519,14 +610,78 @@ public final class SyncEngine: @unchecked Sendable {
                     }
                 }
                 remindersBridge.updateTags(on: reminder, tags: tags)
-                // Note: We don't have file paths here; due conflict handling is applied in the pull phase
-                // where the source path is known. Here we only seed missing due dates to avoid clobbering
-                // Reminders edits before the pull runs.
-                if reminder.dueDateComponents == nil, task.dueDate != nil {
+                let reminderModifiedAt = reminder.lastModifiedDate ?? .distantPast
+                let reminderDue = parseReminderDue(reminder)
+
+                let dueAlreadyMatches: Bool = {
+                    guard let markdownDue = task.dueDate else { return reminderDue == nil }
+                    guard let reminderDue else { return false }
+                    if reminderDue.hasTime != task.dueHasTime { return false }
+                    if task.dueHasTime {
+                        return reminderDue.date == markdownDue
+                    }
+                    return Calendar.current.startOfDay(for: reminderDue.date) == Calendar.current.startOfDay(for: markdownDue)
+                }()
+
+                let alarmMatchesTimedDue: Bool = {
+                    guard task.dueHasTime, let markdownDue = task.dueDate else { return true }
+                    let alarms = reminder.alarms ?? []
+                    guard alarms.count == 1, let abs = alarms[0].absoluteDate else { return false }
+                    return abs == markdownDue
+                }()
+
+                let shouldUpdateReminderDue: Bool = {
+                    // If markdown has no due date, never overwrite a reminder due date here.
+                    guard task.dueDate != nil else { return false }
+
+                    // If reminder has no due date, always seed it from markdown.
+                    if reminderDue == nil { return true }
+
+                    switch policy {
+                    case .reminders:
+                        // Even in reminders-preferred mode, if due matches but the alarm doesn't,
+                        // repair the alarm so Reminders.app displays the expected time.
+                        return dueAlreadyMatches && !alarmMatchesTimedDue
+                    case .markdown:
+                        return true
+                    case .newest:
+                        // If we detected the markdown task changed since the last sync, prefer markdown.
+                        if taskChangedSinceLastSync { return true }
+                        // If due matches but the alarm doesn't, repair it regardless of timestamps.
+                        if dueAlreadyMatches && !alarmMatchesTimedDue { return true }
+                        return taskChangedAt > reminderModifiedAt
+                    }
+                }()
+
+                if shouldUpdateReminderDue {
                     do {
                         try remindersBridge.updateDueDate(reminder, to: task.dueDate, hasTime: task.dueHasTime)
+                        report.remindersDueUpdated += 1
+                        report.remindersDueUpdatedTaskIDs.append(task.id)
+                        let list = reminder.calendar?.title ?? "(unknown list)"
+                        let title = reminder.title ?? ""
+                        let taskDueDesc: String = {
+                            guard let d = task.dueDate else { return "nil" }
+                            let cal = Calendar.current
+                            let y = cal.component(.year, from: d)
+                            let m = cal.component(.month, from: d)
+                            let day = cal.component(.day, from: d)
+                            let h = cal.component(.hour, from: d)
+                            let min = cal.component(.minute, from: d)
+                            return String(format: "%04d-%02d-%02d %02d:%02d (hasTime=%@)", y, m, day, h, min, task.dueHasTime ? "true" : "false")
+                        }()
+                        let dueDesc: String = {
+                            guard let comp = reminder.dueDateComponents else { return "nil" }
+                            let y = comp.year.map(String.init) ?? "?"
+                            let m = comp.month.map(String.init) ?? "?"
+                            let d = comp.day.map(String.init) ?? "?"
+                            let h = comp.hour.map(String.init) ?? "nil"
+                            let min = comp.minute.map(String.init) ?? "nil"
+                            return "\(y)-\(m)-\(d) \(h):\(min)"
+                        }()
+                        report.remindersDueUpdatedDetails.append("\(task.id) → [\(list)] \(title) taskDue=\(taskDueDesc) reminderDue=\(dueDesc)")
                     } catch {
-                        report.errors.append("Failed to set reminder due date for \(task.id): \(error)")
+                        report.errors.append("Failed to update reminder due date for \(task.id): \(error)")
                     }
                 }
             }
@@ -551,7 +706,9 @@ public final class SyncEngine: @unchecked Sendable {
         tasksByID: [String: ForgeTask],
         sourceByID: [String: SourcedTask],
         report: inout SyncReport,
-        importedInboxSignatures: inout [ReminderContentSignature: String]
+        importedInboxSignatures: inout [ReminderContentSignature: String],
+        taskChangedAtByID: [String: Date],
+        taskChangedSinceLastSync: Set<String>
     ) throws {
         for reminder in reminders {
             if let ids = remindersBridge.extractForgeID(from: reminder) {
@@ -575,13 +732,30 @@ public final class SyncEngine: @unchecked Sendable {
                         }()
 
                         if differs {
-                            if try markdownIO.updateTaskDueDate(
-                                withID: ids.taskID,
-                                to: reminderDue.date,
-                                hasTime: reminderDue.hasTime,
-                                inFileAt: source.filePath
-                            ) {
-                                report.tasksUpdated += 1
+                            let shouldUpdateMarkdownDue: Bool = {
+                                switch config.dueConflictPolicy {
+                                case .reminders:
+                                    return true
+                                case .markdown:
+                                    return false
+                                case .newest:
+                                    // If markdown changed since last sync, do not overwrite it from Reminders.
+                                    if taskChangedSinceLastSync.contains(ids.taskID) { return false }
+                                    let markdownModifiedAt: Date = taskChangedAtByID[ids.taskID] ?? .distantPast
+                                    let reminderModifiedAt = reminder.lastModifiedDate ?? .distantPast
+                                    return reminderModifiedAt >= markdownModifiedAt
+                                }
+                            }()
+
+                            if shouldUpdateMarkdownDue {
+                                if try markdownIO.updateTaskDueDate(
+                                    withID: ids.taskID,
+                                    to: reminderDue.date,
+                                    hasTime: reminderDue.hasTime,
+                                    inFileAt: source.filePath
+                                ) {
+                                    report.tasksUpdated += 1
+                                }
                             }
                         }
                     }

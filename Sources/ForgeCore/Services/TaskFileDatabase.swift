@@ -152,7 +152,7 @@ public struct TaskFileCountsUpdate {
 public final class TaskFileDatabase {
 
     private enum Constants {
-        static let schemaVersion: Int32 = 1
+        static let schemaVersion: Int32 = 2
     }
 
     private let dbPath: String
@@ -400,6 +400,84 @@ public final class TaskFileDatabase {
         }
     }
 
+    // MARK: - Task fingerprints (per-task change detection)
+
+    public struct TaskFingerprintRecord: Sendable {
+        public var taskID: String
+        public var fingerprint: String
+        public var lastChangedAt: TimeInterval
+
+        public init(taskID: String, fingerprint: String, lastChangedAt: TimeInterval) {
+            self.taskID = taskID
+            self.fingerprint = fingerprint
+            self.lastChangedAt = lastChangedAt
+        }
+    }
+
+    public func taskFingerprints(for taskIDs: [String]) throws -> [String: TaskFingerprintRecord] {
+        guard !taskIDs.isEmpty else { return [:] }
+        return try queue.sync {
+            guard let db = handle else { return [:] }
+            let placeholders = Array(repeating: "?", count: taskIDs.count).joined(separator: ",")
+            let sql = """
+            SELECT taskID, fingerprint, lastChangedAt
+            FROM task_fingerprints
+            WHERE taskID IN (\(placeholders));
+            """
+            var stmt: OpaquePointer?
+            guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else {
+                throw databaseError()
+            }
+            defer { sqlite3_finalize(stmt) }
+
+            for (i, id) in taskIDs.enumerated() {
+                bindString(id, index: Int32(i + 1), in: stmt)
+            }
+
+            var results: [String: TaskFingerprintRecord] = [:]
+            while sqlite3_step(stmt) == SQLITE_ROW {
+                guard
+                    let idCStr = sqlite3_column_text(stmt, 0),
+                    let fpCStr = sqlite3_column_text(stmt, 1)
+                else { continue }
+                let id = String(cString: idCStr)
+                let fp = String(cString: fpCStr)
+                let changedAt = sqlite3_column_double(stmt, 2)
+                results[id] = TaskFingerprintRecord(taskID: id, fingerprint: fp, lastChangedAt: changedAt)
+            }
+            return results
+        }
+    }
+
+    public func upsertTaskFingerprints(_ records: [TaskFingerprintRecord]) throws {
+        guard !records.isEmpty else { return }
+        try queue.sync {
+            guard let db = handle else { return }
+            let sql = """
+            INSERT INTO task_fingerprints (taskID, fingerprint, lastChangedAt)
+            VALUES (?, ?, ?)
+            ON CONFLICT(taskID) DO UPDATE SET
+                fingerprint = excluded.fingerprint,
+                lastChangedAt = excluded.lastChangedAt;
+            """
+            var stmt: OpaquePointer?
+            guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else {
+                throw databaseError()
+            }
+            defer { sqlite3_finalize(stmt) }
+
+            for r in records {
+                sqlite3_reset(stmt)
+                bindString(r.taskID, index: 1, in: stmt)
+                bindString(r.fingerprint, index: 2, in: stmt)
+                sqlite3_bind_double(stmt, 3, r.lastChangedAt)
+                guard sqlite3_step(stmt) == SQLITE_DONE else {
+                    throw databaseError()
+                }
+            }
+        }
+    }
+
     // MARK: - Private
 
     private func openAndMigrateIfNeeded() throws {
@@ -414,6 +492,15 @@ public final class TaskFileDatabase {
     private func createSchemaIfNeeded() throws {
         try queue.sync {
             guard let db = handle else { return }
+            let currentVersion: Int32 = {
+                var stmt: OpaquePointer?
+                guard sqlite3_prepare_v2(db, "PRAGMA user_version;", -1, &stmt, nil) == SQLITE_OK else {
+                    return 0
+                }
+                defer { sqlite3_finalize(stmt) }
+                guard sqlite3_step(stmt) == SQLITE_ROW else { return 0 }
+                return sqlite3_column_int(stmt, 0)
+            }()
             let createSQL = """
             PRAGMA journal_mode = WAL;
             PRAGMA synchronous = NORMAL;
@@ -441,11 +528,25 @@ public final class TaskFileDatabase {
 
             CREATE INDEX IF NOT EXISTS idx_files_lastParsedAt
                 ON files(lastParsedAt);
-
-            PRAGMA user_version = \(Constants.schemaVersion);
             """
             if sqlite3_exec(db, createSQL, nil, nil, nil) != SQLITE_OK {
                 throw databaseError()
+            }
+
+            if currentVersion < 2 {
+                let migrateSQL = """
+                CREATE TABLE IF NOT EXISTS task_fingerprints (
+                    taskID TEXT PRIMARY KEY,
+                    fingerprint TEXT NOT NULL,
+                    lastChangedAt REAL NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS idx_task_fingerprints_lastChangedAt
+                    ON task_fingerprints(lastChangedAt);
+                PRAGMA user_version = \(Constants.schemaVersion);
+                """
+                if sqlite3_exec(db, migrateSQL, nil, nil, nil) != SQLITE_OK {
+                    throw databaseError()
+                }
             }
         }
     }

@@ -42,7 +42,8 @@ struct SyncCommand: AsyncParsableCommand {
             forgeDir: forgeDir,
             taskFilesRoot: taskFilesRoot,
             options: .full,
-            taskIndex: index
+            taskIndex: index,
+            taskDatabase: db
         )
 
         let dim = "\u{1B}[2m"
@@ -65,6 +66,23 @@ struct SyncCommand: AsyncParsableCommand {
         }
         if report.remindersMoved > 0 {
             print("  ↔ \(report.remindersMoved) reminder\(report.remindersMoved == 1 ? "" : "s") moved to context list\(report.remindersMoved == 1 ? "" : "s")")
+        }
+        if report.remindersDueUpdated > 0 {
+            print("  ↔ \(report.remindersDueUpdated) reminder due date\(report.remindersDueUpdated == 1 ? "" : "s") updated from markdown")
+            if verbose {
+                let ids = report.remindersDueUpdatedTaskIDs
+                    .prefix(10)
+                    .joined(separator: ", ")
+                if !ids.isEmpty {
+                    print("    \(dim)task ids:\(reset) \(ids)")
+                }
+                if report.remindersDueUpdatedTaskIDs.count > 10 {
+                    print("    \(dim)…and \(report.remindersDueUpdatedTaskIDs.count - 10) more\(reset)")
+                }
+                for line in report.remindersDueUpdatedDetails.prefix(10) {
+                    print("    \(dim)\(line)\(reset)")
+                }
+            }
         }
         if report.remindersDeduplicated > 0 {
             print("  ↓ \(report.remindersDeduplicated) duplicate reminder\(report.remindersDeduplicated == 1 ? "" : "s") removed (same ID)")
@@ -89,7 +107,7 @@ struct SyncCommand: AsyncParsableCommand {
         }
 
         let totalActions = report.remindersCreated + report.remindersCompleted
-            + report.remindersMoved + report.remindersDeduplicated + report.remindersMergedByContent
+            + report.remindersMoved + report.remindersDueUpdated + report.remindersDeduplicated + report.remindersMergedByContent
             + report.tasksMergedInMarkdown
             + report.tasksCompleted + report.inboxItemsAdded + report.tasksUpdated
 
