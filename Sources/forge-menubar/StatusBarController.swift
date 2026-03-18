@@ -308,9 +308,8 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     }
 
     func menuWillOpen(_ menu: NSMenu) {
-        // Ensure the dropdown always opens with fresh counts, even if a background sync
-        // has just completed while the menu was previously open.
-        refreshCounts()
+        // No-op: counts are refreshed on startup and after each sync completes.
+        // Avoid recomputing counts on every click, which makes the menu feel like it reloads.
     }
 
     // MARK: - Background Sync
