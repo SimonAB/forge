@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+### [0.8.3] – 2026-03-18
+
+#### Sync correctness future-proofing
+
+- Prefer a completed duplicate when the same task ID appears multiple times in markdown (so markdown completions propagate correctly).
+- Add unit tests around sync input-selection and duplicate handling, plus refactor small decision helpers to be testable.
+- Improve future reminder relinking by exposing looser signature helpers for unit testing.
+
 ### [0.8.2] – 2026-03-18
 
 #### Menubar correctness and freshness
