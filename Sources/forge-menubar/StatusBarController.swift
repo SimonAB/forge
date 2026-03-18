@@ -26,9 +26,17 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     private var dueTodayCount = 0
     private var inboxCount = 0
     private var lastSyncDate: Date?
+    private var lastCountsRefreshDate: Date?
+    private var lastCountsReferenceDay: Date?
 
-    /// Cache of (mtime, overdue, dueToday) per task file path to avoid re-parsing unchanged files.
-    private var countsCache: [String: (mtime: Date, overdue: Int, dueToday: Int)] = [:]
+    /// Cache of per-file counts to avoid re-parsing unchanged files.
+    ///
+    /// Important: "due today" and "overdue" can change as time passes (for timed due dates),
+    /// even if the file itself does not change. To stay aligned with `forge due`, we apply a TTL.
+    private var countsCache: [String: (mtime: Date, computedAt: Date, overdue: Int, dueToday: Int)] = [:]
+
+    /// Maximum age of cached per-file results.
+    private let countsCacheTTL: TimeInterval = 60
 
     /// Sync interval in seconds (default: 5 minutes).
     private let syncInterval: TimeInterval = 300
@@ -144,39 +152,35 @@ final class StatusBarController: NSObject, NSMenuDelegate {
             menu.addItem(NSMenuItem.separator())
         }
 
+        var addedAnyCounts = false
         if overdueCount > 0 {
-            let item = NSMenuItem(
-                title: "⚠ \(overdueCount) overdue",
-                action: #selector(openDue),
-                keyEquivalent: ""
-            )
+            let item = NSMenuItem(title: "⚠ \(overdueCount) overdue", action: #selector(openDue), keyEquivalent: "")
             item.target = self
             item.attributedTitle = NSAttributedString(
-                string: "⚠ \(overdueCount) overdue",
+                string: item.title,
                 attributes: [.foregroundColor: NSColor.systemRed]
             )
             menu.addItem(item)
+            addedAnyCounts = true
         }
         if dueTodayCount > 0 {
-            let item = NSMenuItem(
-                title: "📅 \(dueTodayCount) due today",
-                action: #selector(openDue),
-                keyEquivalent: ""
-            )
+            let item = NSMenuItem(title: "📅 \(dueTodayCount) due today", action: #selector(openDue), keyEquivalent: "")
             item.target = self
             menu.addItem(item)
+            addedAnyCounts = true
         }
         if inboxCount > 0 {
-            let item = NSMenuItem(
-                title: "📥 \(inboxCount) in inbox",
-                action: #selector(openProcess),
-                keyEquivalent: ""
-            )
+            let item = NSMenuItem(title: "📥 \(inboxCount) in inbox", action: #selector(openProcess), keyEquivalent: "")
             item.target = self
             menu.addItem(item)
+            addedAnyCounts = true
         }
-
-        if overdueCount > 0 || dueTodayCount > 0 || inboxCount > 0 {
+        if addedAnyCounts {
+            menu.addItem(NSMenuItem.separator())
+        } else if config != nil {
+            let item = NSMenuItem(title: "No due tasks", action: nil, keyEquivalent: "")
+            item.isEnabled = false
+            menu.addItem(item)
             menu.addItem(NSMenuItem.separator())
         }
 
@@ -308,8 +312,15 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     }
 
     func menuWillOpen(_ menu: NSMenu) {
-        // No-op: counts are refreshed on startup and after each sync completes.
-        // Avoid recomputing counts on every click, which makes the menu feel like it reloads.
+        // Avoid recomputing counts on every click (feels like reload),
+        // but ensure we have at least one refresh before first open.
+        if lastCountsRefreshDate == nil {
+            refreshCounts()
+            return
+        }
+        if let last = lastCountsRefreshDate, Date().timeIntervalSince(last) > countsCacheTTL {
+            refreshCounts()
+        }
     }
 
     // MARK: - Background Sync
@@ -441,26 +452,42 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     // MARK: - Refresh Counts
 
     private func refreshCounts() {
+        let today = Calendar.current.startOfDay(for: Date())
+        if let last = lastCountsReferenceDay, !Calendar.current.isDate(last, inSameDayAs: today) {
+            // Counts depend on "today"/"now" but our per-file cache keys off mtime only.
+            // If the day changes without any file edits, due/overdue counts must be recomputed.
+            countsCache.removeAll()
+        }
+        lastCountsReferenceDay = today
+
         let config = self.config
         let forgeDir = self.forgeDir
         let cache = self.countsCache
+        let ttl = self.countsCacheTTL
         guard config != nil else {
             overdueCount = 0
             dueTodayCount = 0
             inboxCount = 0
+            lastCountsRefreshDate = Date()
             updateBadge()
             rebuildMenu()
             return
         }
         DispatchQueue.global(qos: .utility).async { [weak self] in
             var mutableCache = cache
-            let (overdue, dueToday, inbox) = Self.computeCounts(config: config, forgeDir: forgeDir, cache: &mutableCache)
+            let (overdue, dueToday, inbox) = Self.computeCounts(
+                config: config,
+                forgeDir: forgeDir,
+                cache: &mutableCache,
+                ttlSeconds: ttl
+            )
             DispatchQueue.main.async {
                 guard let self else { return }
                 self.countsCache = mutableCache
                 self.overdueCount = overdue
                 self.dueTodayCount = dueToday
                 self.inboxCount = inbox
+                self.lastCountsRefreshDate = Date()
                 self.updateBadge()
                 self.rebuildMenu()
             }
@@ -472,12 +499,14 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     private nonisolated static func computeCounts(
         config: ForgeConfig?,
         forgeDir: String?,
-        cache: inout [String: (mtime: Date, overdue: Int, dueToday: Int)]
+        cache: inout [String: (mtime: Date, computedAt: Date, overdue: Int, dueToday: Int)],
+        ttlSeconds: TimeInterval
     ) -> (Int, Int, Int) {
         let markdownIO = MarkdownIO()
         let fm = FileManager.default
+        let now = Date()
 
-        let taskFiles: [(path: String, label: String)]
+        var taskFiles: [(path: String, label: String)]
         if let config = config {
             if let forgeDir = forgeDir,
                let db = try? TaskFileDatabase(forgeDir: forgeDir) {
@@ -488,6 +517,21 @@ final class StatusBarController: NSObject, NSMenuDelegate {
                 }
             } else {
                 taskFiles = []
+            }
+
+            // Robust fallback: if the DB-backed index yields nothing (or the DB cannot be opened),
+            // fall back to a bounded filesystem scan of the configured project roots.
+            if taskFiles.isEmpty {
+                let roots = config.resolvedProjectRoots
+                var found: [(path: String, label: String)] = []
+                for root in roots {
+                    let files = TaskFileFinder.findAll(under: root, maxFiles: 500, maxDepth: 6)
+                    found.append(contentsOf: files.map { (path: $0.path, label: $0.label) })
+                    if found.count >= 500 { break }
+                }
+                if !found.isEmpty {
+                    taskFiles = Array(found.prefix(500))
+                }
             }
         } else {
             let home = NSHomeDirectory()
@@ -510,7 +554,10 @@ final class StatusBarController: NSObject, NSMenuDelegate {
             } catch {
                 mtime = .distantPast
             }
-            if let cached = cache[file.path], cached.mtime == mtime {
+            if let cached = cache[file.path],
+               cached.mtime == mtime,
+               now.timeIntervalSince(cached.computedAt) <= ttlSeconds
+            {
                 overdue += cached.overdue
                 dueToday += cached.dueToday
                 continue
@@ -519,10 +566,14 @@ final class StatusBarController: NSObject, NSMenuDelegate {
             var fileDueToday = 0
             let tasks = (try? markdownIO.parseTasks(at: file.path)) ?? []
             for task in tasks where !task.isCompleted {
-                if task.isOverdue { fileOverdue += 1 }
-                if task.isDueToday { fileDueToday += 1 }
+                // Match `forge due` grouping: overdue tasks are not also counted as "due today".
+                if task.isOverdue {
+                    fileOverdue += 1
+                } else if task.isDueToday {
+                    fileDueToday += 1
+                }
             }
-            cache[file.path] = (mtime, fileOverdue, fileDueToday)
+            cache[file.path] = (mtime, now, fileOverdue, fileDueToday)
             overdue += fileOverdue
             dueToday += fileDueToday
         }
@@ -541,7 +592,10 @@ final class StatusBarController: NSObject, NSMenuDelegate {
                     } catch {
                         mtime = .distantPast
                     }
-                    if let cached = cache[path], cached.mtime == mtime {
+                    if let cached = cache[path],
+                       cached.mtime == mtime,
+                       now.timeIntervalSince(cached.computedAt) <= ttlSeconds
+                    {
                         overdue += cached.overdue
                         dueToday += cached.dueToday
                         continue
@@ -551,10 +605,14 @@ final class StatusBarController: NSObject, NSMenuDelegate {
                     let content = (try? String(contentsOfFile: path, encoding: .utf8)) ?? ""
                     let tasks = markdownIO.parseTasks(from: content)
                     for task in tasks where !task.isCompleted {
-                        if task.isOverdue { fileOverdue += 1 }
-                        if task.isDueToday { fileDueToday += 1 }
+                        // Match `forge due` grouping: overdue tasks are not also counted as "due today".
+                        if task.isOverdue {
+                            fileOverdue += 1
+                        } else if task.isDueToday {
+                            fileDueToday += 1
+                        }
                     }
-                    cache[path] = (mtime, fileOverdue, fileDueToday)
+                    cache[path] = (mtime, now, fileOverdue, fileDueToday)
                     overdue += fileOverdue
                     dueToday += fileDueToday
                 }
