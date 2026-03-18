@@ -28,6 +28,7 @@ public final class SyncEngine: @unchecked Sendable {
         }
 
         let now = Date().timeIntervalSinceReferenceDate
+        let iso8601Formatter = ISO8601DateFormatter()
         let fm = FileManager.default
 
         var taskIDs: [String] = []
@@ -47,7 +48,7 @@ public final class SyncEngine: @unchecked Sendable {
 
         for st in sourced {
             let task = st.task
-            let fingerprint = Self.taskFingerprint(for: task)
+            let fingerprint = Self.taskFingerprint(for: task, iso8601Formatter: iso8601Formatter)
 
             let baselineMtime: TimeInterval = {
                 let attrs = try? fm.attributesOfItem(atPath: st.filePath)
@@ -76,11 +77,14 @@ public final class SyncEngine: @unchecked Sendable {
         return (changedAtByID, changedSinceLastSync)
     }
 
-    private static func taskFingerprint(for task: ForgeTask) -> String {
+    private static func taskFingerprint(
+        for task: ForgeTask,
+        iso8601Formatter: ISO8601DateFormatter
+    ) -> String {
         let dueString: String
         if let due = task.dueDate {
             if task.dueHasTime {
-                dueString = ISO8601DateFormatter().string(from: due)
+                dueString = iso8601Formatter.string(from: due)
             } else {
                 let cal = Calendar.current
                 let y = cal.component(.year, from: due)

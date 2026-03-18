@@ -43,6 +43,22 @@ public struct MarkdownIO: Sendable {
         return f
     }()
 
+    // MARK: - Precompiled parsing regexes
+    //
+    // These are performance-sensitive because markdown parsing runs in hot loops.
+    // Avoid recompiling Regex instances for every task line.
+    private nonisolated(unsafe) static let barePersonTagPattern = try! Regex("#([A-Za-z0-9][A-Za-z0-9_-]*)")
+    private nonisolated(unsafe) static let ctxValuePattern = try! Regex("@ctx\\(([^)]*)\\)")
+    private nonisolated(unsafe) static let energyValuePattern = try! Regex("@energy\\(([^)]*)\\)")
+    private nonisolated(unsafe) static let waitingValuePattern = try! Regex("@waiting\\(([^)]*)\\)")
+    private nonisolated(unsafe) static let sourceValuePattern = try! Regex("@source\\(([^)]*)\\)")
+    private nonisolated(unsafe) static let repeatValuePattern = try! Regex("@repeat\\(([^)]*)\\)")
+    private nonisolated(unsafe) static let personValuePattern = try! Regex("@person\\(([^)]*)\\)")
+    private nonisolated(unsafe) static let dueValuePattern = try! Regex("@due\\(([^)]*)\\)")
+    private nonisolated(unsafe) static let deferValuePattern = try! Regex("@defer\\(([^)]*)\\)")
+    private nonisolated(unsafe) static let sinceValuePattern = try! Regex("@since\\(([^)]*)\\)")
+    private nonisolated(unsafe) static let doneValuePattern = try! Regex("@done\\(([^)]*)\\)")
+
     public init() {}
 
     // MARK: - User input parsing
@@ -604,8 +620,7 @@ public struct MarkdownIO: Sendable {
         }
 
         // Canonical syntax: `#Name` (no space after `#`, to avoid heading ambiguity)
-        let barePersonTagPattern = try! Regex("#([A-Za-z0-9][A-Za-z0-9_-]*)")
-        for match in text.matches(of: barePersonTagPattern) {
+        for match in text.matches(of: Self.barePersonTagPattern) {
             let rawName = String(match.output[1].substring!)
             addAssignee(from: "#\(rawName)")
         }
@@ -638,9 +653,42 @@ public struct MarkdownIO: Sendable {
     }
 
     private func extractValue(tag: String, from text: String) -> String? {
-        let pattern = try! Regex("@\(tag)\\(([^)]*)\\)")
-        guard let match = text.firstMatch(of: pattern) else { return nil }
-        return String(match.output[1].substring!)
+        // This is a tagged-value extractor used inside the hot task-line parsing loop.
+        // Keep it fast by switching on known tags and using precompiled regexes.
+        switch tag {
+        case "ctx":
+            guard let match = text.firstMatch(of: Self.ctxValuePattern) else { return nil }
+            return String(match.output[1].substring!)
+        case "energy":
+            guard let match = text.firstMatch(of: Self.energyValuePattern) else { return nil }
+            return String(match.output[1].substring!)
+        case "waiting":
+            guard let match = text.firstMatch(of: Self.waitingValuePattern) else { return nil }
+            return String(match.output[1].substring!)
+        case "source":
+            guard let match = text.firstMatch(of: Self.sourceValuePattern) else { return nil }
+            return String(match.output[1].substring!)
+        case "repeat":
+            guard let match = text.firstMatch(of: Self.repeatValuePattern) else { return nil }
+            return String(match.output[1].substring!)
+        case "person":
+            guard let match = text.firstMatch(of: Self.personValuePattern) else { return nil }
+            return String(match.output[1].substring!)
+        case "due":
+            guard let match = text.firstMatch(of: Self.dueValuePattern) else { return nil }
+            return String(match.output[1].substring!)
+        case "defer":
+            guard let match = text.firstMatch(of: Self.deferValuePattern) else { return nil }
+            return String(match.output[1].substring!)
+        case "since":
+            guard let match = text.firstMatch(of: Self.sinceValuePattern) else { return nil }
+            return String(match.output[1].substring!)
+        case "done":
+            guard let match = text.firstMatch(of: Self.doneValuePattern) else { return nil }
+            return String(match.output[1].substring!)
+        default:
+            return nil
+        }
     }
 
     private func extractDate(tag: String, from text: String) -> Date? {
