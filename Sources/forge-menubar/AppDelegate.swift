@@ -12,9 +12,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     private var preferencesWindowController: PreferencesWindowController?
     private var captureSelectionMonitor: Any?
     private var hasShownAccessibilityAlertThisLaunch = false
+    private let isRunningFromAppBundle = Bundle.main.bundleURL.pathExtension == "app"
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        UNUserNotificationCenter.current().delegate = self
+        if isRunningFromAppBundle {
+            UNUserNotificationCenter.current().delegate = self
+        }
         statusBar = StatusBarController()
         statusBar.start()
         setupMainMenu()

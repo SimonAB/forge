@@ -40,31 +40,58 @@ public struct TaskFileFinder: Sendable {
             "Library", ".cursor", ".cargo", ".rustup",
         ]
 
-        guard let enumerator = fm.enumerator(atPath: normalisedRoot) else {
+        let rootURL = URL(fileURLWithPath: normalisedRoot, isDirectory: true)
+            .standardizedFileURL
+            .resolvingSymlinksInPath()
+        let rootComponents = rootURL.pathComponents
+        guard let enumerator = fm.enumerator(
+            at: rootURL,
+            includingPropertiesForKeys: [.isDirectoryKey],
+            options: [.skipsHiddenFiles]
+        ) else {
             return []
         }
 
         var results: [TaskFile] = []
 
-        for case let subpath as String in enumerator {
+        for case let url as URL in enumerator {
             if let cap = maxFiles, results.count >= cap { break }
 
-            let components = (subpath as NSString).pathComponents
+            let standardURL = url.standardizedFileURL.resolvingSymlinksInPath()
+            let resourceValues = try? standardURL.resourceValues(forKeys: [.isDirectoryKey])
+            let isDirectory = resourceValues?.isDirectory == true
 
-            if components.contains(where: { part in
+            let components = standardURL.pathComponents
+            if components.count < rootComponents.count || Array(components.prefix(rootComponents.count)) != rootComponents {
+                if isDirectory { enumerator.skipDescendants() }
+                continue
+            }
+
+            // Relative path components (depth relative to rootURL).
+            let relativeComponents = Array(components.dropFirst(rootComponents.count))
+            let depth = relativeComponents.count
+            let relativeParts = relativeComponents.filter { $0 != "/" }
+
+            if relativeParts.contains(where: { part in
                 part.hasPrefix(".") || skipNames.contains(part)
             }) {
+                if isDirectory {
+                    enumerator.skipDescendants()
+                }
                 continue
             }
 
-            if let maxD = maxDepth, components.count - 1 > maxD {
+            if let maxD = maxDepth, depth > maxD {
+                if isDirectory {
+                    enumerator.skipDescendants()
+                }
                 continue
             }
 
-            let name = (subpath as NSString).lastPathComponent
+            let name = standardURL.lastPathComponent
             guard name == "TASKS.md" else { continue }
 
-            let fullPath = (normalisedRoot as NSString).appendingPathComponent(subpath)
+            let fullPath = standardURL.path
             let dirPath = (fullPath as NSString).deletingLastPathComponent
             let label = (dirPath as NSString).lastPathComponent
             results.append(TaskFile(path: fullPath, label: label))

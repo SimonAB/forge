@@ -217,7 +217,8 @@ private struct BoardRootView: View {
                     forgeDir: forgeDir,
                     taskFilesRoot: paths.taskFilesRoot,
                     options: .background,
-                    taskIndex: index
+                    taskIndex: index,
+                    taskDatabase: db
                 )
                 _ = try await engine.sync()
             }

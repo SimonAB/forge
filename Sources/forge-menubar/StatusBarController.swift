@@ -43,6 +43,8 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         return f
     }()
 
+    private let isRunningFromAppBundle = Bundle.main.bundleURL.pathExtension == "app"
+
     func start() {
         loadConfig()
         setupStatusItem()
@@ -61,6 +63,7 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     }
 
     private func requestNotificationPermissionIfNeeded() {
+        guard isRunningFromAppBundle else { return }
         UNUserNotificationCenter.current().getNotificationSettings { settings in
             guard settings.authorizationStatus == .notDetermined else { return }
             UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
@@ -133,6 +136,13 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     private func rebuildMenu() {
         let menu = statusMenu
         menu.removeAllItems()
+
+        if config == nil {
+            let item = NSMenuItem(title: "No config loaded — create config.yaml in ~/Documents/Forge", action: nil, keyEquivalent: "")
+            item.isEnabled = false
+            menu.addItem(item)
+            menu.addItem(NSMenuItem.separator())
+        }
 
         if overdueCount > 0 {
             let item = NSMenuItem(
@@ -336,7 +346,8 @@ final class StatusBarController: NSObject, NSMenuDelegate {
                     forgeDir: forgeDir,
                     taskFilesRoot: paths.taskFilesRoot,
                     options: .background,
-                    taskIndex: index
+                    taskIndex: index,
+                    taskDatabase: db
                 )
                 let report = try await engine.sync()
                 lastSyncDate = Date()
@@ -433,11 +444,21 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     private func refreshCounts() {
         let config = self.config
         let forgeDir = self.forgeDir
-        var cache = self.countsCache
-        Task {
-            let (overdue, dueToday, inbox) = Self.computeCounts(config: config, forgeDir: forgeDir, cache: &cache)
-            await MainActor.run {
-                self.countsCache = cache
+        let cache = self.countsCache
+        guard config != nil else {
+            overdueCount = 0
+            dueTodayCount = 0
+            inboxCount = 0
+            updateBadge()
+            rebuildMenu()
+            return
+        }
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            var mutableCache = cache
+            let (overdue, dueToday, inbox) = Self.computeCounts(config: config, forgeDir: forgeDir, cache: &mutableCache)
+            DispatchQueue.main.async {
+                guard let self else { return }
+                self.countsCache = mutableCache
                 self.overdueCount = overdue
                 self.dueTodayCount = dueToday
                 self.inboxCount = inbox
@@ -449,7 +470,7 @@ final class StatusBarController: NSObject, NSMenuDelegate {
 
     /// Runs off the main actor to avoid blocking the menu. When config is present, scopes to workspace only.
     /// Uses cache to skip re-parsing task files whose mtime hasn't changed.
-    private static func computeCounts(
+    private nonisolated static func computeCounts(
         config: ForgeConfig?,
         forgeDir: String?,
         cache: inout [String: (mtime: Date, overdue: Int, dueToday: Int)]
@@ -470,7 +491,11 @@ final class StatusBarController: NSObject, NSMenuDelegate {
                 taskFiles = []
             }
         } else {
-            taskFiles = TaskFileFinder.findAllUnderDocuments().map { file in
+            let home = NSHomeDirectory()
+            let forgeDocs = (home as NSString).appendingPathComponent("Documents/Forge")
+            let docs = (home as NSString).appendingPathComponent("Documents")
+            let root = fm.fileExists(atPath: forgeDocs) ? forgeDocs : docs
+            taskFiles = TaskFileFinder.findAll(under: root, maxFiles: 500, maxDepth: 6).map { file in
                 (path: file.path, label: file.label)
             }
         }
@@ -697,6 +722,10 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     /// Requests notification permission if not yet determined, then delivers the notification when permitted.
     /// Falls back to AppleScript when permission is denied (e.g. running from Xcode without notification entitlement).
     private func sendNotification(title: String, body: String) {
+        guard isRunningFromAppBundle else {
+            Self.deliverNotificationViaAppleScript(title: title, body: body)
+            return
+        }
         UNUserNotificationCenter.current().getNotificationSettings { settings in
             switch settings.authorizationStatus {
             case .authorized, .provisional:

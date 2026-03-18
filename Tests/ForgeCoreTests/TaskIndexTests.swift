@@ -27,7 +27,17 @@ struct TaskIndexTests {
         let forgeDir = tempDir.appendingPathComponent("Forge").path
         try FileManager.default.createDirectory(atPath: forgeDir, withIntermediateDirectories: true)
 
-        let config = ForgeConfig.defaultConfig(projectRoots: [projectRoot.path])
+        let baseConfig = ForgeConfig.defaultConfig(projectRoots: [projectRoot.path])
+        let config = ForgeConfig(
+            projectRoots: baseConfig.projectRoots,
+            board: baseConfig.board,
+            gtd: baseConfig.gtd,
+            workspaceTags: baseConfig.workspaceTags,
+            projectAreas: baseConfig.projectAreas,
+            terminal: baseConfig.terminal,
+            projectTag: nil,
+            dueConflictPolicy: baseConfig.dueConflictPolicy
+        )
         let db = try TaskFileDatabase(forgeDir: forgeDir)
         let index = DatabaseTaskIndex(database: db)
 
