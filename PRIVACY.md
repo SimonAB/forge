@@ -26,30 +26,28 @@ This document summarises what data Forge uses, where it lives, and how it moves.
 
 ### What Forge talks to
 
-- **Apple Reminders and Calendar (optional)**
+- **Apple Reminders (optional)**
   - When you enable sync (via `forge sync` or Forge.app), Forge uses macOS
     EventKit APIs to:
     - Create/update/delete Reminders for tasks with `@due` or context tags.
-    - Create/update/delete Calendar events for dated tasks.
     - Import new items from the configured Reminders list into `inbox.md`.
-    - Keep due dates aligned when events move in Calendar.
-  - All of this happens **locally on your Mac**, against the Reminders and
-    Calendar accounts already configured in System Settings.
+    - Keep completion state and due dates aligned between Reminders and markdown.
+  - All of this happens **locally on your Mac**, against the Reminders account
+    already configured in System Settings.
   - Forge does not talk to any third-party servers.
 
 - **No telemetry or remote services**
   - Forge sends **no usage analytics, telemetry, or task content** to any
     external service.
-  - Network traffic, if any, is solely whatever your macOS Reminders/Calendar
-    accounts already perform via the system.
+  - Network traffic, if any, is solely whatever your macOS Reminders account
+    already performs via the system.
 
 ### Running Forge in more private modes
 
 - **Markdown-only (no sync)**
   - You can use Forge purely as a markdown-based task and project system:
-    - Do not grant Reminders/Calendar permissions when prompted, or
-    - Leave `gtd.reminders_list` / `gtd.calendar_name` unset in `config.yaml`,
-      and avoid calling `forge sync`.
+    - Do not grant Reminders permission when prompted, or
+    - Avoid calling `forge sync`.
   - All CLI commands and the board app still work against the markdown files.
 
 - **Local-only storage**

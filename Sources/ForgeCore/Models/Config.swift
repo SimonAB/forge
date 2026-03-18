@@ -107,18 +107,21 @@ public enum EditorPreferences {
 public struct GTDConfig: Codable, Sendable {
     public let contexts: [String]
     public let remindersList: String
-    public let calendarName: String
 
     enum CodingKeys: String, CodingKey {
         case contexts
         case remindersList = "reminders_list"
-        case calendarName = "calendar_name"
     }
 
-    public init(contexts: [String], remindersList: String, calendarName: String) {
+    public init(contexts: [String], remindersList: String) {
         self.contexts = contexts
         self.remindersList = remindersList
-        self.calendarName = calendarName
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        contexts = try container.decodeIfPresent([String].self, forKey: .contexts) ?? []
+        remindersList = try container.decode(String.self, forKey: .remindersList)
     }
 }
 
@@ -296,8 +299,7 @@ extension ForgeConfig {
                     "low-energy", "email", "slack", "calls", "computer",
                     "reading", "watching", "anywhere", "agenda",
                 ],
-                remindersList: "Forge",
-                calendarName: "Forge"
+                remindersList: "Forge"
             ),
             workspaceTags: ["work"],
             terminal: "auto",

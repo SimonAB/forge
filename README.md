@@ -4,8 +4,8 @@ Local, markdown-based project and task management for macOS.
 
 Forge combines a **kanban board** for project tracking with a **GTD task manager**
 inspired by OmniFocus. Everything lives in plain-text markdown files, editable
-with any editor. Two-way synchronisation with Apple Reminders and Calendar keeps
-your tasks visible across all your devices.
+with any editor. Two-way synchronisation with Apple Reminders keeps your tasks
+visible across all your devices.
 
 ## Who is Forge for?
 
@@ -17,7 +17,7 @@ More specifically, Forge works well if you:
 - Use or want to use Finder tags (including people-tags like `#Alice`) to track project state, assignees, and meta information.
 - Want a files-first, open-source tool that never locks you into a particular app, subscription, or proprietary data format.
 - Like the idea of combining a kanban-style view for projects (columns such as Backlog, In Progress, Review, Done) with a GTD-style flow for tasks (inbox, clarify, organise, review, do).
-- Need your system to co-exist with other tools – editing markdown in Neovim or VS Code, browsing tasks in Finder, and seeing the same items mirrored into Apple Reminders and Calendar.
+- Need your system to co-exist with other tools – editing markdown in Neovim or VS Code, browsing tasks in Finder, and seeing the same items mirrored into Apple Reminders.
 - Care about local-first privacy: all of your projects and tasks stay on your Mac as markdown files, with only minimal metadata in a local cache for performance.
 
 In terms of management style, Forge borrows:
@@ -67,8 +67,8 @@ files in the Forge directory, shared across machines however you choose to sync.
 - Forge keeps a small local cache in `.cache/tasks.db` for performance; this
   stores only file paths, counts, and timestamps, not task text.
 - There are **no Forge servers**: the CLI, board, and menu bar app read and
-  write only your local files and talk to macOS Reminders and Calendar via
-  system APIs on your machine.
+  write only your local files and talk to macOS Reminders via system APIs on
+  your machine.
 - You are free to keep the Forge directory under git, on an encrypted volume,
   or in a local-only folder if you prefer not to sync via any cloud service.
 
@@ -121,7 +121,7 @@ Start from [`config.sample.yaml`](config.sample.yaml) and copy it to
 - **`board.columns`** — ordered kanban columns, each mapped to a Finder tag.
 - **`board.meta_tags`** — supplementary tags (e.g. Collab, Student, URGENT), used for per-project flags and for the board's Radar view.
 - **`gtd.contexts`** — allowed `@ctx()` values for filtering next actions.
-- **`gtd.reminders_list`** / **`gtd.calendar_name`** — Apple integration targets.
+- **`gtd.reminders_list`** — Apple Reminders integration target.
   Tasks with an `@ctx()` tag are synced into a separate Reminders list named
   "&lt;reminders_list&gt; • &lt;context&gt;" (e.g. "Forge • email"), so contexts
   appear as lists in the Reminders sidebar.

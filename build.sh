@@ -116,8 +116,6 @@ cat > "$CONTENTS/Info.plist" << PLIST
     <string>APPL</string>
     <key>LSMinimumSystemVersion</key>
     <string>14.0</string>
-    <key>NSCalendarsUsageDescription</key>
-    <string>Forge syncs tasks with your calendar.</string>
     <key>NSRemindersUsageDescription</key>
     <string>Forge syncs tasks with Reminders.</string>
     <key>NSAppleEventsUsageDescription</key>
