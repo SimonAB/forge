@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+### [0.8.2] – 2026-03-18
+
+#### Menubar correctness and freshness
+
+- Keep menubar overdue / due-today counts aligned with `forge due` by avoiding double-counting and refreshing cached results periodically.
+- Make task discovery more robust in the menubar app by falling back to a bounded scan of configured project roots when the task index database is unavailable.
+
 ### [0.8.1] – 2026-03-17
 
 #### Menubar and sync correctness
