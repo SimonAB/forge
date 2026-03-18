@@ -127,17 +127,20 @@ public final class SyncEngine: @unchecked Sendable {
         public var enableDueSummary: Bool
         public var enableRollups: Bool
         public var enableFinderTags: Bool
+        public var propagateTaskAssigneesToProjectFinderTags: Bool
 
         public init(
             enableLinting: Bool = true,
             enableDueSummary: Bool = true,
             enableRollups: Bool = true,
-            enableFinderTags: Bool = true
+            enableFinderTags: Bool = true,
+            propagateTaskAssigneesToProjectFinderTags: Bool = true
         ) {
             self.enableLinting = enableLinting
             self.enableDueSummary = enableDueSummary
             self.enableRollups = enableRollups
             self.enableFinderTags = enableFinderTags
+            self.propagateTaskAssigneesToProjectFinderTags = propagateTaskAssigneesToProjectFinderTags
         }
 
         /// Full sync used by command-line tools and interactive flows.
@@ -149,7 +152,8 @@ public final class SyncEngine: @unchecked Sendable {
             enableLinting: false,
             enableDueSummary: true,
             enableRollups: false,
-            enableFinderTags: false
+            enableFinderTags: false,
+            propagateTaskAssigneesToProjectFinderTags: true
         )
     }
 
@@ -306,6 +310,10 @@ public final class SyncEngine: @unchecked Sendable {
             taskChangedAtByID: taskChangedAtByID,
             taskChangedSinceLastSync: taskChangedSinceLastSync
         )
+
+        if options.propagateTaskAssigneesToProjectFinderTags {
+            await propagateTaskAssigneesToProjectFinderTags(sourced: sourced)
+        }
 
         if options.enableFinderTags {
             await applyFinderTags(sourced: sourced, areaFiles: areaFiles)
@@ -931,6 +939,35 @@ public final class SyncEngine: @unchecked Sendable {
     }
 
     // MARK: - Finder Tags
+
+    /// Propagate one-way person tags (`#Person`) found in task text onto the containing
+    /// project directory's Finder tags (as `#Person`), without removing any existing tags.
+    ///
+    /// This keeps the Kanban board's delegation assignees in sync with how delegation is
+    /// authored in `TASKS.md`, while intentionally avoiding destructive tag writes.
+    private func propagateTaskAssigneesToProjectFinderTags(sourced: [SourcedTask]) async {
+        let tagStore = FinderTagStore()
+        var desiredTagsByProjectPath: [String: Set<String>] = [:]
+
+        for st in sourced where !st.isAreaTask {
+            guard let assignees = st.task.assignees, !assignees.isEmpty else { continue }
+            let projectPath = (st.filePath as NSString).deletingLastPathComponent
+
+            for identifier in assignees {
+                let trimmed = identifier.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmed.isEmpty else { continue }
+                desiredTagsByProjectPath[projectPath, default: []].insert("#\(trimmed)")
+            }
+        }
+
+        for (projectPath, desiredTags) in desiredTagsByProjectPath {
+            let existing = Set(await tagStore.readTagsIfAvailable(at: projectPath) ?? [])
+            let toAdd = desiredTags.subtracting(existing)
+            for tag in toAdd {
+                try? tagStore.addTag(tag, at: projectPath)
+            }
+        }
+    }
 
     /// Apply frontmatter tags as Finder tags on area markdown files.
     /// Also ensures each project directory has its kanban column tag (so Finder reflects the board).

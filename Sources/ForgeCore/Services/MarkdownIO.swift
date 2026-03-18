@@ -549,13 +549,32 @@ public struct MarkdownIO: Sendable {
         }
 
         var assignees: [String] = []
-        if let rawPerson = extractValue(tag: "person", from: text),
-           let normalised = ForgeTask.normalisedAssigneeIdentifier(fromRawTag: rawPerson) {
+        var seenAssignees: Set<String> = []
+        func addAssignee(from rawPerson: String) {
+            guard let normalised = ForgeTask.normalisedAssigneeIdentifier(fromRawTag: rawPerson) else {
+                return
+            }
+            guard !seenAssignees.contains(normalised) else { return }
+            seenAssignees.insert(normalised)
             assignees.append(normalised)
+        }
+
+        // Backwards compatible syntax: `@person(#Name)`
+        if let rawPerson = extractValue(tag: "person", from: text) {
+            addAssignee(from: rawPerson)
+        }
+
+        // Canonical syntax: `#Name` (no space after `#`, to avoid heading ambiguity)
+        let barePersonTagPattern = try! Regex("#([A-Za-z0-9][A-Za-z0-9_-]*)")
+        for match in text.matches(of: barePersonTagPattern) {
+            let rawName = String(match.output[1].substring!)
+            addAssignee(from: "#\(rawName)")
         }
 
         let cleanText = text
             .replacing(/@\w+\([^)]*\)/, with: "")
+            .replacing(/#[A-Za-z0-9][A-Za-z0-9_-]*/, with: "")
+            .replacing(/\s{2,}/, with: " ")
             .trimmingCharacters(in: .whitespaces)
 
         let task = ForgeTask(
@@ -649,9 +668,13 @@ public struct MarkdownIO: Sendable {
         if let done = task.doneDate {
             parts.append("@done(\(Self.dateFormatter.string(from: done)))")
         }
-        if let assignees = task.assignees, let first = assignees.first,
-           !first.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            parts.append("@person(#\(first))")
+        if let assignees = task.assignees, !assignees.isEmpty {
+            let clean = assignees
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+            for person in clean {
+                parts.append("#\(person)")
+            }
         }
 
         parts.append("<!-- id:\(task.id) -->")

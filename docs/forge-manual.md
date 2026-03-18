@@ -157,7 +157,7 @@ to see overdue and upcoming tasks across all projects, and to update `tasks/due.
 For individual tasks you can also add an explicit assignee in markdown:
 
 ```markdown
-- [ ] Follow up with Dawn @person(#PeggySue) <!-- id:abc123 -->
+- [ ] Follow up with Dawn #PeggySue <!-- id:abc123 -->
 ```
 
 This keeps the task’s assignee aligned with the same `#Person` convention used for projects.

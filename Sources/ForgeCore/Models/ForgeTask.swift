@@ -51,7 +51,8 @@ public struct ForgeTask: Sendable, Identifiable {
     /// The project directory name this task belongs to.
     public var projectName: String?
 
-    /// Assignees for this task, derived from inline person annotations such as @person(#Name).
+    /// Assignees for this task, derived from inline person annotations such as `@person(#Name)`
+    /// and bare `#Name` tags in the task text.
     /// Each entry is a normalised identifier with the leading # removed and surrounding
     /// whitespace trimmed.
     public var assignees: [String]?

@@ -8,6 +8,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.5.0"),
         .package(url: "https://github.com/jpsim/Yams.git", from: "5.0.0"),
+        .package(url: "https://github.com/swiftlang/swift-testing.git", from: "6.2.4"),
     ],
     targets: [
         .target(
@@ -49,7 +50,10 @@ let package = Package(
         ),
         .testTarget(
             name: "ForgeCoreTests",
-            dependencies: ["ForgeCore"],
+            dependencies: [
+                "ForgeCore",
+                .product(name: "Testing", package: "swift-testing"),
+            ],
             path: "Tests/ForgeCoreTests"
         ),
     ]

@@ -14,6 +14,18 @@ struct AssigneesTests {
     @Test func markdownParsesPersonAssigneeTag() {
         let markdown = """
         ## Next Actions
+        - [ ] Delegated task #PeggySue <!-- id:abc123 -->
+        """
+        let io = MarkdownIO()
+        let tasks = io.parseTasks(from: markdown, projectName: "Demo")
+        #expect(tasks.count == 1)
+        let task = tasks[0]
+        #expect(task.assignees == ["PeggySue"])
+    }
+
+    @Test func markdownParsesPersonAssigneeTagBackwardsCompatible() {
+        let markdown = """
+        ## Next Actions
         - [ ] Delegated task @person(#PeggySue) <!-- id:abc123 -->
         """
         let io = MarkdownIO()
