@@ -3,6 +3,7 @@
 # https://github.com/SimonAB/forge/releases/latest/download/forge-macos-arm64.zip
 #
 # Uses macos-15 so the toolchain matches Swift 6 / swift-tools-version 6.0.
+# Release publishing uses the `gh` CLI (no third-party Node actions).
 
 name: Release CLI binary
 
@@ -19,7 +20,7 @@ jobs:
     runs-on: macos-15
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Toolchain
         run: swift --version && xcodebuild -version
@@ -43,9 +44,14 @@ jobs:
           cd dist && zip -r ../forge-macos-arm64.zip forge LICENSE README-BINARY.txt VERSION
 
       - name: Publish GitHub release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: forge-macos-arm64.zip
-          generate_release_notes: true
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          REPO="${{ github.repository }}"
+          if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+            gh release upload "$TAG" forge-macos-arm64.zip --clobber --repo "$REPO"
+          else
+            gh release create "$TAG" forge-macos-arm64.zip --generate-notes --repo "$REPO"
+          fi
