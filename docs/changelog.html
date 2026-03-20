@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en-GB" dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Changelog · Forge</title>
+    <meta name="description" content="Version history and notable changes to Forge." />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/site.css" />
+    <script>
+      (function () {
+        var stored = localStorage.getItem("forge-theme-appearance");
+        var dark =
+          stored === "dark" ||
+          (!stored && window.matchMedia("(prefers-color-scheme: dark)").matches);
+        if (dark) document.documentElement.classList.add("dark");
+      })();
+    </script>
+  </head>
+  <body>
+    <a href="#main" class="visually-hidden">Skip to content</a>
+    <header class="site-nav">
+      <div class="site-nav__inner">
+        <a class="site-nav__brand" href="index.html">Forge</a>
+        <nav class="site-nav__links" aria-label="Main navigation">
+  <a class="site-nav__link" href="index.html">Home</a>
+  <a class="site-nav__link" href="cli.html">CLI</a>
+  <a class="site-nav__link" href="app.html">Forge.app</a>
+  <a class="site-nav__link" href="neovim.html">Neovim</a>
+  <a class="site-nav__link" href="manual.html">Manual</a>
+  <a class="site-nav__link" href="privacy.html">Privacy</a>
+  <a class="site-nav__link" href="readme.html">Readme</a>
+  <a class="site-nav__link is-active" href="changelog.html">Changelog</a>
+  <a class="site-nav__link" href="https://github.com/SimonAB/forge" target="_blank" rel="noopener noreferrer">GitHub</a>
+</nav>
+        <div class="site-nav__actions">
+          <button
+            type="button"
+            class="theme-toggle"
+            id="theme-toggle"
+            aria-label="Toggle dark mode"
+            title="Toggle theme"
+          >
+            <span class="theme-toggle__icon theme-toggle__icon--sun" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="4" />
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+              </svg>
+            </span>
+            <span class="theme-toggle__icon theme-toggle__icon--moon" aria-hidden="true" hidden>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+              </svg>
+            </span>
+          </button>
+          <a
+            class="btn btn--alt"
+            href="https://github.com/SimonAB/forge"
+            target="_blank"
+            rel="noopener noreferrer"
+            >View on GitHub</a
+          >
+        </div>
+      </div>
+    </header>
+    <main id="main" class="doc-page">
+      <article class="doc-content">
+<h2>Changelog</h2>
+<p>All notable changes to this project will be documented in this file.</p>
+<p>The format loosely follows <a href="https://keepachangelog.com/en/1.1.0/">Keep a Changelog</a>.</p>
+<h3><a href="https://github.com/SimonAB/forge/releases/tag/v0.8.6">0.8.6</a> – 2026-03-20</h3>
+<h4>Documentation and site</h4>
+<ul>
+<li>Publish the main documentation as static HTML on the GitHub Pages site (<code>cli.html</code>, <code>app.html</code>, <code>neovim.html</code>, <code>manual.html</code>, <code>privacy.html</code>, <code>readme.html</code>), generated from markdown via <code>docs/build_site.py</code> and <code>docs/requirements.txt</code> (Python <code>markdown</code>).</li>
+<li>Extend the landing page navigation and cross-links to those pages; add shared <code>assets/theme.js</code> and prose styles in <code>assets/site.css</code>.</li>
+<li>Document regeneration steps and the page ↔ source mapping in the README <strong>Project website</strong> section.</li>
+</ul>
+<h3><a href="https://github.com/SimonAB/forge/releases/tag/v0.8.5">0.8.5</a> – 2026-03-20</h3>
+<h4>Documentation and site</h4>
+<ul>
+<li>Add a static project landing page under <code>docs/</code> for GitHub Pages: hero, feature grid, forge/fire-themed styling (light/dark), quick start, and links to repository docs.</li>
+<li>Promote the live URL in the README and expand the <strong>Project website</strong> section with source file pointers and Pages setup.</li>
+</ul>
+<h3>[0.8.4] – 2026-03-20</h3>
+<h4>CLI due and review</h4>
+<ul>
+<li><code>forge due --areas</code> now considers due dates in all markdown files under <code>Forge/tasks/</code>, including <code>inbox.md</code> and <code>someday-maybe.md</code>, and skips only the generated <code>due.md</code> summary (avoids feedback loops).</li>
+<li><code>forge review</code> prints task IDs on key list items so you can jump straight to <code>forge done</code> / edits.</li>
+</ul>
+<h3>[0.8.3] – 2026-03-18</h3>
+<h4>Sync correctness future-proofing</h4>
+<ul>
+<li>Prefer a completed duplicate when the same task ID appears multiple times in markdown (so markdown completions propagate correctly).</li>
+<li>Add unit tests around sync input-selection and duplicate handling, plus refactor small decision helpers to be testable.</li>
+<li>Improve future reminder relinking by exposing looser signature helpers for unit testing.</li>
+</ul>
+<h3>[0.8.2] – 2026-03-18</h3>
+<h4>Menubar correctness and freshness</h4>
+<ul>
+<li>Keep menubar overdue / due-today counts aligned with <code>forge due</code> by avoiding double-counting and refreshing cached results periodically.</li>
+<li>Make task discovery more robust in the menubar app by falling back to a bounded scan of configured project roots when the task index database is unavailable.</li>
+</ul>
+<h3>[0.8.1] – 2026-03-17</h3>
+<h4>Menubar and sync correctness</h4>
+<ul>
+<li>Fix the menubar dropdown counts (overdue / due today) not always updating after a sync completes.</li>
+<li>Pull reminder due-date changes from Reminders.app back into markdown during sync.</li>
+<li>Ensure the board app’s toolbar refresh runs an in-process background sync (same as the menubar app) before reloading projects.</li>
+</ul>
+<h3>[0.8.0] – 2026-03-13</h3>
+<h4>Board Radar and delegation polish</h4>
+<ul>
+<li>Add a <strong>Radar</strong> filter to the kanban board that slices projects into three buckets based on urgency and neglect:</li>
+<li><strong>Calm</strong> – recently-touched, non-urgent projects.</li>
+<li><strong>Watch</strong> – projects whose <code>TASKS.md</code> has not changed for roughly a week.</li>
+<li><strong>Heat</strong> – projects tagged with an <code>URGENT…</code> meta tag (for example <code>URGENT ⚠️</code>), or projects whose <code>TASKS.md</code> has been neglected for several weeks.</li>
+<li>Base neglect scoring on the last modification time of each project's <code>TASKS.md</code> file, falling back to the project directory when needed.</li>
+<li>Refine the board toolbar:</li>
+<li>Replace the generic meta-tag picker with the Radar picker so urgency and neglect are first-class filters.</li>
+<li>Rename the top-level delegation filter label from "All" to "Delegation" while keeping assignee filtering unchanged.</li>
+</ul>
+<h3>[0.7.1] – 2026-03-13</h3>
+<h4>Documentation</h4>
+<ul>
+<li>Add a “Who is Forge for?” section to the README and user manual, clarifying that Forge is a files-first, tag-driven system combining kanban-style project flow with GTD-inspired task management.</li>
+</ul>
+<h3>[0.7.0] – 2026-03-12</h3>
+<h4>Linting and task discovery</h4>
+<ul>
+<li>Preserve <code>## Notes</code> sections in <code>TASKS.md</code> files when <code>forge lint --fix</code> runs and ensure canonical section order is <code>Next Actions</code>, <code>Waiting For</code>, <code>Completed</code>, <code>Notes</code>.</li>
+<li>Tighten heading and list formatting rules:</li>
+<li>Enforce exactly one empty line above and below headings when surrounded by content.</li>
+<li>Disallow blank lines between consecutive list items within the same section.</li>
+<li>Enforce trailing whitespace and EOF conventions:</li>
+<li>Remove trailing spaces and tabs from all lines.</li>
+<li>Require documents to end with exactly one empty line (a single trailing blank line terminated by a newline).</li>
+<li>Extend the task index to support explicit full rescans:</li>
+<li>Add a <code>forceFullRescan</code> flag on <code>DatabaseTaskIndex</code> and thread it through <code>TaskDiscoveryService</code>.</li>
+<li>Expose <code>--rebuild-index</code> flags on <code>forge sync</code> and <code>forge due</code> to force a fresh recursive scan of project roots and rebuild the task index database.</li>
+</ul>
+<h3>[0.6.2] – 2026-03-10</h3>
+<h4>Menubar and board</h4>
+<ul>
+<li>Refresh the kanban board view after each background sync (or “Sync Now”) so that newly applied Finder tags (e.g. column tags) and meta tags appear without reopening the board or restarting the app.</li>
+</ul>
+<h3>[0.6.1] – 2026-03-10</h3>
+<h4>Privacy, licensing, and install UX</h4>
+<ul>
+<li>Clarify Forge’s <strong>local-first, privacy-respecting</strong> data model in the README and manual, including how markdown files, the task file database, and Reminders/Calendar sync fit together.</li>
+<li>Add a dedicated <code>PRIVACY.md</code> describing what Forge stores, how sync works via macOS frameworks, and how to run in markdown-only or local-only modes.</li>
+<li>Add an Apache-2.0 <code>LICENSE</code> file and link it from the README.</li>
+<li>Update <code>.gitignore</code> to exclude <code>tasks/</code>, <code>.cache/</code>, and local <code>config.yaml</code> files so private task content, caches, and machine-specific configuration are not committed.</li>
+<li>Replace the tracked <code>config.yaml</code> with a sanitised <code>config.sample.yaml</code> that new users can copy and edit locally.</li>
+</ul>
+<h4>Build script and menubar polish</h4>
+<ul>
+<li>Harden <code>build.sh</code> with a Swift toolchain check and clearer messaging, and warn when the chosen install directory for <code>forge</code> is not on <code>PATH</code>.</li>
+<li>Improve the Forge.app About panel copy to emphasise that all data stays in your own files.</li>
+<li>Add a small initial-sync window in the menubar app so the first background sync is visible without being modal.</li>
+</ul>
+<h3>[0.6.0] – 2026-03-10</h3>
+<h4>Delegated projects and tasks</h4>
+<ul>
+<li>Treat Finder tags starting with <code>#</code> on project folders (for example <code>#PeggySue</code>) as person tags and surface them as <code>assignees</code> on <code>Project</code> values.</li>
+<li>Extend the kanban board UI to show assignees on project cards and add an <strong>Assignee</strong> filter alongside existing column/meta/domain filters.</li>
+<li>Add assignee support to the board CLI:</li>
+<li><code>forge board --assignee Name</code> filters projects by <code>#Name</code>.</li>
+<li>The list view shows both meta tags and <code>@Name</code> assignees.</li>
+</ul>
+<h4>Task-level delegation and CLI filters</h4>
+<ul>
+<li>Extend <code>ForgeTask</code> and <code>MarkdownIO</code> to support task-level assignees via an inline <code>@person(#Name)</code> tag, in addition to existing <code>@waiting(Name)</code> semantics.</li>
+<li>Add a shared helper on <code>ForgeTask</code> so CLI commands can match both explicit assignees and <code>waitingOn</code> names consistently.</li>
+<li>Add <code>--assignee</code> filters to:</li>
+<li><code>forge next</code> – filter next actions and waiting-for items by assignee and show <code>@Name</code> alongside existing due/context/waiting labels.</li>
+<li><code>forge due</code> – filter due and upcoming tasks by assignee and show assignees in the output.</li>
+<li><code>forge waiting</code> – narrow waiting-for items to a specific person.</li>
+</ul>
+<h4>Delegated overview and menubar integration</h4>
+<ul>
+<li>Add a new <code>forge delegated</code> command that lists all delegated tasks (non-completed, non-deferred with an assignee) grouped by assignee and then by project/area.</li>
+<li>Extend the menubar app with a Delegation submenu (backed by a small list of favourite assignees) which can open:</li>
+<li><code>forge board --assignee Name</code></li>
+<li><code>forge next --assignee Name</code></li>
+<li><code>forge waiting --assignee Name</code></li>
+</ul>
+<h3>[0.5.0] – 2026-03-10</h3>
+<h4>Performance</h4>
+<ul>
+<li>Introduce a SQLite-backed task file database (<code>TaskFileDatabase</code>) to cache project and area task files and their metadata.</li>
+<li>Replace hot-path <code>TaskFileFinder.findAll</code> calls with a database-backed <code>TaskIndex</code> (<code>DatabaseTaskIndex</code>) and a one-off <code>TaskDiscoveryService</code>, substantially reducing repeated filesystem walks on <code>forge sync</code>, <code>forge due</code>, and menubar refresh.</li>
+</ul>
+<h4>Behaviour and architecture</h4>
+<ul>
+<li>Wire <code>SyncEngine</code>, the CLI <code>forge sync</code>/<code>forge due</code> commands, and the menubar app to use the database-backed task index for <code>TASKS.md</code> discovery.</li>
+<li>Lay the groundwork for future incremental updates and cached counts (via <code>TaskFileDatabase.filesNeedingParse</code>, <code>updateCounts</code>, and <code>aggregateCounts</code>) without changing user-visible behaviour.</li>
+<li>Add documentation for:</li>
+<li>The task file database and event-driven discovery plan (<code>docs/task-file-db-plan.md</code>).</li>
+<li>A high-level Forge user manual describing core concepts, sync behaviour, and typical workflows (<code>docs/forge-manual.md</code>).</li>
+<li>Updated performance benchmarking guidance that explains how and when Forge syncs with Reminders and Calendar.</li>
+</ul>
+<h3><a href="https://github.com/your-org/forge/releases/tag/v0.4.0">0.4.0</a> – 2026-03-10</h3>
+<h4>Performance</h4>
+<ul>
+<li>Cache project <code>TASKS.md</code> discovery via a shared task index to avoid repeated deep filesystem walks (<code>df0da65</code>).</li>
+<li>Improve menubar and CLI performance by refining recursive <code>TASKS.md</code> discovery under project roots (<code>f999cc8</code>, <code>937bed1</code>, <code>c695eec</code>).</li>
+<li>Make menubar sync lighter while still regenerating the due summary (<code>95b7ed8</code>).</li>
+<li>Add several rounds of performance tuning across the CLI and menubar:</li>
+<li>Limit markdown size and Finder tag operations, and make CLI scans more asynchronous (<code>48df623</code>, <code>7dc44f2</code>, <code>501887e</code>, <code>ba6bbda</code>).</li>
+</ul>
+<h4>Behaviour and features</h4>
+<ul>
+<li>Improve calendar event deduplication to avoid duplicate events for the same task (<code>c654a75</code>, <code>8253020</code>).</li>
+<li>Refine inbox processing flow to better fit GTD-style capture and clarify how items move from inbox into projects and areas (<code>83ae89c</code>).</li>
+<li>Add markdown due summary generation and integrate it into the sync flow (<code>279ee93</code>), producing a <code>Forge/tasks/due.md</code> overview.</li>
+<li>Add a dedicated <code>forge lint</code> command and <code>TaskFileLinter</code> to enforce markdown conventions:</li>
+<li>Headings and spacing.</li>
+<li>Placement and formatting of completed tasks.</li>
+<li>Better handling of mail URLs and list spacing (<code>be0861c</code>, <code>b1d30b6</code>, <code>98a9390</code>, <code>f9a0cd5</code>, <code>d3d0f35</code>, <code>1abeee5</code>, <code>add8ff7</code>).</li>
+<li>Enhance capture:</li>
+<li>Support capture from Bookends and Obsidian (<code>50865f5</code>).</li>
+<li>Add a selection capture feature to inbox for quickly turning selected content into tasks (<code>99f5f77</code>).</li>
+<li>Improve CLI and board features:</li>
+<li>Add <code>EditTasksCommand</code> for opening task files from the CLI (<code>5cbe8d5</code>).</li>
+<li>Extend CLI commands to use the shared <code>taskFilesRoot</code> for all task-related operations (<code>ee4aaf9</code>, <code>60e8246</code>).</li>
+<li>Add and refine the board UI (<code>6b4fa73</code>, <code>02c1616</code>).</li>
+</ul>
+<h4>Menubar and board app</h4>
+<ul>
+<li>Improve the menubar app:</li>
+<li>Use Forge <code>tasks</code> paths consistently for task files.</li>
+<li>Refine the board window, preferences, and status bar layout (<code>87dc71e</code>, <code>9f9da02</code>).</li>
+<li>Fix menubar overdue count and address Calendar sendability warnings (<code>4a51103</code>).</li>
+<li>Add a dedicated board app (<code>forge-board</code>) backed by the same ForgeCore and ForgeUI components (<code>6b4fa73</code>).</li>
+</ul>
+<h4>Configuration and tooling</h4>
+<ul>
+<li>Tidy configuration:</li>
+<li>Simplify project roots and improve shortcuts preferences layout (<code>250bc69</code>, <code>e7f1f26</code>).</li>
+<li>Update <code>.gitignore</code> to better match the Swift/Forge project:</li>
+<li>Ignore build artefacts, SwiftPM directories, and local <code>tasks/</code> content as appropriate (<code>a573c0d</code>, <code>92d2ee5</code>).</li>
+<li>Add small tooling and release-prep changes:</li>
+<li>Centralise version information.</li>
+<li>Provide a help URL and AppleScript usage description.</li>
+<li>Update the <code>generate_icon</code> script (<code>7767ca9</code>, <code>d0b87fa</code>, <code>23db3b1</code>, <code>a4742ff</code>).</li>
+</ul>
+      </article>
+    </main>
+    <footer class="site-footer">
+      <p>
+        <a href="index.html">Home</a>
+        · Source markdown in the
+        <a href="https://github.com/SimonAB/forge" target="_blank" rel="noopener noreferrer">repository</a>
+      </p>
+      <p>Released under the Apache License, Version 2.0.</p>
+    </footer>
+    <script src="assets/theme.js"></script>
+  </body>
+</html>

@@ -35,6 +35,7 @@ NAV_ITEMS: tuple[tuple[str, str, str], ...] = (
     ("manual.html", "Manual", "manual"),
     ("privacy.html", "Privacy", "privacy"),
     ("readme.html", "Readme", "readme"),
+    ("changelog.html", "Changelog", "changelog"),
 )
 
 MD_EXTENSIONS = (
@@ -160,6 +161,7 @@ def _rewrite_internal_links(html: str) -> str:
     html = sub(r'href="docs/index\.html(#[^"]*)?"', r'href="index.html\1"', html)
     html = sub(r'href="PRIVACY\.md(#[^"]*)?"', r'href="privacy.html\1"', html)
     html = sub(r'href="README\.md(#[^"]*)?"', r'href="readme.html\1"', html)
+    html = sub(r'href="CHANGELOG\.md(#[^"]*)?"', r'href="changelog.html\1"', html)
     html = sub(r'href="docs/assets/', 'href="assets/', html)
     html = sub(r'src="docs/favicon\.svg"', 'src="favicon.svg"', html)
     html = sub(r'href="docs/favicon\.svg"', 'href="favicon.svg"', html)
@@ -237,6 +239,13 @@ def main() -> None:
         page_title="Readme",
         description="Forge overview: kanban, GTD, configuration, task format, and directory layout.",
         active="readme",
+    )
+    build_page(
+        source=REPO_ROOT / "CHANGELOG.md",
+        out_name="changelog.html",
+        page_title="Changelog",
+        description="Version history and notable changes to Forge.",
+        active="changelog",
     )
 
 
