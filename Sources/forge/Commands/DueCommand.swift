@@ -100,26 +100,44 @@ struct DueCommand: ParsableCommand {
 
         // Include area files (markdown in Forge directory) unless --no-areas.
         if areas {
-            let areaFiles = ConfigLoader.areaFiles(forgeDir: forgeDir, focusTag: nil)
-            for area in areaFiles {
-                let content = (try? String(contentsOfFile: area.path, encoding: .utf8)) ?? ""
-                let tasks = markdownIO.parseTasks(from: content, projectName: area.name)
-                for task in tasks where !task.isCompleted {
-                    guard let due = task.dueDate else { continue }
-                    if let needle = assigneeNeedle {
-                        let matches = task.allAssigneeIdentifiers.contains { $0.lowercased() == needle }
-                        if !matches { continue }
-                    }
-                    let item = DueSummaryGenerator.Item(task: task, label: area.name, sourcePath: area.path)
-                    if task.isOverdue {
-                        overdueTasks.append(item)
-                    } else if task.isDueToday {
-                        dueTodayTasks.append(item)
-                    } else if due <= horizon {
-                        upcomingTasks.append(item)
+            /// Parse all markdown task files in `Forge/tasks/*.md` as potential due tasks.
+            ///
+            /// This intentionally includes special files like `inbox.md` and `someday-maybe.md`.
+            /// It only skips generated summaries such as `due.md`.
+            func parseDueTasksFromTaskRoot() {
+                let fm = FileManager.default
+                guard let entries = try? fm.contentsOfDirectory(atPath: taskFilesRoot) else { return }
+
+                for entry in entries.sorted() where entry.hasSuffix(".md") {
+                    // Skip generated due summary to avoid feedback loops.
+                    if entry == "due.md" { continue }
+
+                    let path = (taskFilesRoot as NSString).appendingPathComponent(entry)
+                    let label = (entry as NSString).deletingPathExtension.capitalized
+
+                    let content = (try? String(contentsOfFile: path, encoding: .utf8)) ?? ""
+                    let tasks = markdownIO.parseTasks(from: content, projectName: label)
+
+                    for task in tasks where !task.isCompleted {
+                        guard let due = task.dueDate else { continue }
+                        if let needle = assigneeNeedle {
+                            let matches = task.allAssigneeIdentifiers.contains { $0.lowercased() == needle }
+                            if !matches { continue }
+                        }
+
+                        let item = DueSummaryGenerator.Item(task: task, label: label, sourcePath: path)
+                        if task.isOverdue {
+                            overdueTasks.append(item)
+                        } else if task.isDueToday {
+                            dueTodayTasks.append(item)
+                        } else if due <= horizon {
+                            upcomingTasks.append(item)
+                        }
                     }
                 }
             }
+
+            parseDueTasksFromTaskRoot()
         }
 
         // Sort each group by due date.
