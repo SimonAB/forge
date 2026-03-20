@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+### [0.8.9] – 2026-03-20
+
+#### Distribution
+
+- Fix the release workflow: use `swift build --triple` for arm64 and x86_64 (the `--arch` flag is not accepted on the GitHub Actions Swift toolchain).
+
 ### [0.8.8] – 2026-03-20
 
 #### Distribution
@@ -201,6 +207,7 @@ The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.
   - Provide a help URL and AppleScript usage description.
   - Update the `generate_icon` script (`7767ca9`, `d0b87fa`, `23db3b1`, `a4742ff`).
 
+[0.8.9]: https://github.com/SimonAB/forge/releases/tag/v0.8.9
 [0.8.8]: https://github.com/SimonAB/forge/releases/tag/v0.8.8
 [0.8.6]: https://github.com/SimonAB/forge/releases/tag/v0.8.6
 [0.8.5]: https://github.com/SimonAB/forge/releases/tag/v0.8.5

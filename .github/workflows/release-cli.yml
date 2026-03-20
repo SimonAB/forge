@@ -19,11 +19,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Use --triple (not --arch): matches SwiftPM on GitHub-hosted runners.
       - name: Build release (arm64)
-        run: swift build -c release --product forge --arch arm64
+        run: swift build -c release --product forge --triple arm64-apple-macosx
 
       - name: Build release (x86_64)
-        run: swift build -c release --product forge --arch x86_64
+        run: swift build -c release --product forge --triple x86_64-apple-macosx
 
       - name: Package universal zip
         run: |
