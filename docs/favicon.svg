@@ -16,9 +16,10 @@
     </filter>
   </defs>
   <rect width="32" height="32" rx="6" fill="#0c0a0a"/>
+  <!-- Block “F”: stem (x 7–11), full-width top bar, shorter middle bar -->
   <path
     filter="url(#glow)"
-    d="M8 22V10h4.2l3.8 6.2L19.8 10H24v12h-3.6v-7.2l-3.4 5.6h-2l-3.4-5.6V22H8z"
+    d="M7 6h16v4H11v4h9v4h-9v8H7V6z"
     fill="url(#ember)"
   />
 </svg>
