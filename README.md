@@ -1,9 +1,12 @@
 # Forge
 
 <p align="center">
+<a href="https://simonab.github.io/forge/"><img src="https://img.shields.io/badge/site-GitHub%20Pages-4285F4?style=for-the-badge&amp;logo=githubpages&amp;logoColor=white" alt="Project website on GitHub Pages" /></a>
+</p>
+
+<p align="center">
   <a href="https://github.com/SimonAB/forge/releases/latest"><img src="https://img.shields.io/github/v/release/SimonAB/forge?style=for-the-badge&amp;logo=github&amp;label=release" alt="Latest release" /></a>
   <a href="https://github.com/SimonAB/forge/releases/latest/download/forge-macos-arm64.zip"><img src="https://img.shields.io/badge/download-CLI%20%28Apple%20Silicon%29-ea580c?style=for-the-badge&amp;logo=apple&amp;logoColor=white" alt="Download CLI zip (arm64)" /></a>
-  <a href="https://simonab.github.io/forge/"><img src="https://img.shields.io/badge/site-GitHub%20Pages-4285F4?style=for-the-badge&amp;logo=githubpages&amp;logoColor=white" alt="Project website on GitHub Pages" /></a>
   <a href="https://github.com/SimonAB/forge/blob/main/CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-Keep%20a%20Changelog-78716c?style=for-the-badge&amp;logo=gitbook&amp;logoColor=white" alt="Changelog" /></a>
 </p>
 
@@ -24,8 +27,6 @@ Forge combines a **kanban board** for project tracking with a **GTD task manager
 inspired by OmniFocus. Everything lives in plain-text markdown files, editable
 with any editor. Two-way synchronisation with Apple Reminders keeps your tasks
 visible across all your devices.
-
-**Website:** <a href="https://simonab.github.io/forge/"><img src="docs/favicon.svg" alt="" width="18" height="18" /> simonab.github.io/forge</a> — overview, quick start, and links to the full documentation (served from [`docs/index.html`](docs/index.html) via GitHub Pages).
 
 ## Who is Forge for?
 
