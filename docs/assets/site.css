@@ -311,6 +311,18 @@ main {
   justify-content: center;
 }
 
+.hero__download-note {
+  margin: 20px auto 0;
+  max-width: 520px;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--vp-c-text-2);
+}
+
+.hero__download-note a {
+  font-weight: 500;
+}
+
 .btn {
   display: inline-flex;
   align-items: center;

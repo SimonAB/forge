@@ -1,0 +1,49 @@
+# Build a universal (arm64 + x86_64) `forge` CLI and attach it to the GitHub
+# release for the pushed tag. Stable download URL for the site:
+# https://github.com/SimonAB/forge/releases/latest/download/forge-macos-universal.zip
+
+name: Release CLI binary
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: macos-14
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build release (arm64)
+        run: swift build -c release --product forge --arch arm64
+
+      - name: Build release (x86_64)
+        run: swift build -c release --product forge --arch x86_64
+
+      - name: Package universal zip
+        run: |
+          set -e
+          mkdir -p dist
+          lipo -create \
+            .build/arm64-apple-macosx/release/forge \
+            .build/x86_64-apple-macosx/release/forge \
+            -output dist/forge
+          chmod +x dist/forge
+          cp LICENSE dist/
+          cp packaging/README-BINARY.txt dist/
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "$VERSION" > dist/VERSION
+          cd dist && zip -r ../forge-macos-universal.zip forge LICENSE README-BINARY.txt VERSION
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: forge-macos-universal.zip
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

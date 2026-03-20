@@ -94,6 +94,11 @@
         </p>
         <div class="hero__actions">
           <a class="btn btn--brand" href="#quick-start">Quick start</a>
+          <a
+            class="btn btn--alt"
+            href="https://github.com/SimonAB/forge/releases/latest/download/forge-macos-universal.zip"
+            >Download CLI</a
+          >
           <a class="btn btn--alt" href="readme.html">Full readme</a>
           <a
             class="btn btn--alt"
@@ -103,6 +108,16 @@
             >Repository</a
           >
         </div>
+        <p class="hero__download-note">
+          Universal <code class="inline-code">forge</code> binary (zip) for macOS 14+ — arm64 and Intel.
+          <a
+            href="https://github.com/SimonAB/forge/releases"
+            target="_blank"
+            rel="noopener noreferrer"
+            >All releases</a
+          >
+          · Unsigned; see <code class="inline-code">README-BINARY.txt</code> in the zip if Gatekeeper complains.
+        </p>
       </section>
 
       <section class="features" aria-labelledby="features-heading">
@@ -183,7 +198,12 @@ forge due                   # Overdue and upcoming</code></pre>
         <ul>
           <li><strong>macOS</strong> 14 or later</li>
           <li>
-            <strong>Xcode</strong> or Xcode Command Line Tools (Swift toolchain)
+            <strong>Xcode</strong> or Xcode Command Line Tools — required to <em>build</em> from
+            source; not required if you only use the
+            <a
+              href="https://github.com/SimonAB/forge/releases/latest/download/forge-macos-universal.zip"
+              >pre-built CLI zip</a
+            >.
           </li>
         </ul>
         <h3>Optional</h3>
@@ -197,6 +217,16 @@ forge due                   # Overdue and upcoming</code></pre>
 
       <section class="section" id="quick-start" aria-labelledby="quick-start-title">
         <h2 id="quick-start-title" class="section__title">Quick start</h2>
+        <p class="section__lead">
+          For the <strong>CLI only</strong>, you can
+          <a
+            href="https://github.com/SimonAB/forge/releases/latest/download/forge-macos-universal.zip"
+            >download the latest universal zip</a
+          >
+          (no Xcode required to run the pre-built binary). For
+          <code class="inline-code">Forge.app</code>, the board, and a full local install, use
+          the build script below.
+        </p>
         <p class="section__lead">
           After cloning or syncing the repository to your Mac, run the build script once
           per machine. It compiles the Swift package, installs the binary, creates

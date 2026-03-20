@@ -70,6 +70,12 @@ to **Deploy from a branch**, branch **main**, folder **`/docs`**.
 
 ## Quick start
 
+Pre-built **CLI only** (macOS 14+, universal arm64 + x86_64):
+**[Download `forge-macos-universal.zip`](https://github.com/SimonAB/forge/releases/latest/download/forge-macos-universal.zip)**
+(includes `LICENSE` and install notes). See
+[all releases](https://github.com/SimonAB/forge/releases). The menu bar app and
+board still require building with `build.sh` below.
+
 ```bash
 # On a fresh Mac where Forge source has synced via iCloud Drive:
 zsh ~/Documents/Forge/build.sh
