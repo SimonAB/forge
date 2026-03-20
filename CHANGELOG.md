@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+### [0.8.4] – 2026-03-20
+
+#### CLI due and review
+
+- `forge due --areas` now considers due dates in all markdown files under `Forge/tasks/`, including `inbox.md` and `someday-maybe.md`, and skips only the generated `due.md` summary (avoids feedback loops).
+- `forge review` prints task IDs on key list items so you can jump straight to `forge done` / edits.
+
 ### [0.8.3] – 2026-03-18
 
 #### Sync correctness future-proofing

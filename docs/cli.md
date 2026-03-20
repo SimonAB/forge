@@ -223,7 +223,7 @@ forge due [--days <n>] [--areas] [--markdown] [--rebuild-index]
 | Option | Short | Description |
 |--------|-------|-------------|
 | `--days` | `-d` | Lookahead window in days (default: 7) |
-| `--areas` | `-a` | Also include tasks from Forge area markdown files |
+| `--areas` | `-a` | Also include tasks from every `Forge/tasks/*.md` file except the generated `due.md` summary (covers inbox, someday/maybe, and area files) |
 | `--markdown` | `-m` | Also write a markdown summary to `Forge/tasks/due.md` |
 | `--rebuild-index` | | Rebuild the task index database before computing due tasks (forces a full rescan of project roots) |
 
@@ -245,7 +245,7 @@ in the terminal.
 ```bash
 forge due                         # Overdue + due within 7 days (TASKS.md only)
 forge due -d 30                   # Wider 30-day horizon
-forge due --areas                 # Include area files (inbox, home, etc.)
+forge due --areas                 # Include all task-root markdown (inbox, areas, someday, etc.; skips due.md)
 forge due -d 14 --areas           # 14-day horizon across everything
 forge due --markdown              # Also write Forge/tasks/due.md with clickable links
 forge due -d 14 --areas -m        # Markdown summary including area files
@@ -537,6 +537,8 @@ forge review
 7. **Neglected areas** — flags area files not modified in over 2 weeks
    (uses `date_modified` from YAML frontmatter)
 8. **Someday/Maybe** — counts someday items and paused projects
+
+Task lines for overdue, due this week, waiting-for, and becoming-actionable items include the task ID in brackets (same style as `forge due`).
 
 Concludes with a summary line of key counts.
 
