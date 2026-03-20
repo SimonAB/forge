@@ -74,7 +74,7 @@ struct ReviewCommand: AsyncParsableCommand {
             print("   \(green)✓\(reset) Nothing overdue")
         } else {
             for (task, proj) in overdue {
-                print("   \(red)▸\(reset) \(task.text) \(dim)← \(proj) (due \(task.dueDateString ?? "?"))\(reset)")
+                print("   \(red)▸\(reset) \(task.text) \(dim)← \(proj) (due \(task.dueDateString ?? "?"))\(reset) \(dim)[\(task.id)]\(reset)")
             }
         }
         print()
@@ -84,7 +84,7 @@ struct ReviewCommand: AsyncParsableCommand {
             print("   \(green)✓\(reset) Nothing due this week")
         } else {
             for (task, proj) in dueThisWeek {
-                print("   \(yellow)▸\(reset) \(task.text) \(dim)← \(proj) (due \(task.dueDateString ?? "?"))\(reset)")
+                print("   \(yellow)▸\(reset) \(task.text) \(dim)← \(proj) (due \(task.dueDateString ?? "?"))\(reset) \(dim)[\(task.id)]\(reset)")
             }
         }
         print()
@@ -110,7 +110,7 @@ struct ReviewCommand: AsyncParsableCommand {
         } else {
             for (task, proj) in waitingItems {
                 let person = task.waitingOn ?? "?"
-                print("   \(yellow)⏳\(reset) \(task.text) \(dim)← \(person) (\(proj))\(reset)")
+                print("   \(yellow)⏳\(reset) \(task.text) \(dim)← \(person) (\(proj))\(reset) \(dim)[\(task.id)]\(reset)")
             }
             print("   \(dim)Follow up on any stale items.\(reset)")
         }
@@ -165,7 +165,7 @@ struct ReviewCommand: AsyncParsableCommand {
             print("   \(green)✓\(reset) No deferred tasks surfacing this week")
         } else {
             for (task, proj) in becomingActionable {
-                print("   \(cyan)▸\(reset) \(task.text) \(dim)← \(proj) (available \(task.deferDateString ?? "?"))\(reset)")
+                print("   \(cyan)▸\(reset) \(task.text) \(dim)← \(proj) (available \(task.deferDateString ?? "?"))\(reset) \(dim)[\(task.id)]\(reset)")
             }
         }
         print()
