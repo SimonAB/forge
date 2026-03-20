@@ -1,6 +1,6 @@
-# Build a universal (arm64 + x86_64) `forge` CLI and attach it to the GitHub
-# release for the pushed tag. Stable download URL for the site:
-# https://github.com/SimonAB/forge/releases/latest/download/forge-macos-universal.zip
+# Build the `forge` CLI for Apple Silicon (arm64) and attach a zip to the GitHub
+# release for the pushed tag. Stable download URL:
+# https://github.com/SimonAB/forge/releases/latest/download/forge-macos-arm64.zip
 #
 # Uses macos-15 so the toolchain matches Swift 6 / swift-tools-version 6.0.
 
@@ -24,32 +24,28 @@ jobs:
       - name: Toolchain
         run: swift --version && xcodebuild -version
 
-      - name: Build release (arm64 slice)
-        run: swift build -c release --product forge --triple arm64-apple-macosx
+      - name: Build release (arm64)
+        run: swift build -c release --product forge
 
-      - name: Build release (x86_64 slice)
-        run: swift build -c release --product forge --triple x86_64-apple-macosx
-
-      - name: Package universal zip
+      - name: Package zip
         run: |
           set -e
           mkdir -p dist
-          lipo -create \
-            .build/arm64-apple-macosx/release/forge \
-            .build/x86_64-apple-macosx/release/forge \
-            -output dist/forge
+          BIN="$(swift build -c release --product forge --show-bin-path)/forge"
+          cp "$BIN" dist/forge
           chmod +x dist/forge
+          file dist/forge
           lipo -archs dist/forge
           cp LICENSE dist/
           cp packaging/README-BINARY.txt dist/
           VERSION="${GITHUB_REF_NAME#v}"
           echo "$VERSION" > dist/VERSION
-          cd dist && zip -r ../forge-macos-universal.zip forge LICENSE README-BINARY.txt VERSION
+          cd dist && zip -r ../forge-macos-arm64.zip forge LICENSE README-BINARY.txt VERSION
 
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v2
         with:
-          files: forge-macos-universal.zip
+          files: forge-macos-arm64.zip
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

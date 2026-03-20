@@ -1,8 +1,11 @@
-Forge CLI — macOS universal binary (Apple Silicon arm64 + Intel x86_64)
-======================================================================
+Forge CLI — macOS binary for Apple Silicon (arm64)
+=================================================
 
-Requires macOS 14 or later. No separate Swift install is needed; the binary
-uses the system Swift runtime shipped with recent macOS versions.
+Requires macOS 14 or later on a Mac with Apple Silicon. This build is **not**
+for Intel Macs — build from source with Xcode / `build.sh` if you need x86_64.
+
+No separate Swift install is needed; the binary uses the system Swift runtime
+shipped with recent macOS versions.
 
 Install
 -------
@@ -18,7 +21,7 @@ clear the quarantine attribute from the folder where you extracted it:
 
      xattr -cr path/to/forge
 
-Full source, Forge.app (menu bar), and build script:
+Full source, Forge.app (menu bar), Intel builds, and the full install script:
 
      https://github.com/SimonAB/forge
 

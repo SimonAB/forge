@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+### [0.8.11] – 2026-03-20
+
+#### Distribution
+
+- Ship the pre-built CLI as **Apple Silicon (arm64) only** — single `swift build` on `macos-15`, release asset **`forge-macos-arm64.zip`** (Intel: build from source). Update site and README download links accordingly.
+
 ### [0.8.10] – 2026-03-20
 
 #### Distribution
@@ -213,6 +219,7 @@ The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.
   - Provide a help URL and AppleScript usage description.
   - Update the `generate_icon` script (`7767ca9`, `d0b87fa`, `23db3b1`, `a4742ff`).
 
+[0.8.11]: https://github.com/SimonAB/forge/releases/tag/v0.8.11
 [0.8.10]: https://github.com/SimonAB/forge/releases/tag/v0.8.10
 [0.8.9]: https://github.com/SimonAB/forge/releases/tag/v0.8.9
 [0.8.8]: https://github.com/SimonAB/forge/releases/tag/v0.8.8
