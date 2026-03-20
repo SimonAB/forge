@@ -1,0 +1,2 @@
+# Used by docs/build_site.py to regenerate HTML from markdown.
+markdown>=3.5,<4

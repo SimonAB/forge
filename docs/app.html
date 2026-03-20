@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en-GB" dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Forge.app · Forge</title>
+    <meta name="description" content="Menu bar companion: sync, quick capture, overdue badges, and setup." />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/site.css" />
+    <script>
+      (function () {
+        var stored = localStorage.getItem("forge-theme-appearance");
+        var dark =
+          stored === "dark" ||
+          (!stored && window.matchMedia("(prefers-color-scheme: dark)").matches);
+        if (dark) document.documentElement.classList.add("dark");
+      })();
+    </script>
+  </head>
+  <body>
+    <a href="#main" class="visually-hidden">Skip to content</a>
+    <header class="site-nav">
+      <div class="site-nav__inner">
+        <a class="site-nav__brand" href="index.html">Forge</a>
+        <nav class="site-nav__links" aria-label="Main navigation">
+  <a class="site-nav__link" href="index.html">Home</a>
+  <a class="site-nav__link" href="cli.html">CLI</a>
+  <a class="site-nav__link is-active" href="app.html">Forge.app</a>
+  <a class="site-nav__link" href="neovim.html">Neovim</a>
+  <a class="site-nav__link" href="manual.html">Manual</a>
+  <a class="site-nav__link" href="privacy.html">Privacy</a>
+  <a class="site-nav__link" href="readme.html">Readme</a>
+  <a class="site-nav__link" href="https://github.com/SimonAB/forge" target="_blank" rel="noopener noreferrer">GitHub</a>
+</nav>
+        <div class="site-nav__actions">
+          <button
+            type="button"
+            class="theme-toggle"
+            id="theme-toggle"
+            aria-label="Toggle dark mode"
+            title="Toggle theme"
+          >
+            <span class="theme-toggle__icon theme-toggle__icon--sun" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="4" />
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+              </svg>
+            </span>
+            <span class="theme-toggle__icon theme-toggle__icon--moon" aria-hidden="true" hidden>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+              </svg>
+            </span>
+          </button>
+          <a
+            class="btn btn--alt"
+            href="https://github.com/SimonAB/forge"
+            target="_blank"
+            rel="noopener noreferrer"
+            >View on GitHub</a
+          >
+        </div>
+      </div>
+    </header>
+    <main id="main" class="doc-page">
+      <article class="doc-content">
+<h1>Forge.app</h1>
+<p>Forge.app is a macOS <strong>menu bar companion</strong> that runs in the background,
+providing quick capture, automatic sync, and at-a-glance status badges.</p>
+<h2>Setup</h2>
+<p>Run the setup script on each Mac:</p>
+<pre><code class="language-bash">zsh ~/Documents/Forge/build.sh
+</code></pre>
+<p>This performs the following steps:</p>
+<ol>
+<li><strong>Local build directory</strong> — creates <code>~/.forge-build</code> outside iCloud Drive
+   and symlinks it as <code>.build</code> in the source tree so compiled artefacts don't
+   sync.</li>
+<li><strong>Swift build</strong> — compiles the CLI (<code>forge</code>) and menu bar app
+   (<code>forge-menubar</code>).</li>
+<li><strong>CLI symlink</strong> — links <code>forge</code> into <code>/opt/homebrew/bin</code> (or
+   <code>/usr/local/bin</code> / <code>~/.local/bin</code>).</li>
+<li><strong>App bundle</strong> — assembles <code>/Applications/Forge.app</code> with the compiled
+   binary, an <code>Info.plist</code>, and an optional generated icon.</li>
+<li><strong>Launch Agent</strong> — installs
+   <code>~/Library/LaunchAgents/com.forge.menubar.plist</code> so Forge.app starts
+   automatically at login.</li>
+<li><strong>Verification</strong> — runs <code>forge --version</code> to confirm the install.</li>
+</ol>
+<h3>Icon generation</h3>
+<p>The setup script calls <code>generate_icon.py</code> to create a themed app icon. This
+requires Python 3 with <a href="https://pypi.org/project/Pillow/">Pillow</a>:</p>
+<pre><code class="language-bash">pip3 install Pillow
+</code></pre>
+<p>If Pillow is not installed, the icon step is skipped and a default icon is used.</p>
+<h3>Launching from Spotlight</h3>
+<p>Forge.app is installed in <code>/Applications</code>, so it is discoverable via Spotlight
+(Cmd+Space, type "Forge"). It appears in the Dock and in the application
+switcher (Cmd+Tab), and also shows a menu bar icon.</p>
+<hr />
+<h2>Menu bar icon</h2>
+<p>The status bar displays a hammer icon (SF Symbol <code>hammer.fill</code>). A badge
+indicates urgent items:</p>
+<table>
+<thead>
+<tr>
+<th>Badge</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Red number</td>
+<td>Overdue tasks</td>
+</tr>
+<tr>
+<td>Orange number</td>
+<td>Tasks due today (no overdue)</td>
+</tr>
+<tr>
+<td>No badge</td>
+<td>Nothing urgent</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>Menu items</h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Shortcut</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><em>X overdue</em></td>
+<td>—</td>
+<td>Shown in red; <strong>click</strong> opens <code>forge due</code> in the terminal</td>
+</tr>
+<tr>
+<td><em>X due today</em></td>
+<td>—</td>
+<td>Shown when tasks are due today; <strong>click</strong> opens <code>forge due</code></td>
+</tr>
+<tr>
+<td><em>X in inbox</em></td>
+<td>—</td>
+<td>Shown when inbox has pending items</td>
+</tr>
+<tr>
+<td><strong>Quick Capture...</strong></td>
+<td>Cmd+Shift+N</td>
+<td>Opens a floating text field to capture a task to the inbox</td>
+</tr>
+<tr>
+<td><strong>Sync Now</strong></td>
+<td>Cmd+S</td>
+<td>Triggers an immediate sync cycle</td>
+</tr>
+<tr>
+<td><em>Last sync: X ago</em></td>
+<td>—</td>
+<td>Informational — shows time since last sync</td>
+</tr>
+<tr>
+<td><strong>Board</strong></td>
+<td>Cmd+B</td>
+<td>Opens the native Kanban board window</td>
+</tr>
+<tr>
+<td><strong>Open Board in Terminal</strong></td>
+<td>—</td>
+<td>Runs <code>forge board</code> in your terminal</td>
+</tr>
+<tr>
+<td><strong>Weekly Review in Terminal</strong></td>
+<td>Cmd+R</td>
+<td>Runs <code>forge review</code> in your terminal</td>
+</tr>
+<tr>
+<td><strong>Quit Forge</strong></td>
+<td>Cmd+Q</td>
+<td>Stops the sync timer and exits</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>Background sync</h2>
+<p>Forge.app runs a sync cycle automatically:</p>
+<ul>
+<li><strong>On launch</strong> — immediate sync.</li>
+<li><strong>Every 5 minutes</strong> — repeating timer.</li>
+<li><strong>On demand</strong> — via the "Sync Now" menu item.</li>
+</ul>
+<p>Each sync cycle performs <strong>two-way synchronisation</strong> between your markdown
+files and Apple's Reminders:</p>
+<table>
+<thead>
+<tr>
+<th>Direction</th>
+<th>What happens</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Forge → Reminders</td>
+<td>Tasks are created or updated in the configured Reminders list (or in a context list "Forge • &lt;context&gt;" when the task has an @ctx tag)</td>
+</tr>
+<tr>
+<td>Reminders → Forge</td>
+<td>New items added to the Reminders list are imported to <code>inbox.md</code></td>
+</tr>
+<tr>
+<td>Reminders → Forge</td>
+<td>Completing a Reminder marks the corresponding Forge task as done</td>
+</tr>
+<tr>
+<td>Reminders → Markdown</td>
+<td>If you change a reminder’s due date in Reminders.app, the next sync updates the task’s <code>@due(...)</code> in the markdown file</td>
+</tr>
+<tr>
+<td>Forge → Reminders</td>
+<td>Completing a Forge task marks the corresponding Reminder as complete</td>
+</tr>
+<tr>
+<td>Forge → Finder</td>
+<td>Area-level tags (e.g. <code>work</code>, <code>personal</code>) are applied as Finder tags on area <code>.md</code> files</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Area tasks are included in sync.</strong> Tasks from area files (admin.md,
+home.md, etc.) are synced to Reminders alongside project tasks.</p>
+<h3>Tag propagation</h3>
+<p>Area tags from YAML frontmatter are surfaced across all sync targets:</p>
+<table>
+<thead>
+<tr>
+<th>Surface</th>
+<th>How tags appear</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Reminders</strong></td>
+<td>Stored in the reminder's notes field (<code>tags: work, personal</code>)</td>
+</tr>
+<tr>
+<td><strong>Finder</strong></td>
+<td>Applied as Finder tags on the area <code>.md</code> files (visible in Finder, searchable via Spotlight)</td>
+</tr>
+<tr>
+<td><strong>Forge files</strong></td>
+<td>Stored in YAML frontmatter (<code>tags: [work]</code>)</td>
+</tr>
+</tbody>
+</table>
+<p>Project tasks inherit the <code>workspace_tags</code> from <code>config.yaml</code> (default: <code>[work]</code>).</p>
+<h3>Badge counts</h3>
+<p>The overdue and due-today badge counts are calculated by scanning:</p>
+<ul>
+<li><strong>Project task files</strong> — all indexed <code>TASKS.md</code> files under the configured <code>project_roots</code>.</li>
+<li><strong>Area files</strong> — markdown files in <code>Forge/tasks</code> (excluding generated summaries such as <code>due.md</code>).</li>
+</ul>
+<p>This matches the task discovery behaviour of <code>forge due</code>.</p>
+<p>After each sync, the badge counts are refreshed. If new items were captured
+from Reminders, a macOS notification is displayed.</p>
+<h3>Sync targets</h3>
+<p>Configured in <code>config.yaml</code>:</p>
+<pre><code class="language-yaml">gtd:
+  reminders_list: Forge       # Apple Reminders list name
+</code></pre>
+<p>Create this list in Reminders.app before your first sync. Forge
+will create additional Reminders lists per context as needed (e.g. "Forge • email", "Forge • office") when you sync tasks that have an <code>@ctx()</code> tag.</p>
+<hr />
+<h2>Quick capture</h2>
+<p><strong>Cmd+Shift+N</strong> opens a floating capture panel. Type a task and press Return.
+The task is appended to <code>inbox.md</code> with a generated ID, the inbox count is
+updated, and a confirmation notification is shown.</p>
+<p>You can also capture from the terminal:</p>
+<pre><code class="language-bash">forge inbox &quot;Buy reagents @ctx(errands)&quot;
+</code></pre>
+<p>Or from Neovim:</p>
+<pre><code>&lt;leader&gt;Fc
+</code></pre>
+<hr />
+<h2>Permissions</h2>
+<p>On first launch, macOS will prompt for access to:</p>
+<ul>
+<li><strong>Reminders</strong> — required for two-way task sync.</li>
+</ul>
+<p>Grant access for full functionality. This is declared in the app's
+<code>Info.plist</code>.</p>
+<h3>Privacy and data flow</h3>
+<ul>
+<li>Forge.app reads and writes only the Forge directory on your disk
+  (configuration, inbox and area files, and project <code>TASKS.md</code> files).</li>
+<li>Background sync uses macOS frameworks (EventKit and related APIs) to talk to
+  <strong>your</strong> Reminders account; no data is sent to any Forge
+  server.</li>
+<li>The task index at <code>Forge/.cache/tasks.db</code> stores file paths, timestamps, and
+  cached counts, not full task text.</li>
+<li>CLI commands such as <code>forge sync</code> and <code>forge due</code> use this index for discovery and expose
+  a <code>--rebuild-index</code> flag when you need to force a full rescan of the configured project
+  roots.</li>
+<li>You keep full control over where the Forge directory lives (for example on an
+  encrypted volume, in a git repository, or in a local-only folder).</li>
+</ul>
+<hr />
+<h2>Configuration resolution</h2>
+<p>Forge.app searches for <code>config.yaml</code> in this order:</p>
+<ol>
+<li><code>~/Documents/Forge/config.yaml</code></li>
+<li><code>~/Documents/Work/Projects/Forge/config.yaml</code></li>
+</ol>
+<p>The first match is used, and its parent directory becomes the Forge home
+directory.</p>
+<hr />
+<h2>Multi-Mac sync</h2>
+<p>The Forge source directory (<code>~/Documents/Forge/</code>) syncs via iCloud Drive. On
+each new Mac:</p>
+<ol>
+<li>Wait for iCloud to finish downloading.</li>
+<li>Run <code>zsh ~/Documents/Forge/build.sh</code>.</li>
+<li>The build happens locally; markdown files and configuration are shared.</li>
+</ol>
+<p>The Launch Agent ensures Forge.app starts at every login.</p>
+      </article>
+    </main>
+    <footer class="site-footer">
+      <p>
+        <a href="index.html">Home</a>
+        · Source markdown in the
+        <a href="https://github.com/SimonAB/forge" target="_blank" rel="noopener noreferrer">repository</a>
+      </p>
+      <p>Released under the Apache License, Version 2.0.</p>
+    </footer>
+    <script src="assets/theme.js"></script>
+  </body>
+</html>

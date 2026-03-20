@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en-GB" dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Forge manual · Forge</title>
+    <meta name="description" content="Longer-form guide to using Forge for project and task management." />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/site.css" />
+    <script>
+      (function () {
+        var stored = localStorage.getItem("forge-theme-appearance");
+        var dark =
+          stored === "dark" ||
+          (!stored && window.matchMedia("(prefers-color-scheme: dark)").matches);
+        if (dark) document.documentElement.classList.add("dark");
+      })();
+    </script>
+  </head>
+  <body>
+    <a href="#main" class="visually-hidden">Skip to content</a>
+    <header class="site-nav">
+      <div class="site-nav__inner">
+        <a class="site-nav__brand" href="index.html">Forge</a>
+        <nav class="site-nav__links" aria-label="Main navigation">
+  <a class="site-nav__link" href="index.html">Home</a>
+  <a class="site-nav__link" href="cli.html">CLI</a>
+  <a class="site-nav__link" href="app.html">Forge.app</a>
+  <a class="site-nav__link" href="neovim.html">Neovim</a>
+  <a class="site-nav__link is-active" href="manual.html">Manual</a>
+  <a class="site-nav__link" href="privacy.html">Privacy</a>
+  <a class="site-nav__link" href="readme.html">Readme</a>
+  <a class="site-nav__link" href="https://github.com/SimonAB/forge" target="_blank" rel="noopener noreferrer">GitHub</a>
+</nav>
+        <div class="site-nav__actions">
+          <button
+            type="button"
+            class="theme-toggle"
+            id="theme-toggle"
+            aria-label="Toggle dark mode"
+            title="Toggle theme"
+          >
+            <span class="theme-toggle__icon theme-toggle__icon--sun" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="4" />
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+              </svg>
+            </span>
+            <span class="theme-toggle__icon theme-toggle__icon--moon" aria-hidden="true" hidden>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+              </svg>
+            </span>
+          </button>
+          <a
+            class="btn btn--alt"
+            href="https://github.com/SimonAB/forge"
+            target="_blank"
+            rel="noopener noreferrer"
+            >View on GitHub</a
+          >
+        </div>
+      </div>
+    </header>
+    <main id="main" class="doc-page">
+      <article class="doc-content">
+<hr />
+<h2>title: Forge user manual</h2>
+<h2>Overview</h2>
+<p>Forge is a local-first project and task manager that combines:</p>
+<ul>
+<li>Plain-text markdown files for projects and areas.</li>
+<li>A kanban-style board for visualising work-in-progress.</li>
+<li>Two-way synchronisation with Reminders on macOS.</li>
+<li>A small menubar app that keeps everything in sync in the background.</li>
+</ul>
+<p>This document explains how Forge fits together and how to use it day-to-day.</p>
+<h2>Who is Forge for?</h2>
+<p>Forge is for people who think in files and folders first, and who already use file attributes and tags to organise their projects and tasks. If you like being able to open a normal directory in Finder or your editor and see exactly where everything lives – with no opaque databases or cloud backends – Forge is designed for you.</p>
+<p>More specifically, Forge works well if you:</p>
+<ul>
+<li>Prefer plain-text, markdown-based systems that you can read, search, and version-control with standard tools like git.</li>
+<li>Use or want to use Finder tags (including people-tags like <code>#Alice</code>) to track project state, assignees, and meta information.</li>
+<li>Want a files-first, open-source tool that never locks you into a particular app, subscription, or proprietary data format.</li>
+<li>Like the idea of combining a kanban-style view for projects (columns such as Backlog, In Progress, Review, Done) with a GTD-style flow for tasks (inbox, clarify, organise, review, do).</li>
+<li>Need your system to co-exist with other tools – editing markdown in Neovim or VS Code, browsing tasks in Finder, and seeing the same items mirrored into Apple Reminders.</li>
+<li>Care about local-first privacy: all of your projects and tasks stay on your Mac as markdown files, with only minimal metadata in a local cache for performance.</li>
+</ul>
+<p>In terms of management style, Forge borrows:</p>
+<ul>
+<li>From GTD (Getting Things Done): clear inbox capture, next actions by context (via <code>@ctx()</code>), defer and due dates, waiting-for tracking, and regular reviews of areas and projects.</li>
+<li>From kanban and visual flow management: column-based project states driven by Finder tags, explicit work-in-progress visualisation, and quick reassignment of focus by dragging cards between columns.</li>
+<li>From “second brain” / personal knowledge management-style systems: everything lives in durable text files that you can link, reorganise, and refactor over time without losing history or being tied to a single application.</li>
+</ul>
+<p>If you want a flexible backbone that supports these paradigms but still allows you to evolve your own naming conventions, folder layouts, and tag schemes over time, Forge aims to give you that structure without forcing a single “correct” organisational system.</p>
+<h2>Core concepts</h2>
+<ul>
+<li><strong>Forge directory</strong>: A folder (often <code>~/Documents/Forge</code>) containing:</li>
+<li><code>config.yaml</code> – Forge configuration.</li>
+<li><code>tasks/</code> – inbox and area markdown files, plus generated artefacts like <code>due.md</code>.</li>
+<li><strong>Project roots</strong>:</li>
+<li>One or more directories (configured in <code>config.yaml</code>) under which Forge looks for <code>TASKS.md</code> files.</li>
+<li>Each <code>TASKS.md</code> file represents a project.</li>
+<li><strong>Areas and inbox</strong>:</li>
+<li>Area files live in <code>Forge/tasks/*.md</code> (excluding special files like <code>inbox.md</code>, <code>someday-maybe.md</code>, <code>due.md</code>).</li>
+<li><code>inbox.md</code> is the capture point for quick notes and imported Reminders.</li>
+<li><strong>Sync engine</strong>:</li>
+<li><code>SyncEngine.sync()</code> is responsible for keeping markdown and Reminders in agreement.</li>
+<li><strong>Privacy</strong>:</li>
+<li>All project and area content is stored as plain-text markdown under your Forge directory.</li>
+<li>Forge maintains a small local SQLite cache at <code>Forge/.cache/tasks.db</code> for file metadata and counts only; task text remains in markdown.</li>
+<li>There are no Forge-hosted services: all synchronisation happens locally between your files and macOS Reminders on your machine.</li>
+</ul>
+<h2>Components</h2>
+<ul>
+<li><strong>CLI (<code>forge</code> command)</strong>:</li>
+<li><code>forge sync</code> – run a full two-way sync between markdown and Reminders.</li>
+<li><code>forge due</code> – list overdue and upcoming tasks from markdown (optionally writing <code>tasks/due.md</code>).</li>
+<li>
+<p>Other commands (<code>forge board</code>, <code>forge process</code>, etc.) provide various GTD and board views.</p>
+</li>
+<li>
+<p><strong>Menubar app (Forge.app)</strong>:</p>
+</li>
+<li>Shows a small status icon with badge counts.</li>
+<li>Runs background sync every 5 minutes (and once on startup).</li>
+<li>
+<p>Provides quick access to capture, processing, board, and review workflows.</p>
+</li>
+<li>
+<p><strong>Board app (<code>forge-board</code>)</strong>:</p>
+</li>
+<li>A windowed kanban board backed by the same markdown task files.</li>
+<li>The toolbar refresh runs the same background sync as the menubar app, then reloads projects so Finder tag changes and due-date edits propagate quickly.</li>
+</ul>
+<h2>How synchronisation works</h2>
+<h3>What <code>forge sync</code> does</h3>
+<p>When you run:</p>
+<pre><code class="language-bash">forge sync
+</code></pre>
+<p>Forge:</p>
+<ul>
+<li>Loads <code>config.yaml</code> and resolves the Forge directory and project roots.</li>
+<li>Opens <code>Forge/.cache/tasks.db</code> (a small SQLite database that remembers which task files exist and their basic metadata).</li>
+<li>Uses a task index backed by that database to enumerate project <code>TASKS.md</code> files under the configured roots.</li>
+<li>Parses project and area markdown into <code>ForgeTask</code> objects.</li>
+<li>Fetches Reminders from the configured list (and any context lists it creates).</li>
+<li>Reconciles in both directions:</li>
+<li>Markdown → Reminders:<ul>
+<li>Creates reminders for new tasks.</li>
+<li>Moves reminders to the correct context lists.</li>
+<li>Marks reminders complete when their corresponding tasks complete in markdown.</li>
+</ul>
+</li>
+<li>Reminders → Markdown:<ul>
+<li>Marks tasks complete when reminders complete.</li>
+<li>Imports new reminders into <code>inbox.md</code> when they do not yet exist in markdown.</li>
+</ul>
+</li>
+<li>Updates markdown due dates when reminder due dates change.</li>
+<li>Optionally regenerates <code>tasks/due.md</code> and rollup pages, then commits changes to Reminders.</li>
+</ul>
+<h3>What the menubar app does</h3>
+<p>When Forge.app (the menubar app) is running:</p>
+<ul>
+<li>On startup:</li>
+<li>Loads <code>config.yaml</code> and finds your Forge directory.</li>
+<li>Shows the status item and an initial view of counts based on local markdown.</li>
+<li>Immediately runs <code>SyncEngine.sync()</code> once in a background task (with “background” options).</li>
+<li>Every 5 minutes:</li>
+<li>Runs <code>SyncEngine.sync()</code> again with background options.</li>
+<li>Updates the badge counts by re-reading markdown task files.</li>
+</ul>
+<p>Practically, this means that if Forge.app is running:</p>
+<ul>
+<li>Reminders will be kept in sync with your markdown tasks without needing to run <code>forge sync</code> manually.</li>
+<li>The CLI <code>forge sync</code> is still available when you want to force an immediate sync or measure timings from the terminal.</li>
+</ul>
+<h2>Typical workflows</h2>
+<h3>1. Daily capture and processing</h3>
+<ul>
+<li>Use the menubar’s “Quick Capture…” to add ideas into <code>inbox.md</code>.</li>
+<li>Capture selections from Mail or Finder into inbox tasks.</li>
+<li>Periodically run:</li>
+</ul>
+<pre><code class="language-bash">forge process
+</code></pre>
+<p>from the terminal or via the menubar menu, to empty your inbox and assign tasks to projects or areas.</p>
+<h3>2. Staying on top of deadlines</h3>
+<ul>
+<li>Run:</li>
+</ul>
+<pre><code class="language-bash">forge due --markdown
+</code></pre>
+<p>to see overdue and upcoming tasks across all projects, and to update <code>tasks/due.md</code> for quick reference.</p>
+<ul>
+<li>The menubar badge and menu give a quick summary of:</li>
+<li>Overdue tasks.</li>
+<li>Tasks due today.</li>
+<li>Open inbox items.</li>
+</ul>
+<h3>2.1 Delegated work and assignees</h3>
+<ul>
+<li>Use <strong>Finder tags starting with <code>#</code></strong> on project folders (for example <code>#PeggySue</code>) to mark who a project is delegated to.</li>
+<li>In the <strong>board app</strong>:</li>
+<li>Use the <strong>Assignee</strong> picker in the toolbar to filter projects by these <code>#Person</code> tags.</li>
+<li>Each project card shows both meta tags and assignee names (as <code>@Name</code>).</li>
+<li>In the <strong>CLI</strong>:</li>
+<li><code>forge board --assignee PeggySue</code> shows only projects tagged with <code>#PeggySue</code>.</li>
+<li><code>forge next --assignee PeggySue</code> shows next actions assigned to PeggySue (including waiting-for items with <code>@waiting(PeggySue)</code>).</li>
+<li><code>forge due --assignee PeggySue</code> lists due and upcoming items for that person.</li>
+<li><code>forge waiting --assignee PeggySue</code> narrows the waiting-for list to a single person.</li>
+</ul>
+<p>For individual tasks you can also add an explicit assignee in markdown:</p>
+<pre><code class="language-markdown">- [ ] Follow up with Dawn #PeggySue &lt;!-- id:abc123 --&gt;
+</code></pre>
+<p>This keeps the task’s assignee aligned with the same <code>#Person</code> convention used for projects.</p>
+<h3>3. Working from the board</h3>
+<ul>
+<li>Use <code>forge board</code> in the terminal or the Forge board app to see your work laid out in columns.</li>
+<li>Moving tasks between columns updates the underlying markdown and will propagate to Reminders on the next sync.</li>
+</ul>
+<h3>3.1 Radar view for projects</h3>
+<ul>
+<li>The board toolbar includes a <strong>Radar</strong> picker that slices projects into three buckets:</li>
+<li><strong>Calm</strong> – recently-touched, non-urgent projects.</li>
+<li><strong>Watch</strong> – projects whose <code>TASKS.md</code> has not changed for roughly a week.</li>
+<li><strong>Heat</strong> – explicitly urgent projects (tagged with an <code>URGENT…</code> meta tag such as <code>URGENT ⚠️</code>), or projects whose <code>TASKS.md</code> has been neglected for several weeks.</li>
+<li>Radar combines these signals so you can quickly surface projects that are both <strong>time-sensitive</strong> and <strong>at risk of being forgotten</strong>, without changing any underlying tags or files.</li>
+</ul>
+<h2>Where to look when something seems off</h2>
+<ul>
+<li><strong>Tasks missing from reminders</strong>:</li>
+<li>Run <code>forge sync</code> from the terminal and inspect its output.</li>
+<li>Check <code>config.yaml</code> to ensure project roots and lists/calendars are configured as expected.</li>
+<li>Verify that the relevant <code>TASKS.md</code> or area file lives under a configured project root or <code>Forge/tasks</code>.</li>
+<li>
+<p>If a new project <code>TASKS.md</code> file under an existing project root is not being picked up, run <code>forge sync --rebuild-index</code> once to force a full rescan of project roots.</p>
+</li>
+<li>
+<p><strong>Menubar badge counts look wrong</strong>:</p>
+</li>
+<li>Ensure Forge.app is allowed to access Reminders in System Settings.</li>
+<li>Wait for at least one background sync cycle (or use “Sync Now” from the menubar menu).</li>
+<li>Compare output from <code>forge due</code> with the badge counts.</li>
+<li>
+<p>If CLI due output seems to be missing projects entirely, run <code>forge due --rebuild-index</code> to rebuild the cached index of <code>TASKS.md</code> files.</p>
+</li>
+<li>
+<p><strong>Performance issues</strong>:</p>
+</li>
+<li>Follow the benchmark checklist in this document.</li>
+<li>Attach <code>time forge sync</code> / <code>time forge due --markdown</code> output and any Time Profiler screenshots or call tree summaries.</li>
+</ul>
+      </article>
+    </main>
+    <footer class="site-footer">
+      <p>
+        <a href="index.html">Home</a>
+        · Source markdown in the
+        <a href="https://github.com/SimonAB/forge" target="_blank" rel="noopener noreferrer">repository</a>
+      </p>
+      <p>Released under the Apache License, Version 2.0.</p>
+    </footer>
+    <script src="assets/theme.js"></script>
+  </body>
+</html>

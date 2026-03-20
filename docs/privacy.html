@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en-GB" dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Privacy · Forge</title>
+    <meta name="description" content="What Forge stores locally, how sync works, and privacy-minded options." />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/site.css" />
+    <script>
+      (function () {
+        var stored = localStorage.getItem("forge-theme-appearance");
+        var dark =
+          stored === "dark" ||
+          (!stored && window.matchMedia("(prefers-color-scheme: dark)").matches);
+        if (dark) document.documentElement.classList.add("dark");
+      })();
+    </script>
+  </head>
+  <body>
+    <a href="#main" class="visually-hidden">Skip to content</a>
+    <header class="site-nav">
+      <div class="site-nav__inner">
+        <a class="site-nav__brand" href="index.html">Forge</a>
+        <nav class="site-nav__links" aria-label="Main navigation">
+  <a class="site-nav__link" href="index.html">Home</a>
+  <a class="site-nav__link" href="cli.html">CLI</a>
+  <a class="site-nav__link" href="app.html">Forge.app</a>
+  <a class="site-nav__link" href="neovim.html">Neovim</a>
+  <a class="site-nav__link" href="manual.html">Manual</a>
+  <a class="site-nav__link is-active" href="privacy.html">Privacy</a>
+  <a class="site-nav__link" href="readme.html">Readme</a>
+  <a class="site-nav__link" href="https://github.com/SimonAB/forge" target="_blank" rel="noopener noreferrer">GitHub</a>
+</nav>
+        <div class="site-nav__actions">
+          <button
+            type="button"
+            class="theme-toggle"
+            id="theme-toggle"
+            aria-label="Toggle dark mode"
+            title="Toggle theme"
+          >
+            <span class="theme-toggle__icon theme-toggle__icon--sun" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="4" />
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+              </svg>
+            </span>
+            <span class="theme-toggle__icon theme-toggle__icon--moon" aria-hidden="true" hidden>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+              </svg>
+            </span>
+          </button>
+          <a
+            class="btn btn--alt"
+            href="https://github.com/SimonAB/forge"
+            target="_blank"
+            rel="noopener noreferrer"
+            >View on GitHub</a
+          >
+        </div>
+      </div>
+    </header>
+    <main id="main" class="doc-page">
+      <article class="doc-content">
+<h2>Forge privacy overview</h2>
+<p>Forge is designed as a <strong>local-first, privacy-respecting</strong> project and task manager.
+This document summarises what data Forge uses, where it lives, and how it moves.</p>
+<h3>What Forge stores</h3>
+<ul>
+<li><strong>Tasks and projects</strong></li>
+<li>Stored as plain-text markdown files under your Forge directory (typically
+    <code>~/Documents/Forge</code>), including:<ul>
+<li><code>config.yaml</code></li>
+<li><code>tasks/*.md</code> (inbox and area files, plus generated artefacts like <code>due.md</code>)</li>
+<li>project <code>TASKS.md</code> files under your configured <code>project_roots</code></li>
+</ul>
+</li>
+<li>
+<p>You can open and edit all of these files with any editor.</p>
+</li>
+<li>
+<p><strong>Cache and index</strong></p>
+</li>
+<li>Forge maintains a small local SQLite database at <code>Forge/.cache/tasks.db</code>.</li>
+<li>This stores file paths, modification times, sizes, and cached per-file
+    counts (overdue, due-today, inbox counts).</li>
+<li>
+<p>It does <strong>not</strong> store full task text; that remains in markdown.</p>
+</li>
+<li>
+<p><strong>Preferences and focus</strong></p>
+</li>
+<li>The menubar app stores UI preferences (shortcuts, editor choice, filters)
+    in standard macOS preferences.</li>
+<li>The current focus tag is stored in a <code>.focus</code> file in the Forge directory.</li>
+</ul>
+<h3>What Forge talks to</h3>
+<ul>
+<li><strong>Apple Reminders (optional)</strong></li>
+<li>When you enable sync (via <code>forge sync</code> or Forge.app), Forge uses macOS
+    EventKit APIs to:<ul>
+<li>Create/update/delete Reminders for tasks with <code>@due</code> or context tags.</li>
+<li>Import new items from the configured Reminders list into <code>inbox.md</code>.</li>
+<li>Keep completion state and due dates aligned between Reminders and markdown.</li>
+</ul>
+</li>
+<li>All of this happens <strong>locally on your Mac</strong>, against the Reminders account
+    already configured in System Settings.</li>
+<li>
+<p>Forge does not talk to any third-party servers.</p>
+</li>
+<li>
+<p><strong>No telemetry or remote services</strong></p>
+</li>
+<li>Forge sends <strong>no usage analytics, telemetry, or task content</strong> to any
+    external service.</li>
+<li>Network traffic, if any, is solely whatever your macOS Reminders account
+    already performs via the system.</li>
+</ul>
+<h3>Running Forge in more private modes</h3>
+<ul>
+<li><strong>Markdown-only (no sync)</strong></li>
+<li>You can use Forge purely as a markdown-based task and project system:<ul>
+<li>Do not grant Reminders permission when prompted, or</li>
+<li>Avoid calling <code>forge sync</code>.</li>
+</ul>
+</li>
+<li>
+<p>All CLI commands and the board app still work against the markdown files.</p>
+</li>
+<li>
+<p><strong>Local-only storage</strong></p>
+</li>
+<li>Place your Forge directory on:<ul>
+<li>A local-only folder (not backed by iCloud or other sync), or</li>
+<li>An encrypted volume (e.g. FileVault-encrypted disk image).</li>
+</ul>
+</li>
+<li>The code and config do not care where the directory lives; only your
+    <code>config.yaml</code> needs to point at the right <code>project_roots</code>.</li>
+</ul>
+<h3>Sharing logs and traces</h3>
+<ul>
+<li><strong>CLI logs</strong></li>
+<li><code>forge sync --verbose</code> and similar commands may include:<ul>
+<li>File paths in your home directory</li>
+<li>Task text and inline tags</li>
+</ul>
+</li>
+<li>
+<p>Before pasting logs into an issue, <strong>redact names, emails, and sensitive
+    task descriptions</strong>.</p>
+</li>
+<li>
+<p><strong>Profiling samples and traces</strong></p>
+</li>
+<li>
+<p>Commands like:</p>
+<p><code>bash
+sample &lt;PID&gt; 10 -file forge-menubar-startup.txt</code></p>
+<p>produce files that contain stack traces and local paths.</p>
+</li>
+<li>
+<p>Treat these as sensitive:</p>
+<ul>
+<li>Do not commit them to git.</li>
+<li>When sharing snippets, strip or replace any personal paths or project
+  names.</li>
+</ul>
+</li>
+</ul>
+<h3>Your responsibilities</h3>
+<p>Forge keeps all data local and under your control, but you remain responsible
+for:</p>
+<ul>
+<li>Choosing where the Forge directory lives (and whether it is synced or
+  encrypted).</li>
+<li>Managing backup and retention policies for your markdown files.</li>
+<li>Redacting sensitive content before sharing logs or example task files in
+  public bug reports.</li>
+</ul>
+      </article>
+    </main>
+    <footer class="site-footer">
+      <p>
+        <a href="index.html">Home</a>
+        · Source markdown in the
+        <a href="https://github.com/SimonAB/forge" target="_blank" rel="noopener noreferrer">repository</a>
+      </p>
+      <p>Released under the Apache License, Version 2.0.</p>
+    </footer>
+    <script src="assets/theme.js"></script>
+  </body>
+</html>

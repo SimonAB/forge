@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+### [0.8.6] – 2026-03-20
+
+#### Documentation and site
+
+- Publish the main documentation as static HTML on the GitHub Pages site (`cli.html`, `app.html`, `neovim.html`, `manual.html`, `privacy.html`, `readme.html`), generated from markdown via `docs/build_site.py` and `docs/requirements.txt` (Python `markdown`).
+- Extend the landing page navigation and cross-links to those pages; add shared `assets/theme.js` and prose styles in `assets/site.css`.
+- Document regeneration steps and the page ↔ source mapping in the README **Project website** section.
+
 ### [0.8.5] – 2026-03-20
 
 #### Documentation and site
@@ -186,5 +194,6 @@ The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.
   - Provide a help URL and AppleScript usage description.
   - Update the `generate_icon` script (`7767ca9`, `d0b87fa`, `23db3b1`, `a4742ff`).
 
+[0.8.6]: https://github.com/SimonAB/forge/releases/tag/v0.8.6
 [0.8.5]: https://github.com/SimonAB/forge/releases/tag/v0.8.5
 [0.4.0]: https://github.com/your-org/forge/releases/tag/v0.4.0

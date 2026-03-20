@@ -31,11 +31,15 @@
     <a href="#main" class="visually-hidden">Skip to content</a>
     <header class="site-nav">
       <div class="site-nav__inner">
-        <a class="site-nav__brand" href="./">Forge</a>
+        <a class="site-nav__brand" href="index.html">Forge</a>
         <nav class="site-nav__links" aria-label="Main navigation">
-          <a class="site-nav__link is-active" href="./">Home</a>
-          <a class="site-nav__link" href="#quick-start">Quick start</a>
-          <a class="site-nav__link" href="#documentation">Documentation</a>
+          <a class="site-nav__link is-active" href="index.html">Home</a>
+          <a class="site-nav__link" href="cli.html">CLI</a>
+          <a class="site-nav__link" href="app.html">Forge.app</a>
+          <a class="site-nav__link" href="neovim.html">Neovim</a>
+          <a class="site-nav__link" href="manual.html">Manual</a>
+          <a class="site-nav__link" href="privacy.html">Privacy</a>
+          <a class="site-nav__link" href="readme.html">Readme</a>
           <a
             class="site-nav__link"
             href="https://github.com/SimonAB/forge"
@@ -89,13 +93,7 @@
         </p>
         <div class="hero__actions">
           <a class="btn btn--brand" href="#quick-start">Quick start</a>
-          <a
-            class="btn btn--alt"
-            href="https://github.com/SimonAB/forge/blob/main/README.md"
-            target="_blank"
-            rel="noopener noreferrer"
-            >Readme on GitHub</a
-          >
+          <a class="btn btn--alt" href="readme.html">Full readme</a>
           <a
             class="btn btn--alt"
             href="https://github.com/SimonAB/forge"
@@ -235,33 +233,39 @@ zsh ~/Documents/Forge/build.sh</code></pre>
           <tbody>
             <tr>
               <td>
+                <a href="cli.html"><code class="inline-code">forge</code> CLI</a>
+                ·
                 <a
                   href="https://github.com/SimonAB/forge/blob/main/docs/cli.md"
                   target="_blank"
                   rel="noopener noreferrer"
-                  ><code class="inline-code">forge</code> CLI</a
+                  >source</a
                 >
               </td>
               <td>Boards, tasks, inbox, sync, review, and lint from the terminal.</td>
             </tr>
             <tr>
               <td>
+                <a href="app.html">Forge.app</a>
+                ·
                 <a
                   href="https://github.com/SimonAB/forge/blob/main/docs/app.md"
                   target="_blank"
                   rel="noopener noreferrer"
-                  >Forge.app</a
+                  >source</a
                 >
               </td>
               <td>Menu bar companion — background sync, quick capture, overdue badges.</td>
             </tr>
             <tr>
               <td>
+                <a href="neovim.html">Neovim plugin</a>
+                ·
                 <a
                   href="https://github.com/SimonAB/forge/blob/main/docs/neovim.md"
                   target="_blank"
                   rel="noopener noreferrer"
-                  >Neovim plugin</a
+                  >source</a
                 >
               </td>
               <td>Keymaps, commands, and dashboard integration via <code class="inline-code">forge-nvim.lua</code>.</td>
@@ -294,59 +298,64 @@ zsh ~/Documents/Forge/build.sh</code></pre>
 
       <section class="section" id="documentation" aria-labelledby="documentation-title">
         <h2 id="documentation-title" class="section__title">Documentation</h2>
+        <p class="section__lead">
+          Full guides are published as pages below (generated from the same markdown as the
+          repository). Each page links to its <strong>source</strong> file on GitHub for edits.
+        </p>
         <ol class="doc-list">
           <li>
-            <a
+            <a href="readme.html">Project readme</a>
+            (<a
               href="https://github.com/SimonAB/forge/blob/main/README.md"
               target="_blank"
               rel="noopener noreferrer"
-              >Project readme</a
-            >
-            — overview, layout, configuration, task format
+              >source</a
+            >) — overview, layout, configuration, task format
           </li>
           <li>
-            <a
+            <a href="cli.html">CLI reference</a>
+            (<a
               href="https://github.com/SimonAB/forge/blob/main/docs/cli.md"
               target="_blank"
               rel="noopener noreferrer"
-              >CLI reference</a
-            >
-            — commands and options
+              >source</a
+            >) — commands and options
           </li>
           <li>
-            <a
+            <a href="app.html">Forge.app</a>
+            (<a
               href="https://github.com/SimonAB/forge/blob/main/docs/app.md"
               target="_blank"
               rel="noopener noreferrer"
-              >Forge.app</a
-            >
-            — menu bar app setup and behaviour
+              >source</a
+            >) — menu bar app setup and behaviour
           </li>
           <li>
-            <a
+            <a href="neovim.html">Neovim integration</a>
+            (<a
               href="https://github.com/SimonAB/forge/blob/main/docs/neovim.md"
               target="_blank"
               rel="noopener noreferrer"
-              >Neovim integration</a
-            >
+              >source</a
+            >)
           </li>
           <li>
-            <a
+            <a href="privacy.html">Privacy</a>
+            (<a
               href="https://github.com/SimonAB/forge/blob/main/PRIVACY.md"
               target="_blank"
               rel="noopener noreferrer"
-              >Privacy</a
-            >
-            — data model and sync
+              >source</a
+            >) — data model and sync
           </li>
           <li>
-            <a
+            <a href="manual.html">Forge manual</a>
+            (<a
               href="https://github.com/SimonAB/forge/blob/main/docs/forge-manual.md"
               target="_blank"
               rel="noopener noreferrer"
-              >Forge manual</a
-            >
-            — longer-form guide
+              >source</a
+            >) — longer-form guide
           </li>
         </ol>
       </section>
@@ -357,28 +366,6 @@ zsh ~/Documents/Forge/build.sh</code></pre>
       <p>Forge</p>
     </footer>
 
-    <script>
-      (function () {
-        var root = document.documentElement;
-        var btn = document.getElementById("theme-toggle");
-        if (!btn) return;
-
-        function setIcon() {
-          var dark = root.classList.contains("dark");
-          var sun = btn.querySelector(".theme-toggle__icon--sun");
-          var moon = btn.querySelector(".theme-toggle__icon--moon");
-          sun.hidden = dark;
-          moon.hidden = !dark;
-        }
-
-        setIcon();
-
-        btn.addEventListener("click", function () {
-          var dark = root.classList.toggle("dark");
-          localStorage.setItem("forge-theme-appearance", dark ? "dark" : "light");
-          setIcon();
-        });
-      })();
-    </script>
+    <script src="assets/theme.js"></script>
   </body>
 </html>

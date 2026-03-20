@@ -41,8 +41,28 @@ If you want a flexible backbone that supports these paradigms but still allows y
 ## Project website
 
 The public site is <a href="https://simonab.github.io/forge/"><img src="docs/favicon.svg" alt="" width="18" height="18" /> <strong>simonab.github.io/forge</strong></a>
-(fork: `https://<user>.github.io/<repo>/`). Source: [`docs/index.html`](docs/index.html)
-plus [`docs/assets/site.css`](docs/assets/site.css) and [`docs/favicon.svg`](docs/favicon.svg).
+(fork: `https://<user>.github.io/<repo>/`). Landing page: [`docs/index.html`](docs/index.html)
+with [`docs/assets/site.css`](docs/assets/site.css) and [`docs/favicon.svg`](docs/favicon.svg).
+
+The **full documentation** is also published as static HTML next to the landing page, generated from the same markdown as the repo (`README.md`, `PRIVACY.md`, `docs/cli.md`, `docs/app.md`, `docs/neovim.md`, `docs/forge-manual.md`):
+
+| Page | Source |
+|------|--------|
+| [`docs/cli.html`](docs/cli.html) | [`docs/cli.md`](docs/cli.md) |
+| [`docs/app.html`](docs/app.html) | [`docs/app.md`](docs/app.md) |
+| [`docs/neovim.html`](docs/neovim.html) | [`docs/neovim.md`](docs/neovim.md) |
+| [`docs/manual.html`](docs/manual.html) | [`docs/forge-manual.md`](docs/forge-manual.md) |
+| [`docs/privacy.html`](docs/privacy.html) | [`PRIVACY.md`](PRIVACY.md) |
+| [`docs/readme.html`](docs/readme.html) | [`README.md`](README.md) |
+
+Regenerate the `*.html` files after editing documentation:
+
+```bash
+pip install -r docs/requirements.txt   # once per environment
+python3 docs/build_site.py
+```
+
+Commit the updated HTML so **GitHub Pages** serves the latest content.
 
 To publish with **GitHub Pages**, open **Settings → Pages**, set **Build and deployment**
 to **Deploy from a branch**, branch **main**, folder **`/docs`**.
