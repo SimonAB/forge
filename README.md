@@ -7,6 +7,8 @@ inspired by OmniFocus. Everything lives in plain-text markdown files, editable
 with any editor. Two-way synchronisation with Apple Reminders keeps your tasks
 visible across all your devices.
 
+**Website:** [simonab.github.io/forge](https://simonab.github.io/forge/) — overview, quick start, and links to the full documentation (served from [`docs/index.html`](docs/index.html) via GitHub Pages).
+
 ## Who is Forge for?
 
 Forge is for people who think in files and folders first, and who already use file attributes and tags to organise their projects and tasks. If you like being able to open a normal directory in Finder or your editor and see exactly where everything lives – with no opaque databases or cloud backends – Forge is designed for you.
@@ -35,6 +37,15 @@ If you want a flexible backbone that supports these paradigms but still allows y
 | [`forge` CLI](docs/cli.md) | Command-line interface for boards, tasks, inbox, sync, and review |
 | [Forge.app](docs/app.md) | Menu bar companion — background sync, quick capture, overdue badges |
 | [Neovim plugin](docs/neovim.md) | Keymaps, commands, and dashboard integration via `forge-nvim.lua` |
+
+## Project website
+
+The public site is **[simonab.github.io/forge](https://simonab.github.io/forge/)**
+(fork: `https://<user>.github.io/<repo>/`). Source: [`docs/index.html`](docs/index.html)
+plus [`docs/assets/site.css`](docs/assets/site.css) and [`docs/favicon.svg`](docs/favicon.svg).
+
+To publish with **GitHub Pages**, open **Settings → Pages**, set **Build and deployment**
+to **Deploy from a branch**, branch **main**, folder **`/docs`**.
 
 ## Quick start
 

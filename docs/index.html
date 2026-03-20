@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en-GB" dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Forge</title>
+    <meta
+      name="description"
+      content="Local, markdown-based project and task management for macOS — kanban board, GTD workflows, and Apple Reminders sync."
+    />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/site.css" />
+    <script>
+      (function () {
+        var stored = localStorage.getItem("forge-theme-appearance");
+        var dark =
+          stored === "dark" ||
+          (!stored &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches);
+        if (dark) document.documentElement.classList.add("dark");
+      })();
+    </script>
+  </head>
+  <body>
+    <a href="#main" class="visually-hidden">Skip to content</a>
+    <header class="site-nav">
+      <div class="site-nav__inner">
+        <a class="site-nav__brand" href="./">Forge</a>
+        <nav class="site-nav__links" aria-label="Main navigation">
+          <a class="site-nav__link is-active" href="./">Home</a>
+          <a class="site-nav__link" href="#quick-start">Quick start</a>
+          <a class="site-nav__link" href="#documentation">Documentation</a>
+          <a
+            class="site-nav__link"
+            href="https://github.com/SimonAB/forge"
+            target="_blank"
+            rel="noopener noreferrer"
+            >GitHub</a
+          >
+        </nav>
+        <div class="site-nav__actions">
+          <button
+            type="button"
+            class="theme-toggle"
+            id="theme-toggle"
+            aria-label="Toggle dark mode"
+            title="Toggle theme"
+          >
+            <span class="theme-toggle__icon theme-toggle__icon--sun" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="4" />
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+              </svg>
+            </span>
+            <span class="theme-toggle__icon theme-toggle__icon--moon" aria-hidden="true" hidden>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+              </svg>
+            </span>
+          </button>
+          <a
+            class="btn btn--alt"
+            href="https://github.com/SimonAB/forge"
+            target="_blank"
+            rel="noopener noreferrer"
+            >View on GitHub</a
+          >
+        </div>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="hero" aria-labelledby="hero-title">
+        <h1 id="hero-title" class="hero__title">
+          <span class="hero__name">Forge</span>
+          <span class="hero__subtitle"
+            >Local project and task management for macOS</span
+          >
+        </h1>
+        <p class="hero__tagline">
+          Kanban board, GTD-style workflows, and plain-text markdown — with optional
+          two-way sync to Apple Reminders. No servers; your files stay on your Mac.
+        </p>
+        <div class="hero__actions">
+          <a class="btn btn--brand" href="#quick-start">Quick start</a>
+          <a
+            class="btn btn--alt"
+            href="https://github.com/SimonAB/forge/blob/main/README.md"
+            target="_blank"
+            rel="noopener noreferrer"
+            >Readme on GitHub</a
+          >
+          <a
+            class="btn btn--alt"
+            href="https://github.com/SimonAB/forge"
+            target="_blank"
+            rel="noopener noreferrer"
+            >Repository</a
+          >
+        </div>
+      </section>
+
+      <section class="features" aria-labelledby="features-heading">
+        <h2 id="features-heading" class="visually-hidden">Features</h2>
+        <div class="features__grid">
+          <article class="feature-card">
+            <div class="feature-card__icon" aria-hidden="true">📋</div>
+            <h3 class="feature-card__title">Kanban &amp; GTD</h3>
+            <p class="feature-card__text">
+              Project columns driven by Finder tags, plus inbox, next actions,
+              contexts, waiting-for, and weekly review — all in markdown.
+            </p>
+          </article>
+          <article class="feature-card">
+            <div class="feature-card__icon" aria-hidden="true">📄</div>
+            <h3 class="feature-card__title">Plain-text first</h3>
+            <p class="feature-card__text">
+              Tasks and areas live in normal <code class="inline-code">.md</code> files.
+              Edit in Neovim, VS Code, or any editor; use git like any other project.
+            </p>
+          </article>
+          <article class="feature-card">
+            <div class="feature-card__icon" aria-hidden="true">🔄</div>
+            <h3 class="feature-card__title">Apple Reminders</h3>
+            <p class="feature-card__text">
+              Optional sync surfaces contexts as Reminders lists on iPhone and iPad,
+              while your canonical task text remains in markdown on the Mac.
+            </p>
+          </article>
+          <article class="feature-card">
+            <div class="feature-card__icon" aria-hidden="true">⌨️</div>
+            <h3 class="feature-card__title">CLI &amp; apps</h3>
+            <p class="feature-card__text">
+              The <code class="inline-code">forge</code> CLI for terminals, a menu bar
+              companion for capture and sync, and a native board window for the big picture.
+            </p>
+          </article>
+          <article class="feature-card">
+            <div class="feature-card__icon" aria-hidden="true">🏷️</div>
+            <h3 class="feature-card__title">Finder integration</h3>
+            <p class="feature-card__text">
+              Kanban state lives in Finder tags; people-tags like
+              <code class="inline-code">#Alice</code> support assignees and metadata you
+              can see outside Forge.
+            </p>
+          </article>
+          <article class="feature-card">
+            <div class="feature-card__icon" aria-hidden="true">🔒</div>
+            <h3 class="feature-card__title">Local-first privacy</h3>
+            <p class="feature-card__text">
+              No Forge cloud. A small local cache holds paths and timestamps — not your
+              task bodies. See <code class="inline-code">PRIVACY.md</code> for detail.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" id="cli-examples" aria-labelledby="cli-examples-title">
+        <h2 id="cli-examples-title" class="section__title">CLI at a glance</h2>
+        <p class="section__lead">
+          Common commands for boards, tasks, and sync. Full reference in the CLI
+          documentation.
+        </p>
+        <div class="code-block">
+          <span class="code-block__label">bash</span>
+          <pre><code>forge board                 # Kanban overview
+forge next                  # Next actions
+forge inbox                 # GTD inbox
+forge sync                  # Two-way Reminders sync
+forge review                # Weekly review checklist
+forge due                   # Overdue and upcoming</code></pre>
+        </div>
+      </section>
+
+      <section class="section" id="requirements" aria-labelledby="requirements-title">
+        <h2 id="requirements-title" class="section__title">Requirements</h2>
+        <h3>Essential</h3>
+        <ul>
+          <li><strong>macOS</strong> 14 or later</li>
+          <li>
+            <strong>Xcode</strong> or Xcode Command Line Tools (Swift toolchain)
+          </li>
+        </ul>
+        <h3>Optional</h3>
+        <ul>
+          <li>
+            <strong>Python 3</strong> with Pillow (<code class="inline-code">pip3 install Pillow</code>)
+            if you want the generated app icon
+          </li>
+        </ul>
+      </section>
+
+      <section class="section" id="quick-start" aria-labelledby="quick-start-title">
+        <h2 id="quick-start-title" class="section__title">Quick start</h2>
+        <p class="section__lead">
+          After cloning or syncing the repository to your Mac, run the build script once
+          per machine. It compiles the Swift package, installs the binary, creates
+          <code class="inline-code">Forge.app</code>, and registers a launch agent for the
+          menu bar app.
+        </p>
+        <div class="code-block">
+          <span class="code-block__label">bash</span>
+          <pre><code># From your Forge source directory (e.g. after iCloud or git sync)
+zsh ~/Documents/Forge/build.sh</code></pre>
+        </div>
+        <p class="section__lead" style="margin-top: 1rem">
+          Configure <code class="inline-code">config.yaml</code> from
+          <code class="inline-code">config.sample.yaml</code>, set your workspace path, and
+          adjust board columns and contexts. See the
+          <a
+            href="https://github.com/SimonAB/forge/blob/main/README.md#configuration"
+            target="_blank"
+            rel="noopener noreferrer"
+            >configuration section</a
+          >
+          in the readme.
+        </p>
+      </section>
+
+      <section class="section" id="components" aria-labelledby="components-title">
+        <h2 id="components-title" class="section__title">Components</h2>
+        <table class="doc-table">
+          <thead>
+            <tr>
+              <th>Component</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <a
+                  href="https://github.com/SimonAB/forge/blob/main/docs/cli.md"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  ><code class="inline-code">forge</code> CLI</a
+                >
+              </td>
+              <td>Boards, tasks, inbox, sync, review, and lint from the terminal.</td>
+            </tr>
+            <tr>
+              <td>
+                <a
+                  href="https://github.com/SimonAB/forge/blob/main/docs/app.md"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >Forge.app</a
+                >
+              </td>
+              <td>Menu bar companion — background sync, quick capture, overdue badges.</td>
+            </tr>
+            <tr>
+              <td>
+                <a
+                  href="https://github.com/SimonAB/forge/blob/main/docs/neovim.md"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >Neovim plugin</a
+                >
+              </td>
+              <td>Keymaps, commands, and dashboard integration via <code class="inline-code">forge-nvim.lua</code>.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="section" id="design-principles" aria-labelledby="principles-title">
+        <h2 id="principles-title" class="section__title">Design principles</h2>
+        <ol class="principles">
+          <li>
+            <strong>Files first</strong> — durable markdown you can search, diff, and move
+            without a proprietary database.
+          </li>
+          <li>
+            <strong>Composability</strong> — CLI, GUI, and editor integrations share the same
+            on-disk format.
+          </li>
+          <li>
+            <strong>GTD + kanban</strong> — visual project flow alongside next actions,
+            contexts, and reviews.
+          </li>
+          <li>
+            <strong>Transparency</strong> — clear configuration, documented privacy model,
+            and open-source code.
+          </li>
+        </ol>
+      </section>
+
+      <section class="section" id="documentation" aria-labelledby="documentation-title">
+        <h2 id="documentation-title" class="section__title">Documentation</h2>
+        <ol class="doc-list">
+          <li>
+            <a
+              href="https://github.com/SimonAB/forge/blob/main/README.md"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Project readme</a
+            >
+            — overview, layout, configuration, task format
+          </li>
+          <li>
+            <a
+              href="https://github.com/SimonAB/forge/blob/main/docs/cli.md"
+              target="_blank"
+              rel="noopener noreferrer"
+              >CLI reference</a
+            >
+            — commands and options
+          </li>
+          <li>
+            <a
+              href="https://github.com/SimonAB/forge/blob/main/docs/app.md"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Forge.app</a
+            >
+            — menu bar app setup and behaviour
+          </li>
+          <li>
+            <a
+              href="https://github.com/SimonAB/forge/blob/main/docs/neovim.md"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Neovim integration</a
+            >
+          </li>
+          <li>
+            <a
+              href="https://github.com/SimonAB/forge/blob/main/PRIVACY.md"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Privacy</a
+            >
+            — data model and sync
+          </li>
+          <li>
+            <a
+              href="https://github.com/SimonAB/forge/blob/main/docs/forge-manual.md"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Forge manual</a
+            >
+            — longer-form guide
+          </li>
+        </ol>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>Released under the Apache License, Version 2.0.</p>
+      <p>Forge</p>
+    </footer>
+
+    <script>
+      (function () {
+        var root = document.documentElement;
+        var btn = document.getElementById("theme-toggle");
+        if (!btn) return;
+
+        function setIcon() {
+          var dark = root.classList.contains("dark");
+          var sun = btn.querySelector(".theme-toggle__icon--sun");
+          var moon = btn.querySelector(".theme-toggle__icon--moon");
+          sun.hidden = dark;
+          moon.hidden = !dark;
+        }
+
+        setIcon();
+
+        btn.addEventListener("click", function () {
+          var dark = root.classList.toggle("dark");
+          localStorage.setItem("forge-theme-appearance", dark ? "dark" : "light");
+          setIcon();
+        });
+      })();
+    </script>
+  </body>
+</html>

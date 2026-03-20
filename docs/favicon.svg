@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <defs>
+    <linearGradient id="ember" x1="6" y1="24" x2="26" y2="4" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1c0a0a"/>
+      <stop offset="0.25" stop-color="#7f1d1d"/>
+      <stop offset="0.5" stop-color="#ea580c"/>
+      <stop offset="0.78" stop-color="#fbbf24"/>
+      <stop offset="1" stop-color="#fde68a"/>
+    </linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="1.2" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="32" height="32" rx="6" fill="#0c0a0a"/>
+  <path
+    filter="url(#glow)"
+    d="M8 22V10h4.2l3.8 6.2L19.8 10H24v12h-3.6v-7.2l-3.4 5.6h-2l-3.4-5.6V22H8z"
+    fill="url(#ember)"
+  />
+</svg>

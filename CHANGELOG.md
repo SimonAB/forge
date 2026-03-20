@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+### [0.8.5] – 2026-03-20
+
+#### Documentation and site
+
+- Add a static project landing page under `docs/` for GitHub Pages: hero, feature grid, forge/fire-themed styling (light/dark), quick start, and links to repository docs.
+- Promote the live URL in the README and expand the **Project website** section with source file pointers and Pages setup.
+
 ### [0.8.4] – 2026-03-20
 
 #### CLI due and review
@@ -179,4 +186,5 @@ The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.
   - Provide a help URL and AppleScript usage description.
   - Update the `generate_icon` script (`7767ca9`, `d0b87fa`, `23db3b1`, `a4742ff`).
 
+[0.8.5]: https://github.com/SimonAB/forge/releases/tag/v0.8.5
 [0.4.0]: https://github.com/your-org/forge/releases/tag/v0.4.0
