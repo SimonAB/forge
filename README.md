@@ -92,7 +92,6 @@ and how to run in markdown-only or local-only modes.
 ├── horizons.md                 Area: Horizons
 ├── build.sh                  Per-Mac build & install script
 ├── generate_icon.py            App icon generator (requires Pillow)
-├── import_omnifocus.py         One-time OmniFocus import helper
 ├── Sources/                    Swift source code
 ├── Package.swift               Swift package manifest
 └── docs/                       Documentation
