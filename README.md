@@ -7,7 +7,7 @@ inspired by OmniFocus. Everything lives in plain-text markdown files, editable
 with any editor. Two-way synchronisation with Apple Reminders keeps your tasks
 visible across all your devices.
 
-**Website:** [simonab.github.io/forge](https://simonab.github.io/forge/) — overview, quick start, and links to the full documentation (served from [`docs/index.html`](docs/index.html) via GitHub Pages).
+**Website:** <a href="https://simonab.github.io/forge/"><img src="docs/favicon.svg" alt="" width="18" height="18" /> simonab.github.io/forge</a> — overview, quick start, and links to the full documentation (served from [`docs/index.html`](docs/index.html) via GitHub Pages).
 
 ## Who is Forge for?
 
@@ -40,7 +40,7 @@ If you want a flexible backbone that supports these paradigms but still allows y
 
 ## Project website
 
-The public site is **[simonab.github.io/forge](https://simonab.github.io/forge/)**
+The public site is <a href="https://simonab.github.io/forge/"><img src="docs/favicon.svg" alt="" width="18" height="18" /> <strong>simonab.github.io/forge</strong></a>
 (fork: `https://<user>.github.io/<repo>/`). Source: [`docs/index.html`](docs/index.html)
 plus [`docs/assets/site.css`](docs/assets/site.css) and [`docs/favicon.svg`](docs/favicon.svg).
 
