@@ -74,6 +74,20 @@
 <h2>Changelog</h2>
 <p>All notable changes to this project will be documented in this file.</p>
 <p>The format loosely follows <a href="https://keepachangelog.com/en/1.1.0/">Keep a Changelog</a>.</p>
+<h3><a href="https://github.com/SimonAB/forge/releases/tag/v0.8.12">0.8.12</a> – 2026-03-21</h3>
+<h4>Forge.app (menubar and board)</h4>
+<ul>
+<li><strong>Default terminal</strong> — preferences can persist a chosen terminal (<code>config.yaml</code> <code>terminal:</code>): Auto, Ghostty, kitty, iTerm, Warp, <strong>cmux</strong>, or Terminal. <code>forge …</code> and editor launches honour this choice.</li>
+<li><strong>Vim in terminal</strong> — editor option renamed to <strong>“Vim (in selected terminal)”</strong>; legacy <strong>“Vim (in default terminal)”</strong> still maps correctly.</li>
+<li><strong>Centralised <code>EditorLauncher</code></strong> — shared open-file/folder logic for the terminal editor and GUI editors.</li>
+</ul>
+<h4>Terminal integration</h4>
+<ul>
+<li><strong><code>TerminalLauncher</code></strong> — reliable launches per app (Ghostty surface config, kitty remote <code>launch</code>, iTerm/Terminal AppleScript, Warp YAML, cmux <code>new-pane</code> + <code>send</code>, fallbacks).</li>
+<li><strong><code>openNeovim</code></strong> — opens the real file with <strong><code>cd dir &amp;&amp; vim relative-file</code></strong> (bare <code>vim</code> on <code>PATH</code>); kitty still execs the <code>nvim</code> binary with a relative file argument.</li>
+<li><strong>Environment</strong> — resolve <strong><code>HOME</code></strong> from the login record (<code>getpwuid</code>) and set <strong><code>XDG_*</code></strong> / <strong><code>PATH</code></strong> so Neovim plugin managers (e.g. lazy.nvim) use the same data dirs as a normal shell.</li>
+<li><strong>cmux</strong> — warn when socket/automation mode blocks Forge; subprocess env allows automation where needed.</li>
+</ul>
 <h3><a href="https://github.com/SimonAB/forge/releases/tag/v0.8.11">0.8.11</a> – 2026-03-20</h3>
 <h4>Distribution</h4>
 <ul>
