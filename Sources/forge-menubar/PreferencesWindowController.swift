@@ -35,7 +35,13 @@ final class PreferencesWindowController: NSWindowController {
 
         let generalItem = NSTabViewItem(identifier: "general")
         generalItem.label = "General"
-        generalItem.view = PreferencesGeneralView(configPath: configPath, config: config)
+        generalItem.view = PreferencesGeneralView(
+            configPath: configPath,
+            config: config,
+            onSaveTerminal: { [weak self] terminal in
+                self?.saveTerminal(terminal) ?? false
+            }
+        )
         tabView.addTabViewItem(generalItem)
 
         let boardItem = NSTabViewItem(identifier: "board")
@@ -101,6 +107,28 @@ final class PreferencesWindowController: NSWindowController {
         }
     }
 
+    /// Save terminal preference to config.yaml and update in-memory config.
+    private func saveTerminal(_ terminal: String?) -> Bool {
+        guard let path = configPath, let current = config else { return false }
+        let updated = ForgeConfig(
+            projectRoots: current.projectRoots,
+            board: current.board,
+            gtd: current.gtd,
+            workspaceTags: current.workspaceTags,
+            projectAreas: current.projectAreas,
+            terminal: terminal,
+            projectTag: current.projectTag,
+            dueConflictPolicy: current.dueConflictPolicy
+        )
+        do {
+            try updated.save(to: path)
+            config = updated
+            return true
+        } catch {
+            return false
+        }
+    }
+
     @available(*, unavailable)
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
@@ -117,14 +145,17 @@ final class PreferencesWindowController: NSWindowController {
 
 private final class PreferencesGeneralView: NSView {
     private var editorPopUp: NSPopUpButton?
+    private var terminalPopUp: NSPopUpButton?
     private let configPath: String?
     private let config: ForgeConfig?
+    private let onSaveTerminal: (String?) -> Bool
 
     override var isFlipped: Bool { true }
 
-    init(configPath: String?, config: ForgeConfig?) {
+    init(configPath: String?, config: ForgeConfig?, onSaveTerminal: @escaping (String?) -> Bool) {
         self.configPath = configPath
         self.config = config
+        self.onSaveTerminal = onSaveTerminal
         super.init(frame: .zero)
         let label = NSTextField(labelWithString: "General")
         label.font = .systemFont(ofSize: 13, weight: .semibold)
@@ -188,6 +219,35 @@ private final class PreferencesGeneralView: NSView {
             popUp.topAnchor.constraint(equalTo: editorLabel.bottomAnchor, constant: 6),
             popUp.widthAnchor.constraint(greaterThanOrEqualToConstant: 200),
         ])
+
+        let terminalLabel = NSTextField(labelWithString: "Default terminal for Forge CLI actions:")
+        terminalLabel.font = .systemFont(ofSize: 12, weight: .regular)
+        terminalLabel.textColor = .secondaryLabelColor
+        terminalLabel.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(terminalLabel)
+
+        let terminalPopUp = NSPopUpButton(frame: .zero, pullsDown: false)
+        terminalPopUp.translatesAutoresizingMaskIntoConstraints = false
+        terminalPopUp.addItems(withTitles: TerminalPreferences.knownTerminals)
+        let terminalDisplayTitle = TerminalPreferences.displayTitle(forConfigValue: config?.terminal)
+        if let idx = TerminalPreferences.knownTerminals.firstIndex(of: terminalDisplayTitle) {
+            terminalPopUp.selectItem(at: idx)
+        } else {
+            terminalPopUp.selectItem(at: 0)
+        }
+        terminalPopUp.target = self
+        terminalPopUp.action = #selector(terminalPopUpChanged(_:))
+        terminalPopUp.isEnabled = configPath != nil
+        addSubview(terminalPopUp)
+        self.terminalPopUp = terminalPopUp
+
+        NSLayoutConstraint.activate([
+            terminalLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            terminalLabel.topAnchor.constraint(equalTo: popUp.bottomAnchor, constant: 16),
+            terminalPopUp.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            terminalPopUp.topAnchor.constraint(equalTo: terminalLabel.bottomAnchor, constant: 6),
+            terminalPopUp.widthAnchor.constraint(greaterThanOrEqualToConstant: 200),
+        ])
     }
 
     @objc private func openConfigTapped(_ sender: NSButton) {
@@ -198,63 +258,38 @@ private final class PreferencesGeneralView: NSView {
     }
 
     @objc private func editTaskFilesTapped(_ sender: NSButton) {
-        guard let path = configPath, let config = config else { return }
+        guard let path = configPath, let config = currentConfig() else { return }
         let forgeDir = (path as NSString).deletingLastPathComponent
         let taskFilesRoot = ForgePaths(forgeDir: forgeDir).taskFilesRoot
-        let url = URL(fileURLWithPath: taskFilesRoot)
         let editor = EditorPreferences.loadPreferredEditor()
-        openFolder(url: url, path: taskFilesRoot, withEditor: editor, config: config)
+        openFolder(path: taskFilesRoot, withEditor: editor, config: config)
     }
 
     /// Opens a folder with the chosen default editor (Finder, named app, or vim in terminal).
-    private func openFolder(url: URL, path: String, withEditor editorIdentifier: String?, config: ForgeConfig) {
-        if editorIdentifier == nil || editorIdentifier == "default" || editorIdentifier?.isEmpty == true {
-            NSWorkspace.shared.open(url)
-            return
-        }
-        switch editorIdentifier! {
-        case "Vim (in default terminal)":
-            let launcher = TerminalLauncher(config: config, terminalOverride: nil, openURL: { NSWorkspace.shared.open($0) })
-            let escaped = path.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"")
-            launcher.run("zsh -i -c 'vim \"\(escaped)\"'", workingDirectory: path)
-        case "Cursor", "Visual Studio Code", "TextEdit", "Sublime Text":
-            let process = Process()
-            process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
-            process.arguments = ["-a", editorIdentifier!, path]
-            process.qualityOfService = .userInitiated
-            try? process.run()
-        default:
-            NSWorkspace.shared.open(url)
-        }
+    private func openFolder(path: String, withEditor editorIdentifier: String?, config: ForgeConfig) {
+        let folderURL = URL(fileURLWithPath: path)
+        EditorLauncher.openFolder(
+            folderURL: folderURL,
+            preferredEditor: editorIdentifier,
+            config: config,
+            openURL: { NSWorkspace.shared.open($0) }
+        )
     }
 
     /// Opens a file with the chosen default editor (system app, named app, or vim in terminal).
     private func openFile(url: URL, withEditor editorIdentifier: String?) {
-        let path = url.path
-        if editorIdentifier == nil || editorIdentifier == "default" || editorIdentifier?.isEmpty == true {
-            NSWorkspace.shared.open(url)
-            return
-        }
-        switch editorIdentifier! {
-        case "Vim (in default terminal)":
-            guard let config = config else {
-                NSWorkspace.shared.open(url)
-                return
-            }
-            let dir = (path as NSString).deletingLastPathComponent
-            // Use Auto terminal
-            let launcher = TerminalLauncher(config: config, terminalOverride: nil, openURL: { NSWorkspace.shared.open($0) })
-            let escaped = path.replacingOccurrences(of: "\"", with: "\\\"")
-            launcher.run("zsh -i -c 'vim \"\(escaped)\"'", workingDirectory: dir)
-        case "Cursor", "Visual Studio Code", "TextEdit", "Sublime Text":
-            let process = Process()
-            process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
-            process.arguments = ["-a", editorIdentifier!, path]
-            process.qualityOfService = .userInitiated
-            try? process.run()
-        default:
-            NSWorkspace.shared.open(url)
-        }
+        EditorLauncher.openFile(
+            fileURL: url,
+            preferredEditor: editorIdentifier,
+            config: currentConfig(),
+            openURL: { NSWorkspace.shared.open($0) }
+        )
+    }
+
+    /// Load the latest config so editor+terminal settings stay in sync while Preferences is open.
+    private func currentConfig() -> ForgeConfig? {
+        guard let path = configPath else { return config }
+        return (try? ForgeConfig.load(from: path)) ?? config
     }
 
     override func viewDidMoveToWindow() {
@@ -279,6 +314,13 @@ private final class PreferencesGeneralView: NSView {
         guard let title = sender.selectedItem?.title else { return }
         let id = EditorPreferences.identifier(forDisplayTitle: title)
         EditorPreferences.savePreferredEditor(id)
+    }
+
+    /// Persist the selected terminal application into config.yaml.
+    @objc private func terminalPopUpChanged(_ sender: NSPopUpButton) {
+        guard let title = sender.selectedItem?.title else { return }
+        let configValue = TerminalPreferences.configValue(forDisplayTitle: title)
+        _ = onSaveTerminal(configValue)
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }

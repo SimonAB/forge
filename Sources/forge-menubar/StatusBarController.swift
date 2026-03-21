@@ -704,24 +704,12 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         let taskFilesRoot = (paths.taskFilesRoot as NSString).standardizingPath
         let folderURL = URL(fileURLWithPath: taskFilesRoot).standardizedFileURL
         let editor = EditorPreferences.loadPreferredEditor()
-        if editor == nil || editor == "default" || editor?.isEmpty == true {
-            NSWorkspace.shared.open(folderURL)
-            return
-        }
-        switch editor! {
-        case "Vim (in default terminal)":
-            let launcher = TerminalLauncher(config: config, terminalOverride: nil, openURL: { NSWorkspace.shared.open($0) })
-            let escaped = taskFilesRoot.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"")
-            launcher.run("zsh -i -c 'vim \"\(escaped)\"'", workingDirectory: taskFilesRoot)
-        case "Cursor", "Visual Studio Code", "TextEdit", "Sublime Text":
-            let process = Process()
-            process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
-            process.arguments = ["-a", editor!, taskFilesRoot]
-            process.qualityOfService = .userInitiated
-            try? process.run()
-        default:
-            NSWorkspace.shared.open(folderURL)
-        }
+        EditorLauncher.openFolder(
+            folderURL: folderURL,
+            preferredEditor: editor,
+            config: config,
+            openURL: { NSWorkspace.shared.open($0) }
+        )
     }
 
     @objc private func openBoardInTerminal() {

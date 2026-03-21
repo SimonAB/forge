@@ -68,25 +68,12 @@ struct ForgeBoardApp: App {
         let paths = ForgePaths(forgeDir: forgeDir)
         let folderURL = URL(fileURLWithPath: paths.taskFilesRoot)
         let editor = EditorPreferences.loadPreferredEditor()
-        if editor == nil || editor == "default" || editor?.isEmpty == true {
-            NSWorkspace.shared.open(folderURL)
-            return
-        }
-        let path = paths.taskFilesRoot
-        switch editor! {
-        case "Vim (in default terminal)":
-            let launcher = TerminalLauncher(config: config, terminalOverride: nil, openURL: { NSWorkspace.shared.open($0) })
-            let escaped = path.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"")
-            launcher.run("zsh -i -c 'vim \"\(escaped)\"'", workingDirectory: path)
-        case "Cursor", "Visual Studio Code", "TextEdit", "Sublime Text":
-            let process = Process()
-            process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
-            process.arguments = ["-a", editor!, path]
-            process.qualityOfService = .userInitiated
-            try? process.run()
-        default:
-            NSWorkspace.shared.open(folderURL)
-        }
+        EditorLauncher.openFolder(
+            folderURL: folderURL,
+            preferredEditor: editor,
+            config: config,
+            openURL: { NSWorkspace.shared.open($0) }
+        )
     }
     #endif
 
@@ -156,25 +143,12 @@ private struct BoardRootView: View {
         let taskFilesRoot = (paths.taskFilesRoot as NSString).standardizingPath
         let folderURL = URL(fileURLWithPath: taskFilesRoot).standardizedFileURL
         let editor = EditorPreferences.loadPreferredEditor()
-        if editor == nil || editor == "default" || editor?.isEmpty == true {
-            NSWorkspace.shared.open(folderURL)
-            return
-        }
-        let path = taskFilesRoot
-        switch editor! {
-        case "Vim (in default terminal)":
-            let launcher = TerminalLauncher(config: config, terminalOverride: nil, openURL: { NSWorkspace.shared.open($0) })
-            let escaped = path.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"")
-            launcher.run("zsh -i -c 'vim \"\(escaped)\"'", workingDirectory: path)
-        case "Cursor", "Visual Studio Code", "TextEdit", "Sublime Text":
-            let process = Process()
-            process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
-            process.arguments = ["-a", editor!, path]
-            process.qualityOfService = .userInitiated
-            try? process.run()
-        default:
-            NSWorkspace.shared.open(folderURL)
-        }
+        EditorLauncher.openFolder(
+            folderURL: folderURL,
+            preferredEditor: editor,
+            config: config,
+            openURL: { NSWorkspace.shared.open($0) }
+        )
     }
 
     private static func openFileWithEditor(url: URL, config: ForgeConfig) {
@@ -184,25 +158,12 @@ private struct BoardRootView: View {
             try? MarkdownIO().createEmptyTasksFile(at: path)
         }
         let editor = EditorPreferences.loadPreferredEditor()
-        if editor == nil || editor == "default" || editor?.isEmpty == true {
-            NSWorkspace.shared.open(url)
-            return
-        }
-        switch editor! {
-        case "Vim (in default terminal)":
-            let dir = (path as NSString).deletingLastPathComponent
-            let launcher = TerminalLauncher(config: config, terminalOverride: nil, openURL: { NSWorkspace.shared.open($0) })
-            let escaped = path.replacingOccurrences(of: "\"", with: "\\\"")
-            launcher.run("zsh -i -c 'vim \"\(escaped)\"'", workingDirectory: dir)
-        case "Cursor", "Visual Studio Code", "TextEdit", "Sublime Text":
-            let process = Process()
-            process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
-            process.arguments = ["-a", editor!, path]
-            process.qualityOfService = .userInitiated
-            try? process.run()
-        default:
-            NSWorkspace.shared.open(url)
-        }
+        EditorLauncher.openFile(
+            fileURL: url,
+            preferredEditor: editor,
+            config: config,
+            openURL: { NSWorkspace.shared.open($0) }
+        )
     }
     #endif
 
