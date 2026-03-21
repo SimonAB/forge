@@ -61,11 +61,14 @@ public enum BoardFilterPreferences {
 // MARK: - Default text editor preference (UserDefaults)
 
 /// UserDefaults-backed default text editor for opening config and other files.
-/// Use "default" or nil for system default (Open With). "Vim (in default terminal)" opens in terminal with vim.
+/// Use "default" or nil for system default (Open With). "Vim (in selected terminal)"
+/// opens in the terminal selected in config with vim.
 public enum EditorPreferences {
     public static let userDefaultsKey = "ForgePreferredTextEditor"
+    public static let vimInTerminalDisplayTitle = "Vim (in selected terminal)"
+    public static let legacyVimInTerminalDisplayTitle = "Vim (in default terminal)"
 
-    /// Stored value: nil or "default" = system default; otherwise app name or "Vim (in default terminal)".
+    /// Stored value: nil or "default" = system default; otherwise app name or "Vim (in selected terminal)".
     public static func loadPreferredEditor() -> String? {
         UserDefaults.standard.string(forKey: userDefaultsKey)
     }
@@ -83,7 +86,7 @@ public enum EditorPreferences {
         "Default (system)",
         "Cursor",
         "Visual Studio Code",
-        "Vim (in default terminal)",
+        vimInTerminalDisplayTitle,
         "TextEdit",
         "Sublime Text",
     ]
@@ -91,13 +94,51 @@ public enum EditorPreferences {
     /// Stored value for the given display title. Used when saving selection.
     public static func identifier(forDisplayTitle title: String) -> String? {
         if title == "Default (system)" { return nil }
+        if title == legacyVimInTerminalDisplayTitle { return vimInTerminalDisplayTitle }
         return title
     }
 
     /// Display title for the given stored value. Used when loading selection.
     public static func displayTitle(forIdentifier identifier: String?) -> String {
         guard let id = identifier, !id.isEmpty, id != "default" else { return "Default (system)" }
+        if id == legacyVimInTerminalDisplayTitle { return vimInTerminalDisplayTitle }
         return knownEditors.contains(id) ? id : id
+    }
+
+    /// Returns true when the editor selection means "open with vim in selected terminal".
+    public static func isVimInTerminal(_ identifier: String?) -> Bool {
+        identifier == vimInTerminalDisplayTitle || identifier == legacyVimInTerminalDisplayTitle
+    }
+}
+
+// MARK: - Terminal app options (config + preferences)
+
+/// Known terminal application display titles for the preferences picker.
+/// First item is automatic detection order in TerminalLauncher.
+public enum TerminalPreferences {
+    public static let knownTerminals = [
+        "Auto (recommended)",
+        "Ghostty",
+        "kitty",
+        "iTerm",
+        "Warp",
+        "cmux",
+        "Terminal",
+    ]
+
+    /// Config value for a given picker display title.
+    public static func configValue(forDisplayTitle title: String) -> String? {
+        if title == "Auto (recommended)" { return "auto" }
+        if title == "cmux.app" { return "cmux" } // backwards compatibility for older UI labels
+        return title
+    }
+
+    /// Picker display title for a config value.
+    public static func displayTitle(forConfigValue value: String?) -> String {
+        guard let value = value, !value.isEmpty else { return "Auto (recommended)" }
+        if value.lowercased() == "auto" { return "Auto (recommended)" }
+        if value.lowercased() == "cmux" || value.lowercased() == "cmux.app" { return "cmux" }
+        return knownTerminals.contains(value) ? value : value
     }
 }
 
@@ -148,7 +189,7 @@ public struct ForgeConfig: Codable, Sendable {
     /// E.g. `{ "research": ["Lepto", "Deer-stress"] }`.
     /// Absent from config means no rollups are generated.
     public var projectAreas: [String: [String]]
-    /// Preferred terminal application name (e.g. "Ghostty", "kitty", "iTerm", "Warp", "Terminal").
+    /// Preferred terminal application name (e.g. "Ghostty", "kitty", "iTerm", "Warp", "cmux", "Terminal").
     /// If nil or "auto", Forge detects the first available modern terminal.
     public let terminal: String?
 
