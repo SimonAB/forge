@@ -139,6 +139,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
 
         addItem(to: appMenu, title: "About \(appName)", action: #selector(showAbout(_:)), keyEquivalent: "")
         appMenu.addItem(NSMenuItem.separator())
+        addItem(to: appMenu, title: "Check for Updates…", action: #selector(checkForUpdates(_:)), keyEquivalent: "")
+        appMenu.addItem(NSMenuItem.separator())
         addItem(to: appMenu, title: "Preferences…", action: #selector(showPreferences(_:)), keyEquivalent: ",")
         appMenu.addItem(NSMenuItem.separator())
 
@@ -224,6 +226,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             NSApplication.AboutPanelOptionKey.credits: NSAttributedString(string: "Local-first, GTD-style task management with markdown and native macOS tags. All data stays in your own files."),
             NSApplication.AboutPanelOptionKey(rawValue: "Copyright"): "© Forge",
         ])
+    }
+
+    @objc private func checkForUpdates(_ sender: Any?) {
+        AppUpdateCoordinator.shared.checkForUpdatesFromMenu()
     }
 
     @objc private func showPreferences(_ sender: Any?) {
