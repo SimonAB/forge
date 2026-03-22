@@ -1,7 +1,6 @@
 /**
- * Forge docs theme: default follows the OS/browser (prefers-color-scheme).
- * Toggle cycles system → light → dark → system. Legacy localStorage values
- * "light" and "dark" from older builds are unchanged.
+ * Forge docs theme: "system" = no html.light/html.dark (CSS prefers-color-scheme).
+ * Toggle cycles system → light → dark → system.
  */
 (function () {
   document.addEventListener("DOMContentLoaded", function () {
@@ -12,9 +11,13 @@
     var mq = window.matchMedia("(prefers-color-scheme: dark)");
 
     function getMode() {
-      var stored = localStorage.getItem("forge-theme-appearance");
-      if (stored === "light" || stored === "dark" || stored === "system") {
-        return stored;
+      try {
+        var stored = localStorage.getItem("forge-theme-appearance");
+        if (stored === "light" || stored === "dark" || stored === "system") {
+          return stored;
+        }
+      } catch (err) {
+        /* ignore */
       }
       return "system";
     }
@@ -24,8 +27,14 @@
     }
 
     function applyMode(mode) {
+      root.classList.remove("light", "dark");
+      if (mode === "light") {
+        root.classList.add("light");
+      } else if (mode === "dark") {
+        root.classList.add("dark");
+      }
+
       var dark = resolvedDark(mode);
-      root.classList.toggle("dark", dark);
       var sun = btn.querySelector(".theme-toggle__icon--sun");
       var moon = btn.querySelector(".theme-toggle__icon--moon");
       if (sun) sun.hidden = dark;
@@ -71,7 +80,11 @@
       var i = cycle.indexOf(current);
       if (i < 0) i = 0;
       var next = cycle[(i + 1) % cycle.length];
-      localStorage.setItem("forge-theme-appearance", next);
+      try {
+        localStorage.setItem("forge-theme-appearance", next);
+      } catch (err) {
+        /* still apply visually for this session */
+      }
       applyMode(next);
     });
   });

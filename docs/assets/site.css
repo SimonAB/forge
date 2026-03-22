@@ -40,6 +40,82 @@
     drop-shadow(0 0 26px var(--vp-glow-coal));
 }
 
+/**
+ * System appearance: when JS mode is "system", neither .light nor .dark is set.
+ * Dark palette then comes from prefers-color-scheme alone (works even if theme.js is cached/old).
+ */
+@media (prefers-color-scheme: dark) {
+  html:not(.light):not(.dark) {
+    color-scheme: dark;
+    --vp-c-bg: #0c0a0a;
+    --vp-c-bg-alt: #0f0c0b;
+    --vp-c-bg-soft: #1a1412;
+    --vp-c-text-1: #fafaf9;
+    --vp-c-text-2: #d6d3d1;
+    --vp-c-text-3: #a8a29e;
+    --vp-c-divider: #44403c;
+    --vp-c-brand-1: #fb923c;
+    --vp-c-brand-2: #fcd34d;
+    --vp-home-hero-name-background: linear-gradient(
+      112deg,
+      #3f0f0f 0%,
+      #991b1b 18%,
+      #ea580c 42%,
+      #fb923c 62%,
+      #fbbf24 80%,
+      #fde68a 94%,
+      #fffbeb 100%
+    );
+    --vp-code-bg: #1a1412;
+    --vp-code-border: #44403c;
+    --vp-nav-bg: rgba(12, 10, 10, 0.88);
+    --vp-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+    --vp-card-border: #3f3a36;
+    --vp-card-hover: #221c19;
+    --vp-glow-flame: rgba(251, 191, 36, 0.55);
+    --vp-glow-coal: rgba(248, 113, 113, 0.4);
+    --vp-hero-ambient: rgba(234, 88, 12, 0.2);
+    --vp-hero-name-glow: drop-shadow(0 0 10px rgba(251, 146, 60, 0.55))
+      drop-shadow(0 0 22px rgba(234, 88, 12, 0.38))
+      drop-shadow(0 0 34px rgba(185, 28, 28, 0.28));
+  }
+}
+
+/** Pinned light theme (e.g. dark OS but user chose light). */
+html.light {
+  color-scheme: light;
+  --vp-c-bg: #fffdfb;
+  --vp-c-bg-alt: #fff7ed;
+  --vp-c-bg-soft: #ffedd5;
+  --vp-c-text-1: #1c1917;
+  --vp-c-text-2: #57534e;
+  --vp-c-text-3: #78716c;
+  --vp-c-divider: #fed7aa;
+  --vp-c-brand-1: #b91c1c;
+  --vp-c-brand-2: #ea580c;
+  --vp-home-hero-name-background: linear-gradient(
+    110deg,
+    #1c0a0a 0%,
+    #7f1d1d 14%,
+    #b91c1c 32%,
+    #ea580c 52%,
+    #f97316 72%,
+    #f59e0b 92%,
+    #d97706 100%
+  );
+  --vp-code-bg: #fff7ed;
+  --vp-code-border: #fdba74;
+  --vp-nav-bg: rgba(255, 253, 250, 0.85);
+  --vp-shadow: 0 1px 3px rgba(69, 10, 10, 0.08);
+  --vp-card-border: #fed7aa;
+  --vp-card-hover: #fff7ed;
+  --vp-glow-flame: rgba(249, 115, 22, 0.35);
+  --vp-glow-coal: rgba(185, 28, 28, 0.3);
+  --vp-hero-ambient: rgba(251, 146, 60, 0.14);
+  --vp-hero-name-glow: drop-shadow(0 0 12px var(--vp-glow-flame))
+    drop-shadow(0 0 26px var(--vp-glow-coal));
+}
+
 html.dark {
   color-scheme: dark;
   --vp-c-bg: #0c0a0a;
@@ -375,6 +451,18 @@ html.dark .btn--brand {
     0 0 32px rgba(251, 146, 60, 0.25);
 }
 
+@media (prefers-color-scheme: dark) {
+  html:not(.light):not(.dark) .btn--brand {
+    background: linear-gradient(165deg, #7f1d1d 0%, #b91c1c 35%, #ea580c 75%, #f59e0b 100%);
+    border-color: rgba(253, 224, 71, 0.4);
+    text-shadow: 0 0 14px rgba(254, 249, 195, 0.45);
+    box-shadow:
+      0 0 0 1px rgba(251, 191, 36, 0.2),
+      0 2px 18px rgba(234, 88, 12, 0.45),
+      0 0 32px rgba(251, 146, 60, 0.25);
+  }
+}
+
 html.dark .btn--brand:hover {
   background: linear-gradient(165deg, #b91c1c 0%, #ea580c 45%, #fb923c 78%, #fde68a 100%);
   border-color: rgba(255, 251, 235, 0.55);
@@ -382,6 +470,17 @@ html.dark .btn--brand:hover {
     0 0 0 1px rgba(254, 240, 138, 0.45),
     0 4px 26px rgba(251, 146, 60, 0.55),
     0 0 44px rgba(253, 224, 71, 0.22);
+}
+
+@media (prefers-color-scheme: dark) {
+  html:not(.light):not(.dark) .btn--brand:hover {
+    background: linear-gradient(165deg, #b91c1c 0%, #ea580c 45%, #fb923c 78%, #fde68a 100%);
+    border-color: rgba(255, 251, 235, 0.55);
+    box-shadow:
+      0 0 0 1px rgba(254, 240, 138, 0.45),
+      0 4px 26px rgba(251, 146, 60, 0.55),
+      0 0 44px rgba(253, 224, 71, 0.22);
+  }
 }
 
 .btn--alt {
@@ -435,6 +534,16 @@ html.dark .feature-card:hover {
     0 0 0 1px rgba(251, 146, 60, 0.2),
     0 8px 32px rgba(234, 88, 12, 0.15),
     0 0 48px rgba(251, 191, 36, 0.08);
+}
+
+@media (prefers-color-scheme: dark) {
+  html:not(.light):not(.dark) .feature-card:hover {
+    box-shadow:
+      var(--vp-shadow),
+      0 0 0 1px rgba(251, 146, 60, 0.2),
+      0 8px 32px rgba(234, 88, 12, 0.15),
+      0 0 48px rgba(251, 191, 36, 0.08);
+  }
 }
 
 .feature-card__icon {

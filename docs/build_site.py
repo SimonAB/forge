@@ -25,6 +25,9 @@ except ImportError:
 DOCS_DIR = Path(__file__).resolve().parent
 REPO_ROOT = DOCS_DIR.parent
 
+# Bust GitHub Pages CDN/browser caches when CSS/JS behaviour changes.
+DOCS_ASSET_VER = "3"
+
 GITHUB_BLOB = "https://github.com/SimonAB/forge/blob/main"
 
 NAV_ITEMS: tuple[tuple[str, str, str], ...] = (
@@ -43,18 +46,25 @@ MD_EXTENSIONS = (
     "markdown.extensions.sane_lists",
 )
 
-# Inline before first paint: match macOS / browser light–dark (prefers-color-scheme)
-# when mode is "system" (default). Kept in sync with docs/index.html.
+# Inline before first paint: pinned light/dark only. "system" leaves classes off so
+# site.css @media (prefers-color-scheme: dark) applies. Kept in sync with docs/index.html.
 THEME_INLINE_BOOTSTRAP = """    <script>
       (function () {
-        var stored = localStorage.getItem("forge-theme-appearance");
-        var mode =
-          stored === "light" || stored === "dark" || stored === "system"
-            ? stored
-            : "system";
-        var prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-        var dark = mode === "dark" || (mode === "system" && prefersDark);
-        if (dark) document.documentElement.classList.add("dark");
+        try {
+          var stored = localStorage.getItem("forge-theme-appearance");
+          var mode =
+            stored === "light" || stored === "dark" || stored === "system"
+              ? stored
+              : "system";
+          var root = document.documentElement;
+          if (mode === "light") {
+            root.classList.add("light");
+          } else if (mode === "dark") {
+            root.classList.add("dark");
+          }
+        } catch (err) {
+          /* localStorage unavailable — CSS alone follows prefers-color-scheme */
+        }
       })();
     </script>
 """
@@ -90,7 +100,7 @@ def _page_shell(*, title: str, description: str, active: str, main_html: str) ->
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="assets/site.css" />
+    <link rel="stylesheet" href="assets/site.css?v={DOCS_ASSET_VER}" />
 """
         + THEME_INLINE_BOOTSTRAP
         + f"""
@@ -144,7 +154,7 @@ def _page_shell(*, title: str, description: str, active: str, main_html: str) ->
       </p>
       <p>Released under the Apache License, Version 2.0.</p>
     </footer>
-    <script src="assets/theme.js"></script>
+    <script src="assets/theme.js?v={DOCS_ASSET_VER}"></script>
   </body>
 </html>
 """
