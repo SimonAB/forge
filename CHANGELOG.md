@@ -8,16 +8,13 @@ The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 #### Forge.app
 
-- **Check for Updates…** — compares the running app with [GitHub Releases](https://github.com/SimonAB/forge/releases/latest), downloads **`Forge-macos-arm64.app.zip`**, and replaces **`/Applications/Forge.app`** (admin password required). Does not update the separate CLI zip.
+- **Sparkle 2** — in-app updates via **`SUFeedURL`** (`docs/appcast.xml` on `main`), **`SUPublicEDKey`**, automatic daily checks (`SUScheduledCheckInterval`), and **Check for Updates…**. **`Sparkle.framework`** is embedded next to the executable (SwiftPM `@loader_path` layout). See **`packaging/SPARKLE_SIGNING.md`** and GitHub secret **`SPARKLE_EDDSA_PRIVATE_KEY`** for release signing.
+- Removed the earlier custom GitHub REST + `ditto` updater.
 
 #### Distribution
 
-- **`Forge-macos-arm64.app.zip`** — release workflow now builds **`forge-menubar`** (release) and assembles **`Forge.app`** via **`packaging/assemble_forge_app.sh`** (same layout as **`build.sh`**), uploaded next to the CLI zip.
+- **`Forge-macos-arm64.app.zip`** — release workflow builds **`forge-menubar`** (release) and assembles **`Forge.app`** via **`packaging/assemble_forge_app.sh`**, uploaded next to the CLI zip; when the signing secret is set, **`generate_appcast`** refreshes **`docs/appcast.xml`** and the workflow commits it to **`main`** after publishing the release assets.
 - **`build.sh`** — delegates app bundle assembly to **`packaging/assemble_forge_app.sh`**.
-
-#### ForgeCore
-
-- **`GitHubReleaseService`**, **`SemanticVersion`**, and **`ForgeReleaseAssets`** for release metadata and version comparison (unit-tested).
 
 ### [0.8.12] – 2026-03-21
 

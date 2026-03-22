@@ -30,6 +30,22 @@ fi
 
 FORGE_VERSION=$(grep -o 'version = "[^"]*"' "$VERSION_FILE" | cut -d'"' -f2)
 
+SPARKLE_KEY_FILE="$FORGE_DIR/packaging/sparkle_public_ed25519.key"
+if [[ ! -f "$SPARKLE_KEY_FILE" ]]; then
+  echo "error: Sparkle public key not found at $SPARKLE_KEY_FILE" >&2
+  exit 1
+fi
+SPARKLE_PUBLIC_KEY="$(tr -d '[:space:]' < "$SPARKLE_KEY_FILE")"
+
+# Appcast must stay in sync with CI (see packaging/SPARKLE_SIGNING.md).
+SUFeedURL="https://raw.githubusercontent.com/SimonAB/forge/main/docs/appcast.xml"
+
+SPARKLE_SRC="$BIN_DIR/Sparkle.framework"
+if [[ ! -d "$SPARKLE_SRC" ]]; then
+  echo "error: Sparkle.framework not found at $SPARKLE_SRC (SwiftPM should place it next to build products)" >&2
+  exit 1
+fi
+
 CONTENTS="$OUTPUT_APP/Contents"
 MACOS_DIR="$CONTENTS/MacOS"
 RESOURCES="$CONTENTS/Resources"
@@ -39,6 +55,8 @@ mkdir -p "$MACOS_DIR" "$RESOURCES"
 
 cp "$MENUBAR_BIN" "$MACOS_DIR/Forge"
 chmod +x "$MACOS_DIR/Forge"
+
+cp -R "$SPARKLE_SRC" "$MACOS_DIR/"
 
 cat > "$CONTENTS/Info.plist" << PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -67,6 +85,14 @@ cat > "$CONTENTS/Info.plist" << PLIST
     <string>Forge syncs tasks with Reminders.</string>
     <key>NSAppleEventsUsageDescription</key>
     <string>Forge runs commands in your chosen terminal and shows task notifications.</string>
+    <key>SUFeedURL</key>
+    <string>${SUFeedURL}</string>
+    <key>SUPublicEDKey</key>
+    <string>${SPARKLE_PUBLIC_KEY}</string>
+    <key>SUEnableAutomaticChecks</key>
+    <true/>
+    <key>SUScheduledCheckInterval</key>
+    <integer>86400</integer>
 </dict>
 </plist>
 PLIST

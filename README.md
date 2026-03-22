@@ -92,7 +92,7 @@ to **Deploy from a branch**, branch **main**, folder **`/docs`**.
 Pre-built binaries (macOS 14+, **Apple Silicon arm64**):
 
 - **CLI:** [`forge-macos-arm64.zip`](https://github.com/SimonAB/forge/releases/latest/download/forge-macos-arm64.zip) (includes `LICENSE` and install notes).
-- **Menu bar app:** [`Forge-macos-arm64.app.zip`](https://github.com/SimonAB/forge/releases/latest/download/Forge-macos-arm64.app.zip) — unzip and drag `Forge.app` into **Applications** (or use **Forge → Check for Updates…** once you already have a copy installed).
+- **Menu bar app:** [`Forge-macos-arm64.app.zip`](https://github.com/SimonAB/forge/releases/latest/download/Forge-macos-arm64.app.zip) — unzip and drag `Forge.app` into **Applications**. Updates use **Sparkle** ([`docs/appcast.xml`](https://raw.githubusercontent.com/SimonAB/forge/main/docs/appcast.xml)): **Check for Updates…** and periodic automatic checks.
 
 See [all releases](https://github.com/SimonAB/forge/releases). Intel Macs: build from
 source with `build.sh`. Developers syncing source via iCloud typically still use `build.sh` below so the CLI and app stay in sync with local changes.
