@@ -6,6 +6,8 @@ The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 ### Unreleased
 
+### [0.8.13] – 2026-03-22
+
 #### Forge.app
 
 - **Sparkle 2** — in-app updates via **`SUFeedURL`** (`docs/appcast.xml` on `main`), **`SUPublicEDKey`**, automatic daily checks (`SUScheduledCheckInterval`), and **Check for Updates…**. **`Sparkle.framework`** is embedded next to the executable (SwiftPM `@loader_path` layout). See **`packaging/SPARKLE_SIGNING.md`** and GitHub secret **`SPARKLE_EDDSA_PRIVATE_KEY`** for release signing.
