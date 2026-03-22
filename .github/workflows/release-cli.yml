@@ -1,6 +1,7 @@
-# Build the `forge` CLI for Apple Silicon (arm64) and attach a zip to the GitHub
-# release for the pushed tag. Stable download URL:
-# https://github.com/SimonAB/forge/releases/latest/download/forge-macos-arm64.zip
+# Build the `forge` CLI and Forge.app (menubar) for Apple Silicon (arm64) and attach
+# zips to the GitHub release for the pushed tag. Stable download URLs:
+#   https://github.com/SimonAB/forge/releases/latest/download/forge-macos-arm64.zip
+#   https://github.com/SimonAB/forge/releases/latest/download/Forge-macos-arm64.app.zip
 #
 # Uses macos-15 so the toolchain matches Swift 6 / swift-tools-version 6.0.
 # Release publishing uses the `gh` CLI (no third-party Node actions).
@@ -26,9 +27,11 @@ jobs:
         run: swift --version && xcodebuild -version
 
       - name: Build release (arm64)
-        run: swift build -c release --product forge
+        run: |
+          swift build -c release --product forge
+          swift build -c release --product forge-menubar
 
-      - name: Package zip
+      - name: Package CLI zip
         run: |
           set -e
           mkdir -p dist
@@ -43,6 +46,14 @@ jobs:
           echo "$VERSION" > dist/VERSION
           cd dist && zip -r ../forge-macos-arm64.zip forge LICENSE README-BINARY.txt VERSION
 
+      - name: Package Forge.app zip
+        run: |
+          set -e
+          BIN="$(swift build -c release --product forge-menubar --show-bin-path)"
+          mkdir -p dist-app
+          bash packaging/assemble_forge_app.sh "$GITHUB_WORKSPACE" "$BIN" "$GITHUB_WORKSPACE/dist-app/Forge.app"
+          cd dist-app && zip -r -y ../Forge-macos-arm64.app.zip Forge.app
+
       - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -51,7 +62,7 @@ jobs:
           TAG="${GITHUB_REF_NAME}"
           REPO="${{ github.repository }}"
           if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
-            gh release upload "$TAG" forge-macos-arm64.zip --clobber --repo "$REPO"
+            gh release upload "$TAG" forge-macos-arm64.zip Forge-macos-arm64.app.zip --clobber --repo "$REPO"
           else
-            gh release create "$TAG" forge-macos-arm64.zip --generate-notes --repo "$REPO"
+            gh release create "$TAG" forge-macos-arm64.zip Forge-macos-arm64.app.zip --generate-notes --repo "$REPO"
           fi
