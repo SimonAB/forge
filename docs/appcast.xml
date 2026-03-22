@@ -1,8 +1,17 @@
-<?xml version="1.0" encoding="utf-8"?>
-<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/">
-  <channel>
-    <title>Forge</title>
-    <description>Forge menu bar app updates.</description>
-    <language>en</language>
-  </channel>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/" version="2.0">
+    <channel>
+        <title>Forge</title>
+        <description>Forge menu bar app updates.</description>
+        <language>en</language>
+        <item>
+            <title>0.8.14</title>
+            <pubDate>Sun, 22 Mar 2026 18:10:24 +0000</pubDate>
+            <sparkle:version>0.8.14</sparkle:version>
+            <sparkle:shortVersionString>0.8.14</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
+            <enclosure url="https://github.com/SimonAB/forge/releases/download/v0.8.14/Forge-macos-arm64.app.zip" length="1958725" type="application/octet-stream" sparkle:edSignature="2YwrRY6kGhvc4quHBThYObGt7PRIk7++6OPlR5uynlaHASbA6Y7QXgXkJL8fvgoQQw7qp6MTnvyxP99VHJJPDQ=="/>
+        </item>
+    </channel>
 </rss>
