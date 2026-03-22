@@ -1,6 +1,7 @@
 import AppKit
 import ApplicationServices
 import ForgeCore
+import Sparkle
 import UserNotifications
 
 /// Menu bar application delegate. Manages the status item, main menu bar,
@@ -13,10 +14,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     private var captureSelectionMonitor: Any?
     private var hasShownAccessibilityAlertThisLaunch = false
     private let isRunningFromAppBundle = Bundle.main.bundleURL.pathExtension == "app"
+    private var updaterController: SPUStandardUpdaterController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         if isRunningFromAppBundle {
             UNUserNotificationCenter.current().delegate = self
+            updaterController = SPUStandardUpdaterController(
+                startingUpdater: true,
+                updaterDelegate: nil,
+                userDriverDelegate: nil
+            )
         }
         statusBar = StatusBarController()
         statusBar.start()
@@ -139,6 +146,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
 
         addItem(to: appMenu, title: "About \(appName)", action: #selector(showAbout(_:)), keyEquivalent: "")
         appMenu.addItem(NSMenuItem.separator())
+        if isRunningFromAppBundle {
+            addItem(to: appMenu, title: "Check for Updates…", action: #selector(checkForUpdates(_:)), keyEquivalent: "")
+            appMenu.addItem(NSMenuItem.separator())
+        }
         addItem(to: appMenu, title: "Preferences…", action: #selector(showPreferences(_:)), keyEquivalent: ",")
         appMenu.addItem(NSMenuItem.separator())
 
@@ -226,6 +237,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         ])
     }
 
+    @objc private func checkForUpdates(_ sender: Any?) {
+        updaterController?.checkForUpdates(sender)
+    }
+
     @objc private func showPreferences(_ sender: Any?) {
         if preferencesWindowController == nil {
             preferencesWindowController = PreferencesWindowController()
@@ -246,7 +261,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     }
 
     @objc private func showHelp(_ sender: Any?) {
-        guard let url = URL(string: "https://github.com/forge-app/forge") else { return }
+        guard let url = URL(string: "https://github.com/SimonAB/forge") else { return }
         NSWorkspace.shared.open(url)
     }
 }

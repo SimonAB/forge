@@ -74,6 +74,17 @@
 <h2>Changelog</h2>
 <p>All notable changes to this project will be documented in this file.</p>
 <p>The format loosely follows <a href="https://keepachangelog.com/en/1.1.0/">Keep a Changelog</a>.</p>
+<h3>Unreleased</h3>
+<h4>Forge.app</h4>
+<ul>
+<li><strong>Sparkle 2</strong> — in-app updates via appcast (<strong><code>docs/appcast.xml</code></strong>), <strong><code>SUPublicEDKey</code></strong>, automatic daily checks, and <strong>Check for Updates…</strong>. See <strong><code>packaging/SPARKLE_SIGNING.md</code></strong>.</li>
+<li>Removed the earlier custom GitHub REST + <code>ditto</code> updater.</li>
+</ul>
+<h4>Distribution</h4>
+<ul>
+<li><strong><code>Forge-macos-arm64.app.zip</code></strong> — release workflow assembles <strong><code>Forge.app</code></strong> and, when <strong><code>SPARKLE_EDDSA_PRIVATE_KEY</code></strong> is set, regenerates and commits <strong><code>docs/appcast.xml</code></strong> to <strong><code>main</code></strong>.</li>
+<li><strong><code>build.sh</code></strong> — delegates app bundle assembly to <strong><code>packaging/assemble_forge_app.sh</code></strong>.</li>
+</ul>
 <h3><a href="https://github.com/SimonAB/forge/releases/tag/v0.8.12">0.8.12</a> – 2026-03-21</h3>
 <h4>Forge.app (menubar and board)</h4>
 <ul>

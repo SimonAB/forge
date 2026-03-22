@@ -1,11 +1,14 @@
-# Build the `forge` CLI for Apple Silicon (arm64) and attach a zip to the GitHub
-# release for the pushed tag. Stable download URL:
-# https://github.com/SimonAB/forge/releases/latest/download/forge-macos-arm64.zip
+# Build the `forge` CLI and Forge.app (menubar) for Apple Silicon (arm64), attach
+# zips to the GitHub release, and regenerate Sparkle `docs/appcast.xml` on `main`
+# when SPARKLE_EDDSA_PRIVATE_KEY is configured (see packaging/SPARKLE_SIGNING.md).
+#
+# Stable download URLs:
+#   https://github.com/SimonAB/forge/releases/latest/download/forge-macos-arm64.zip
+#   https://github.com/SimonAB/forge/releases/latest/download/Forge-macos-arm64.app.zip
 #
 # Uses macos-15 so the toolchain matches Swift 6 / swift-tools-version 6.0.
-# Release publishing uses the `gh` CLI (no third-party Node actions).
 
-name: Release CLI binary
+name: Release macOS binaries
 
 on:
   push:
@@ -21,14 +24,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Toolchain
         run: swift --version && xcodebuild -version
 
       - name: Build release (arm64)
-        run: swift build -c release --product forge
+        run: |
+          swift build -c release --product forge
+          swift build -c release --product forge-menubar
 
-      - name: Package zip
+      - name: Package CLI zip
         run: |
           set -e
           mkdir -p dist
@@ -43,6 +50,14 @@ jobs:
           echo "$VERSION" > dist/VERSION
           cd dist && zip -r ../forge-macos-arm64.zip forge LICENSE README-BINARY.txt VERSION
 
+      - name: Package Forge.app zip
+        run: |
+          set -e
+          BIN="$(swift build -c release --product forge-menubar --show-bin-path)"
+          mkdir -p dist-app
+          zsh packaging/assemble_forge_app.sh "$GITHUB_WORKSPACE" "$BIN" "$GITHUB_WORKSPACE/dist-app/Forge.app"
+          cd dist-app && zip -r -y ../Forge-macos-arm64.app.zip Forge.app
+
       - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -51,7 +66,59 @@ jobs:
           TAG="${GITHUB_REF_NAME}"
           REPO="${{ github.repository }}"
           if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
-            gh release upload "$TAG" forge-macos-arm64.zip --clobber --repo "$REPO"
+            gh release upload "$TAG" forge-macos-arm64.zip Forge-macos-arm64.app.zip --clobber --repo "$REPO"
           else
-            gh release create "$TAG" forge-macos-arm64.zip --generate-notes --repo "$REPO"
+            gh release create "$TAG" forge-macos-arm64.zip Forge-macos-arm64.app.zip --generate-notes --repo "$REPO"
           fi
+
+      - name: Regenerate Sparkle appcast
+        env:
+          SPARKLE_EDDSA_PRIVATE_KEY: ${{ secrets.SPARKLE_EDDSA_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SPARKLE_EDDSA_PRIVATE_KEY:-}" ]; then
+            echo "::warning::SPARKLE_EDDSA_PRIVATE_KEY secret is not set — skipping appcast regeneration (see packaging/SPARKLE_SIGNING.md)"
+            exit 0
+          fi
+          TAG="${GITHUB_REF_NAME}"
+          REPO="${{ github.repository }}"
+          SPARKLE_VER="$(python3 "$GITHUB_WORKSPACE/packaging/sparkle_release_version.py")"
+          curl -sL -o /tmp/sparkle-rel.tar.xz "https://github.com/sparkle-project/Sparkle/releases/download/${SPARKLE_VER}/Sparkle-${SPARKLE_VER}.tar.xz"
+          rm -rf /tmp/sparkle-rel && mkdir /tmp/sparkle-rel
+          tar xf /tmp/sparkle-rel.tar.xz -C /tmp/sparkle-rel
+          GENAPP="$(find /tmp/sparkle-rel -name generate_appcast -type f -print -quit)"
+          test -f "$GENAPP"
+          mkdir -p sparkle-work
+          if [ -f docs/appcast.xml ]; then
+            cp docs/appcast.xml sparkle-work/
+          fi
+          cp Forge-macos-arm64.app.zip sparkle-work/
+          PREFIX="https://github.com/${REPO}/releases/download/${TAG}/"
+          printf '%s\n' "$SPARKLE_EDDSA_PRIVATE_KEY" | "$GENAPP" \
+            --ed-key-file - \
+            --download-url-prefix "$PREFIX" \
+            sparkle-work
+          cp sparkle-work/appcast.xml /tmp/appcast-generated.xml
+
+      - name: Commit appcast to main
+        env:
+          SPARKLE_EDDSA_PRIVATE_KEY: ${{ secrets.SPARKLE_EDDSA_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SPARKLE_EDDSA_PRIVATE_KEY:-}" ] || [ ! -f /tmp/appcast-generated.xml ]; then
+            exit 0
+          fi
+          git fetch origin main
+          git checkout main
+          git pull origin main
+          cp /tmp/appcast-generated.xml docs/appcast.xml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/appcast.xml
+          if git diff --staged --quiet; then
+            echo "Appcast unchanged"
+          else
+            git commit -m "chore: update Sparkle appcast for ${GITHUB_REF_NAME}"
+            git push origin main
+          fi
+          git checkout "${GITHUB_SHA}"

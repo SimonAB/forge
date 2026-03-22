@@ -21,7 +21,11 @@ clear the quarantine attribute from the folder where you extracted it:
 
      xattr -cr path/to/forge
 
-Full source, Forge.app (menu bar), Intel builds, and the full install script:
+Forge.app (menu bar) zip for Apple Silicon (same as in-app updater):
+
+     https://github.com/SimonAB/forge/releases/latest/download/Forge-macos-arm64.app.zip
+
+Full source, Intel builds, and the full install script:
 
      https://github.com/SimonAB/forge
 

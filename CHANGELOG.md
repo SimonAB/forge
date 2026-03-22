@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+### Unreleased
+
+#### Forge.app
+
+- **Sparkle 2** — in-app updates via **`SUFeedURL`** (`docs/appcast.xml` on `main`), **`SUPublicEDKey`**, automatic daily checks (`SUScheduledCheckInterval`), and **Check for Updates…**. **`Sparkle.framework`** is embedded next to the executable (SwiftPM `@loader_path` layout). See **`packaging/SPARKLE_SIGNING.md`** and GitHub secret **`SPARKLE_EDDSA_PRIVATE_KEY`** for release signing.
+- Removed the earlier custom GitHub REST + `ditto` updater.
+
+#### Distribution
+
+- **`Forge-macos-arm64.app.zip`** — release workflow builds **`forge-menubar`** (release) and assembles **`Forge.app`** via **`packaging/assemble_forge_app.sh`**, uploaded next to the CLI zip; when the signing secret is set, **`generate_appcast`** refreshes **`docs/appcast.xml`** and the workflow commits it to **`main`** after publishing the release assets.
+- **`build.sh`** — delegates app bundle assembly to **`packaging/assemble_forge_app.sh`**.
+
 ### [0.8.12] – 2026-03-21
 
 #### Forge.app (menubar and board)

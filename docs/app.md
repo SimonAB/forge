@@ -5,6 +5,14 @@ providing quick capture, automatic sync, and at-a-glance status badges.
 
 ## Setup
 
+### Option A — GitHub release (pre-built app)
+
+Each [GitHub release](https://github.com/SimonAB/forge/releases/latest) includes **`Forge-macos-arm64.app.zip`**. Unzip it and move **`Forge.app`** to `/Applications`. The zip is built with the same layout as `build.sh` (release configuration).
+
+**In-app updates ([Sparkle](https://sparkle-project.org/)):** once Forge is running from a proper **`Forge.app`** bundle (release install or `build.sh`), **Forge → Check for Updates…** and **automatic checks** (about once per day) use the appcast at [`docs/appcast.xml`](https://raw.githubusercontent.com/SimonAB/forge/main/docs/appcast.xml) on `main`. Sparkle downloads a signed **`Forge-macos-arm64.app.zip`** from [GitHub Releases](https://github.com/SimonAB/forge/releases) and installs it using the standard Sparkle flow (including **Install on quit** when offered). Maintainer signing setup: **`packaging/SPARKLE_SIGNING.md`**. The **CLI `forge` binary is not updated** by Sparkle; use [`forge-macos-arm64.zip`](https://github.com/SimonAB/forge/releases/latest/download/forge-macos-arm64.zip) or `build.sh` for that.
+
+### Option B — `build.sh` (from source)
+
 Run the setup script on each Mac:
 
 ```bash
@@ -73,6 +81,7 @@ indicates urgent items:
 | **Open Board in Terminal** | — | Runs `forge board` in your terminal |
 | **Weekly Review in Terminal** | Cmd+R | Runs `forge review` in your terminal |
 | **Quit Forge** | Cmd+Q | Stops the sync timer and exits |
+| **Check for Updates…** | — | Sparkle: compares with **`docs/appcast.xml`** and offers signed **`Forge-macos-arm64.app.zip`** |
 
 ---
 

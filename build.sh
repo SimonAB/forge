@@ -9,9 +9,6 @@ FORGE_DIR="$(cd "$(dirname "$0")" && pwd)"
 BUILD_DIR="$HOME/.forge-build"
 LAUNCH_AGENT="$HOME/Library/LaunchAgents/com.forge.menubar.plist"
 
-# Single source of truth for version (must match Sources/ForgeCore/Version.swift)
-FORGE_VERSION=$(grep -o 'version = "[^"]*"' "$FORGE_DIR/Sources/ForgeCore/Version.swift" | cut -d'"' -f2)
-
 echo "Forge build"
 echo "==========="
 echo "Source:  $FORGE_DIR"
@@ -85,44 +82,7 @@ esac
 
 # 4. Create Forge.app bundle in /Applications
 APP_DIR="/Applications/Forge.app"
-CONTENTS="$APP_DIR/Contents"
-MACOS="$CONTENTS/MacOS"
-RESOURCES="$CONTENTS/Resources"
-
-mkdir -p "$MACOS" "$RESOURCES"
-
-cp "$BIN_PATH/forge-menubar" "$MACOS/Forge"
-
-cat > "$CONTENTS/Info.plist" << PLIST
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>CFBundleName</key>
-    <string>Forge</string>
-    <key>CFBundleDisplayName</key>
-    <string>Forge</string>
-    <key>CFBundleIdentifier</key>
-    <string>com.forge.menubar</string>
-    <key>CFBundleVersion</key>
-    <string>${FORGE_VERSION}</string>
-    <key>CFBundleShortVersionString</key>
-    <string>${FORGE_VERSION}</string>
-    <key>CFBundleExecutable</key>
-    <string>Forge</string>
-    <key>CFBundleIconFile</key>
-    <string>AppIcon</string>
-    <key>CFBundlePackageType</key>
-    <string>APPL</string>
-    <key>LSMinimumSystemVersion</key>
-    <string>14.0</string>
-    <key>NSRemindersUsageDescription</key>
-    <string>Forge syncs tasks with Reminders.</string>
-    <key>NSAppleEventsUsageDescription</key>
-    <string>Forge runs commands in your chosen terminal and shows task notifications.</string>
-</dict>
-</plist>
-PLIST
+"$FORGE_DIR/packaging/assemble_forge_app.sh" "$FORGE_DIR" "$BIN_PATH" "$APP_DIR"
 
 # Generate the app icon using Pillow (requires: pip3 install Pillow)
 if command -v python3 >/dev/null 2>&1 && python3 -c "import PIL" 2>/dev/null; then
