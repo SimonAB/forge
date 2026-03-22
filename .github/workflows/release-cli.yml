@@ -55,7 +55,7 @@ jobs:
           set -e
           BIN="$(swift build -c release --product forge-menubar --show-bin-path)"
           mkdir -p dist-app
-          bash packaging/assemble_forge_app.sh "$GITHUB_WORKSPACE" "$BIN" "$GITHUB_WORKSPACE/dist-app/Forge.app"
+          zsh packaging/assemble_forge_app.sh "$GITHUB_WORKSPACE" "$BIN" "$GITHUB_WORKSPACE/dist-app/Forge.app"
           cd dist-app && zip -r -y ../Forge-macos-arm64.app.zip Forge.app
 
       - name: Publish GitHub release
@@ -82,7 +82,7 @@ jobs:
           fi
           TAG="${GITHUB_REF_NAME}"
           REPO="${{ github.repository }}"
-          SPARKLE_VER="2.9.0"
+          SPARKLE_VER="$(python3 "$GITHUB_WORKSPACE/packaging/sparkle_release_version.py")"
           curl -sL -o /tmp/sparkle-rel.tar.xz "https://github.com/sparkle-project/Sparkle/releases/download/${SPARKLE_VER}/Sparkle-${SPARKLE_VER}.tar.xz"
           rm -rf /tmp/sparkle-rel && mkdir /tmp/sparkle-rel
           tar xf /tmp/sparkle-rel.tar.xz -C /tmp/sparkle-rel

@@ -16,6 +16,11 @@ FORGE_DIR="${1:?FORGE_DIR required}"
 BIN_DIR="${2:?BIN_DIR required}"
 OUTPUT_APP="${3:?OUTPUT_APP_PATH required}"
 
+if [[ -z "$OUTPUT_APP" || "$OUTPUT_APP" == "/" || "${OUTPUT_APP##*.}" != "app" ]]; then
+  echo "error: OUTPUT_APP must be a non-empty path ending in .app (got: '${OUTPUT_APP}')" >&2
+  exit 1
+fi
+
 MENUBAR_BIN="$BIN_DIR/forge-menubar"
 if [[ ! -f "$MENUBAR_BIN" ]]; then
   echo "error: forge-menubar not found at $MENUBAR_BIN" >&2
