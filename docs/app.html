@@ -16,12 +16,16 @@
     <script>
       (function () {
         var stored = localStorage.getItem("forge-theme-appearance");
-        var dark =
-          stored === "dark" ||
-          (!stored && window.matchMedia("(prefers-color-scheme: dark)").matches);
+        var mode =
+          stored === "light" || stored === "dark" || stored === "system"
+            ? stored
+            : "system";
+        var prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        var dark = mode === "dark" || (mode === "system" && prefersDark);
         if (dark) document.documentElement.classList.add("dark");
       })();
     </script>
+
   </head>
   <body>
     <a href="#main" class="visually-hidden">Skip to content</a>
@@ -77,7 +81,7 @@ providing quick capture, automatic sync, and at-a-glance status badges.</p>
 <h2>Setup</h2>
 <h3>Option A — GitHub release (pre-built app)</h3>
 <p>Each <a href="https://github.com/SimonAB/forge/releases/latest">GitHub release</a> includes <strong><code>Forge-macos-arm64.app.zip</code></strong>. Unzip it and move <strong><code>Forge.app</code></strong> to <code>/Applications</code>. The zip is built with the same layout as <code>build.sh</code> (release configuration).</p>
-<p><strong>In-app updates (<a href="https://sparkle-project.org/">Sparkle</a>):</strong> once Forge is running from a proper <strong><code>Forge.app</code></strong> bundle (release install or <code>build.sh</code>), <strong>Forge → Check for Updates…</strong> and <strong>automatic checks</strong> (about once per day) use the appcast at <a href="https://raw.githubusercontent.com/SimonAB/forge/main/docs/appcast.xml"><code>docs/appcast.xml</code></a> on <code>main</code>. Sparkle downloads a signed <strong><code>Forge-macos-arm64.app.zip</code></strong> from <a href="https://github.com/SimonAB/forge/releases">GitHub Releases</a> and installs it using the standard Sparkle flow. Maintainer signing: <strong><code>packaging/SPARKLE_SIGNING.md</code></strong>. The <strong>CLI <code>forge</code> binary is not updated</strong> by Sparkle; use <a href="https://github.com/SimonAB/forge/releases/latest/download/forge-macos-arm64.zip"><code>forge-macos-arm64.zip</code></a> or <code>build.sh</code> for that.</p>
+<p><strong>In-app updates (<a href="https://sparkle-project.org/">Sparkle</a>):</strong> once Forge is running from a proper <strong><code>Forge.app</code></strong> bundle (release install or <code>build.sh</code>), <strong>Forge → Check for Updates…</strong> and <strong>automatic checks</strong> (about once per day) use the appcast at <a href="https://raw.githubusercontent.com/SimonAB/forge/main/docs/appcast.xml"><code>docs/appcast.xml</code></a> on <code>main</code>. Sparkle downloads a signed <strong><code>Forge-macos-arm64.app.zip</code></strong> from <a href="https://github.com/SimonAB/forge/releases">GitHub Releases</a> and installs it using the standard Sparkle flow (including <strong>Install on quit</strong> when offered). Maintainer signing setup: <strong><code>packaging/SPARKLE_SIGNING.md</code></strong>. The <strong>CLI <code>forge</code> binary is not updated</strong> by Sparkle; use <a href="https://github.com/SimonAB/forge/releases/latest/download/forge-macos-arm64.zip"><code>forge-macos-arm64.zip</code></a> or <code>build.sh</code> for that.</p>
 <h3>Option B — <code>build.sh</code> (from source)</h3>
 <p>Run the setup script on each Mac:</p>
 <pre><code class="language-bash">zsh ~/Documents/Forge/build.sh
@@ -198,7 +202,7 @@ indicates urgent items:</p>
 <tr>
 <td><strong>Check for Updates…</strong></td>
 <td>—</td>
-<td>Sparkle: compares with <strong><code>docs/appcast.xml</code></strong> and offers signed <strong>Forge-macos-arm64.app.zip</strong></td>
+<td>Sparkle: compares with <strong><code>docs/appcast.xml</code></strong> and offers signed <strong><code>Forge-macos-arm64.app.zip</code></strong></td>
 </tr>
 </tbody>
 </table>

@@ -16,12 +16,16 @@
     <script>
       (function () {
         var stored = localStorage.getItem("forge-theme-appearance");
-        var dark =
-          stored === "dark" ||
-          (!stored && window.matchMedia("(prefers-color-scheme: dark)").matches);
+        var mode =
+          stored === "light" || stored === "dark" || stored === "system"
+            ? stored
+            : "system";
+        var prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        var dark = mode === "dark" || (mode === "system" && prefersDark);
         if (dark) document.documentElement.classList.add("dark");
       })();
     </script>
+
   </head>
   <body>
     <a href="#main" class="visually-hidden">Skip to content</a>

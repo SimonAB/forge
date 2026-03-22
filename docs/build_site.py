@@ -43,6 +43,22 @@ MD_EXTENSIONS = (
     "markdown.extensions.sane_lists",
 )
 
+# Inline before first paint: match macOS / browser light–dark (prefers-color-scheme)
+# when mode is "system" (default). Kept in sync with docs/index.html.
+THEME_INLINE_BOOTSTRAP = """    <script>
+      (function () {
+        var stored = localStorage.getItem("forge-theme-appearance");
+        var mode =
+          stored === "light" || stored === "dark" || stored === "system"
+            ? stored
+            : "system";
+        var prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        var dark = mode === "dark" || (mode === "system" && prefersDark);
+        if (dark) document.documentElement.classList.add("dark");
+      })();
+    </script>
+"""
+
 
 def _nav_html(active: str) -> str:
     parts = ['<nav class="site-nav__links" aria-label="Main navigation">']
@@ -59,7 +75,8 @@ def _nav_html(active: str) -> str:
 
 def _page_shell(*, title: str, description: str, active: str, main_html: str) -> str:
     nav = _nav_html(active)
-    return f"""<!DOCTYPE html>
+    return (
+        f"""<!DOCTYPE html>
 <html lang="en-GB" dir="ltr">
   <head>
     <meta charset="utf-8" />
@@ -74,15 +91,9 @@ def _page_shell(*, title: str, description: str, active: str, main_html: str) ->
       rel="stylesheet"
     />
     <link rel="stylesheet" href="assets/site.css" />
-    <script>
-      (function () {{
-        var stored = localStorage.getItem("forge-theme-appearance");
-        var dark =
-          stored === "dark" ||
-          (!stored && window.matchMedia("(prefers-color-scheme: dark)").matches);
-        if (dark) document.documentElement.classList.add("dark");
-      }})();
-    </script>
+"""
+        + THEME_INLINE_BOOTSTRAP
+        + f"""
   </head>
   <body>
     <a href="#main" class="visually-hidden">Skip to content</a>
@@ -137,6 +148,7 @@ def _page_shell(*, title: str, description: str, active: str, main_html: str) ->
   </body>
 </html>
 """
+    )
 
 
 def _escape_meta(text: str) -> str:
