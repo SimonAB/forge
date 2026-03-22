@@ -16,6 +16,12 @@ Forge uses [Sparkle](https://sparkle-project.org/) for in-app updates. The **pub
 
 The **Release** workflow uses this secret with `generate_appcast` to sign update entries and then commits `docs/appcast.xml` to `main`. If the secret is missing, the workflow still uploads release zips but skips the appcast update (and logs a warning).
 
+### CI: `generate_appcast` and ad hoc signatures
+
+GitHub Actions currently ships **Forge.app** as **linker-signed (ad hoc)**, not **Developer ID**-signed. Sparkle’s `generate_appcast` applies strict code-sign checks the **first** time it unarchives an update; that step fails for ad hoc builds (typically “The app failed Apple Code Signing checks”, `NSOSStatus` **-67056**). The tool still extracts the bundle into **`~/Library/Caches/Sparkle_generate_appcast`** on the runner. The workflow therefore runs **`generate_appcast` twice**: the first invocation may exit with an error; the second succeeds and writes **`appcast.xml`**.
+
+For wider distribution you should still **Developer ID**-sign (and ideally **notarise**) **`Forge.app`**; that satisfies `generate_appcast` on the first pass and matches what users expect from Gatekeeper.
+
 ## Appcast URL
 
 `Forge.app` loads the feed from `SUFeedURL` in `Info.plist` (see `packaging/assemble_forge_app.sh`), currently:

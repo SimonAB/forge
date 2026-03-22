@@ -6,6 +6,12 @@ The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 ### Unreleased
 
+### [0.8.14] – 2026-03-22
+
+#### Distribution / CI
+
+- **Sparkle appcast** — release workflow runs **`generate_appcast` twice** so **`docs/appcast.xml`** regenerates for ad hoc–signed **`Forge.app`** CI builds (Sparkle’s strict code-sign check on first unarchive; see **`packaging/SPARKLE_SIGNING.md`**).
+
 ### [0.8.13] – 2026-03-22
 
 #### Forge.app

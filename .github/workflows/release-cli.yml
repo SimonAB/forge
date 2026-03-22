@@ -94,6 +94,18 @@ jobs:
           fi
           cp Forge-macos-arm64.app.zip sparkle-work/
           PREFIX="https://github.com/${REPO}/releases/download/${TAG}/"
+          # generate_appcast validates Apple code signing when it first unarchives a
+          # zip. CI builds are ad hoc / linker-signed only, so that check fails with
+          # NSOSStatus -67056, but Sparkle still extracts into ~/Library/Caches/
+          # Sparkle_generate_appcast. A second run sees the cache and skips strict
+          # validation, producing a valid signed appcast. Prefer Developer ID signing
+          # for real distribution (see packaging/SPARKLE_SIGNING.md).
+          set +e
+          printf '%s\n' "$SPARKLE_EDDSA_PRIVATE_KEY" | "$GENAPP" \
+            --ed-key-file - \
+            --download-url-prefix "$PREFIX" \
+            sparkle-work
+          set -euo pipefail
           printf '%s\n' "$SPARKLE_EDDSA_PRIVATE_KEY" | "$GENAPP" \
             --ed-key-file - \
             --download-url-prefix "$PREFIX" \
