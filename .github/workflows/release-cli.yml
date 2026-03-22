@@ -55,7 +55,7 @@ jobs:
           set -e
           BIN="$(swift build -c release --product forge-menubar --show-bin-path)"
           mkdir -p dist-app
-          bash packaging/assemble_forge_app.sh "$GITHUB_WORKSPACE" "$BIN" "$GITHUB_WORKSPACE/dist-app/Forge.app"
+          zsh packaging/assemble_forge_app.sh "$GITHUB_WORKSPACE" "$BIN" "$GITHUB_WORKSPACE/dist-app/Forge.app"
           cd dist-app && zip -r -y ../Forge-macos-arm64.app.zip Forge.app
 
       - name: Publish GitHub release
@@ -82,7 +82,31 @@ jobs:
           fi
           TAG="${GITHUB_REF_NAME}"
           REPO="${{ github.repository }}"
-          SPARKLE_VER="2.9.0"
+          SPARKLE_VER="$(python3 - << 'PY'
+import json, pathlib, sys
+default_version = "2.9.0"
+path = pathlib.Path("Package.resolved")
+try:
+    with path.open("r", encoding="utf-8") as f:
+        data = json.load(f)
+    pins = []
+    if isinstance(data, dict):
+        if "pins" in data and isinstance(data["pins"], list):
+            pins = data["pins"]
+        elif "object" in data and isinstance(data["object"], dict) and "pins" in data["object"]:
+            pins = data["object"]["pins"]
+    for pin in pins:
+        ident = (pin.get("identity") or pin.get("package") or "").lower()
+        if ident == "sparkle":
+            ver = (pin.get("state") or {}).get("version")
+            if ver:
+                print(ver)
+                sys.exit(0)
+except Exception:
+    pass
+print(default_version)
+PY
+)"
           curl -sL -o /tmp/sparkle-rel.tar.xz "https://github.com/sparkle-project/Sparkle/releases/download/${SPARKLE_VER}/Sparkle-${SPARKLE_VER}.tar.xz"
           rm -rf /tmp/sparkle-rel && mkdir /tmp/sparkle-rel
           tar xf /tmp/sparkle-rel.tar.xz -C /tmp/sparkle-rel

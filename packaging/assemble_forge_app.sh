@@ -50,6 +50,10 @@ CONTENTS="$OUTPUT_APP/Contents"
 MACOS_DIR="$CONTENTS/MacOS"
 RESOURCES="$CONTENTS/Resources"
 
+if [[ -z "$OUTPUT_APP" || "$OUTPUT_APP" == "/" || "${OUTPUT_APP##*.}" != "app" ]]; then
+  echo "error: OUTPUT_APP must be a non-empty path ending in .app (got: '${OUTPUT_APP}')" >&2
+  exit 1
+fi
 rm -rf "$OUTPUT_APP"
 mkdir -p "$MACOS_DIR" "$RESOURCES"
 
