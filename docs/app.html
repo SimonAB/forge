@@ -75,6 +75,10 @@
 <p>Forge.app is a macOS <strong>menu bar companion</strong> that runs in the background,
 providing quick capture, automatic sync, and at-a-glance status badges.</p>
 <h2>Setup</h2>
+<h3>Option A — GitHub release (pre-built app)</h3>
+<p>Each <a href="https://github.com/SimonAB/forge/releases/latest">GitHub release</a> includes <strong><code>Forge-macos-arm64.app.zip</code></strong>. Unzip it and move <strong><code>Forge.app</code></strong> to <code>/Applications</code>. The zip is built with the same layout as <code>build.sh</code> (release configuration).</p>
+<p><strong>In-app updates:</strong> once Forge is running from <code>/Applications/Forge.app</code>, use <strong>Forge → Check for Updates…</strong> in the menu bar. Forge compares your version to <a href="https://github.com/SimonAB/forge/releases/latest">the latest release</a>, downloads the same zip, and replaces <code>/Applications/Forge.app</code>. macOS will ask for an <strong>administrator password</strong> (standard <code>ditto</code> install). If Gatekeeper complains about an unidentified developer, clear quarantine as described in <a href="../packaging/README-BINARY.txt"><code>packaging/README-BINARY.txt</code></a> (same idea as for the CLI binary). The <strong>command-line <code>forge</code> tool is not updated</strong> by this flow; download <a href="https://github.com/SimonAB/forge/releases/latest/download/forge-macos-arm64.zip"><code>forge-macos-arm64.zip</code></a> separately or use <code>build.sh</code> if you compile from source.</p>
+<h3>Option B — <code>build.sh</code> (from source)</h3>
 <p>Run the setup script on each Mac:</p>
 <pre><code class="language-bash">zsh ~/Documents/Forge/build.sh
 </code></pre>
@@ -190,6 +194,11 @@ indicates urgent items:</p>
 <td><strong>Quit Forge</strong></td>
 <td>Cmd+Q</td>
 <td>Stops the sync timer and exits</td>
+</tr>
+<tr>
+<td><strong>Check for Updates…</strong></td>
+<td>—</td>
+<td>Compares with GitHub Releases and can download <strong>Forge-macos-arm64.app.zip</strong></td>
 </tr>
 </tbody>
 </table>

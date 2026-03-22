@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+### Unreleased
+
+#### Forge.app
+
+- **Check for Updates…** — compares the running app with [GitHub Releases](https://github.com/SimonAB/forge/releases/latest), downloads **`Forge-macos-arm64.app.zip`**, and replaces **`/Applications/Forge.app`** (admin password required). Does not update the separate CLI zip.
+
+#### Distribution
+
+- **`Forge-macos-arm64.app.zip`** — release workflow now builds **`forge-menubar`** (release) and assembles **`Forge.app`** via **`packaging/assemble_forge_app.sh`** (same layout as **`build.sh`**), uploaded next to the CLI zip.
+- **`build.sh`** — delegates app bundle assembly to **`packaging/assemble_forge_app.sh`**.
+
+#### ForgeCore
+
+- **`GitHubReleaseService`**, **`SemanticVersion`**, and **`ForgeReleaseAssets`** for release metadata and version comparison (unit-tested).
+
 ### [0.8.12] – 2026-03-21
 
 #### Forge.app (menubar and board)

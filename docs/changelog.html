@@ -74,6 +74,20 @@
 <h2>Changelog</h2>
 <p>All notable changes to this project will be documented in this file.</p>
 <p>The format loosely follows <a href="https://keepachangelog.com/en/1.1.0/">Keep a Changelog</a>.</p>
+<h3>Unreleased</h3>
+<h4>Forge.app</h4>
+<ul>
+<li><strong>Check for Updates…</strong> — compares the running app with <a href="https://github.com/SimonAB/forge/releases/latest">GitHub Releases</a>, downloads <strong><code>Forge-macos-arm64.app.zip</code></strong>, and replaces <strong><code>/Applications/Forge.app</code></strong> (admin password required). Does not update the separate CLI zip.</li>
+</ul>
+<h4>Distribution</h4>
+<ul>
+<li><strong><code>Forge-macos-arm64.app.zip</code></strong> — release workflow now builds <strong><code>forge-menubar</code></strong> (release) and assembles <strong><code>Forge.app</code></strong> via <strong><code>packaging/assemble_forge_app.sh</code></strong> (same layout as <strong><code>build.sh</code></strong>), uploaded next to the CLI zip.</li>
+<li><strong><code>build.sh</code></strong> — delegates app bundle assembly to <strong><code>packaging/assemble_forge_app.sh</code></strong>.</li>
+</ul>
+<h4>ForgeCore</h4>
+<ul>
+<li><strong><code>GitHubReleaseService</code></strong>, <strong><code>SemanticVersion</code></strong>, and <strong><code>ForgeReleaseAssets</code></strong> for release metadata and version comparison (unit-tested).</li>
+</ul>
 <h3><a href="https://github.com/SimonAB/forge/releases/tag/v0.8.12">0.8.12</a> – 2026-03-21</h3>
 <h4>Forge.app (menubar and board)</h4>
 <ul>
