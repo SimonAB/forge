@@ -6,6 +6,12 @@ The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 ### Unreleased
 
+### [0.9.0] – 2026-03-23
+
+#### Summary
+
+- Opens the **0.9** release line with **Sparkle 2** in-app updates, **`Forge-macos-arm64.app.zip`** on tagged releases, and **CI `generate_appcast`** refreshing **`docs/appcast.xml`**—verified green on **v0.8.14**. See **[0.8.13]** and **[0.8.14]** for full notes.
+
 ### [0.8.14] – 2026-03-22
 
 #### Distribution / CI
