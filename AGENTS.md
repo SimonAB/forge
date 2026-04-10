@@ -173,7 +173,7 @@ If you (the assistant) make edits to tasks/due dates in markdown, run `forge syn
 Assistant startup behaviour (recommended):
 
 - When a new assistant session starts in this repo, begin with:
-  - “Good morning. Would you like your morning brief?”
+  - “Good morning. Shall I prepare your morning brief?”
 - If yes, run `forge brief --paths --path-format absolute` and then use the prompt above.
 
 ### Weekly (30–60 minutes)
