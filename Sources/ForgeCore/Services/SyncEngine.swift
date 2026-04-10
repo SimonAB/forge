@@ -325,6 +325,7 @@ public final class SyncEngine: @unchecked Sendable {
         // When the same task ID appears more than once in markdown, sync only one to avoid duplicate reminders.
         // Prefer a completed variant when any duplicate is completed, so markdown completion propagates to Reminders.
         for st in Self.preferCompletedSources(for: sourced) {
+            if remindersBridge.isReminderSyncExcluded(context: st.task.context) { continue }
             let list = try remindersBridge.findOrCreateList(context: st.task.context)
             syncTaskToReminders(
                 task: st.task,
@@ -640,7 +641,8 @@ public final class SyncEngine: @unchecked Sendable {
             }
             let taskID = remindersBridge.extractForgeID(from: group[0])!.taskID
             let preferredListId: String? = sourceByID[taskID].flatMap { st in
-                (try? remindersBridge.findOrCreateList(context: st.task.context))?.calendarIdentifier
+                guard !remindersBridge.isReminderSyncExcluded(context: st.task.context) else { return nil }
+                return (try? remindersBridge.findOrCreateList(context: st.task.context))?.calendarIdentifier
             }
             let sorted = group.sorted { r1, r2 in
                 let m1 = r1.calendar?.calendarIdentifier == preferredListId

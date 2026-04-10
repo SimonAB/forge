@@ -335,7 +335,7 @@ extension ForgeConfig {
             ),
             gtd: GTDConfig(
                 contexts: [
-                    "office", "lab", "campus", "home", "errands", "shopping",
+                    "office", "lab", "campus", "home", "errands",
                     "writing", "review", "analysis", "planning", "deep-work",
                     "low-energy", "email", "slack", "calls", "computer",
                     "reading", "watching", "anywhere", "agenda",

@@ -6,15 +6,31 @@ public final class RemindersBridge: @unchecked Sendable {
 
     private let store: EKEventStore
     private let listName: String
+    /// Contexts that never sync to Reminders (lowercased). Tasks keep `@context` in markdown only.
+    private let excludedReminderContextsLowercased: Set<String>
 
-    public init(store: EKEventStore = EKEventStore(), listName: String = "Forge") {
+    public init(
+        store: EKEventStore = EKEventStore(),
+        listName: String = "Forge",
+        excludedReminderContexts: Set<String> = ["shopping"]
+    ) {
         self.store = store
         self.listName = listName
+        self.excludedReminderContextsLowercased = Set(excludedReminderContexts.map { $0.lowercased() })
+    }
+
+    /// Returns true when this context must not create or use a per-context Reminders list or sync tasks to Reminders.
+    public func isReminderSyncExcluded(context: String?) -> Bool {
+        guard let ctx = context, !ctx.isEmpty else { return false }
+        return excludedReminderContextsLowercased.contains(ctx.lowercased())
     }
 
     /// Request full access to Reminders. Must be called before any read/write operations.
     public func requestAccess() async throws {
-        try await store.requestFullAccessToReminders()
+        let granted = try await store.requestFullAccessToReminders()
+        if !granted {
+            throw BridgeError.accessDenied
+        }
     }
 
     // MARK: - List Management
@@ -47,11 +63,16 @@ public final class RemindersBridge: @unchecked Sendable {
     }
 
     /// All reminder calendars that belong to Forge (base list + any "Forge • context" lists).
+    ///
+    /// Omits calendars for contexts in `excludedReminderContexts` so Forge does not read or write them.
     public func allForgeListCalendars() -> [EKCalendar] {
         let calendars = store.calendars(for: .reminder)
         let prefix = "\(listName) • "
         return calendars.filter { cal in
-            cal.title == listName || cal.title.hasPrefix(prefix)
+            if cal.title == listName { return true }
+            guard cal.title.hasPrefix(prefix) else { return false }
+            let suffix = String(cal.title.dropFirst(prefix.count))
+            return !excludedReminderContextsLowercased.contains(suffix.lowercased())
         }
     }
 
@@ -274,7 +295,7 @@ public final class RemindersBridge: @unchecked Sendable {
             case .noSource:
                 return "No iCloud or local source found for Reminders."
             case .accessDenied:
-                return "Access to Reminders was denied. Check System Settings > Privacy > Reminders."
+                return "Access to Reminders was denied. Check System Settings > Privacy & Security > Reminders (your terminal app must be allowed)."
             }
         }
     }
