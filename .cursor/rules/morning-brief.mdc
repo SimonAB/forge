@@ -35,4 +35,5 @@ When the user asks to be taken to a specific task, you may use the absolute path
   - directories → `open "<dir>"`
   - markdown files (`.md`, including `TASKS.md`) → `vim "<file>"` (edit) or `open "<file>"` (view)
   - other files → `open "<file>"`
+  - email/message links (`message://...`) → `open -a Mail "<message://...>"`
 

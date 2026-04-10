@@ -233,6 +233,8 @@ When the user asks to “show” a task or “take me to” a task, prefer to:
   - If it is a **directory**: `open "<project directory>"`
   - If it is a **markdown file** (`.md`, including `TASKS.md`): default to `vim "<path>"` (fast edit), or `open "<path>"` if the user asked to view rather than edit
   - For other file types: default to `open "<path>"`
+  - For email/message links (e.g. `message://...`): use Mail.app explicitly:
+    - `open -a Mail "<message://...>"`
 
 Always ask for confirmation before opening or editing files unless the user explicitly requested it.
 
