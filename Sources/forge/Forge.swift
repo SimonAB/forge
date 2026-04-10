@@ -13,6 +13,7 @@ struct Forge: AsyncParsableCommand {
             ProjectsCommand.self,
             MoveCommand.self,
             StatusCommand.self,
+            BriefCommand.self,
             AddCommand.self,
             DoneCommand.self,
             DueCommand.self,
