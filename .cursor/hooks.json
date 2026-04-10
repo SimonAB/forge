@@ -5,7 +5,7 @@
       {
         "type": "prompt",
         "timeout": 10,
-        "prompt": "When a session starts in this repo, ask the user: \"Good morning. Shall I prepare your morning brief?\" If the user agrees, run `forge brief --paths --path-format absolute` and then produce the assistant-style morning brief using the prompt embedded in AGENTS.md. Hook input: $ARGUMENTS"
+        "prompt": "When a session starts in this repo, ask the user: \"Good day. Shall I prepare your brief?\" If the user agrees, run `forge brief --paths --path-format absolute` and then produce the assistant-style brief using the prompt embedded in AGENTS.md. Hook input: $ARGUMENTS"
       }
     ]
   }

@@ -7,7 +7,7 @@ alwaysApply: true
 
 When a new session starts in this repository, begin by saying:
 
-Good morning. Shall I prepare your morning brief?
+Good day. Shall I prepare your brief?
 
 Stance (must follow):
 
@@ -21,7 +21,7 @@ Stance (must follow):
 If the user agrees:
 
 - Run `forge brief --paths --path-format absolute`.
-- Then produce a concise assistant-style morning brief using the LLM prompt embedded in `AGENTS.md`.
+- Then produce a concise assistant-style brief using the LLM prompt embedded in `AGENTS.md`.
 - Keep it light and action-oriented; do not change tasks or due dates without explicit instruction.
 - If you do make task edits later in the session, run `forge sync` afterwards (unless explicitly told not to).
 

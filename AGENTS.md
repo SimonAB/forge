@@ -79,7 +79,7 @@ At the start of any Forge “execution” session:
 - Two-minute bullet journal sweep (timeboxed):
   - Scan today’s page (and yesterday’s if needed) for uncrossed items and commitments.
   - Capture anything actionable into Forge (or into Obsidian `- [ ]` tasks, then export).
-- Run the morning brief:
+- Run the brief:
   - `forge brief --paths --path-format absolute`
 - Export unchecked tasks from Obsidian into Forge inbox.
 - Process the inbox to zero (or to “safe zero”: only genuinely unclear items remain).
@@ -169,7 +169,7 @@ LLM assistant prompt (paste after running `forge brief`):
 ```
 You are my personal assistant. Greet me as I arrive at the office.
 Using only the `forge brief` output below, produce:
-- a 5–8 line morning brief
+- a 5–8 line brief
 - a proposed Top 3 (must/should/nice) with one-sentence rationale each
 - any due dates that look like they should be renegotiated today (be conservative)
 - one suggested batching plan (first work block), using @ctx(...) or mental-mode contexts
@@ -180,7 +180,7 @@ If you (the assistant) make edits to tasks/due dates in markdown, run `forge syn
 Assistant startup behaviour (recommended):
 
 - When a new assistant session starts in this repo, begin with:
-  - “Good morning. Shall I prepare your morning brief?”
+  - “Good day. Shall I prepare your brief?”
 - If yes, run `forge brief --paths --path-format absolute` and then use the prompt above.
 
 ### Weekly (30–60 minutes)

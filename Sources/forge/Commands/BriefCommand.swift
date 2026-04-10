@@ -2,14 +2,14 @@ import ArgumentParser
 import Foundation
 import ForgeCore
 
-/// Print a concise “morning brief” (commitments, inbox, and next actions).
+/// Print a concise “brief” (commitments, inbox, and next actions).
 ///
 /// This is designed to be pasted into an LLM chat to produce a short assistant-style greeting
 /// and a proposed Top 3 for the day.
 struct BriefCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "brief",
-        abstract: "Print a concise morning brief for review."
+        abstract: "Print a concise brief for review."
     )
 
     @Option(name: .long, help: "Show tasks due within the next N days (default: 7).")
@@ -57,7 +57,7 @@ struct BriefCommand: AsyncParsableCommand {
 
         let now = Date()
         let dateLabel = Self.briefDateFormatter.string(from: now)
-        print("\n\(bold)Good morning.\(reset) \(dim)\(dateLabel)\(reset)")
+        print("\n\(bold)Good day.\(reset) \(dim)\(dateLabel)\(reset)")
         let pathsArg = paths ? " --paths" : ""
         let pathFormatArg = paths ? " --path-format \(pathFormat.rawValue)" : ""
         print("\(dim)Command: forge brief --days \(days) --limit \(limit) --id-format \(idFormat.rawValue)\(pathsArg)\(pathFormatArg)\(reset)")
