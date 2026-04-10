@@ -521,12 +521,129 @@ public struct MarkdownIO: Sendable {
         return true
     }
 
+    /// Find a task by ID in a markdown task file and return its parsed representation (including notes, when present).
+    /// Returns nil when the task ID is not present in the file.
+    public func findTask(withID taskID: String, inFileAt path: String, projectName: String? = nil) throws -> ForgeTask? {
+        let tasks = try parseTasks(at: path, projectName: projectName)
+        return tasks.first { $0.id == taskID }
+    }
+
+    /// Update a task by ID in a markdown task file.
+    ///
+    /// - Updates the task line (and preserves notes as an indented `>` blockquote section).
+    /// - If the task's section changes (e.g. Next Actions → Waiting For), the updated task is moved to the new section.
+    /// - Touches `date_modified` in frontmatter.
+    /// - Returns true if the task was found and updated.
+    public func updateTask(
+        withID taskID: String,
+        inFileAt path: String,
+        projectName: String? = nil,
+        apply: (inout ForgeTask) -> Void
+    ) throws -> Bool {
+        let raw = try String(contentsOfFile: path, encoding: .utf8)
+        let idMarker = "<!-- id:\(taskID) -->"
+
+        guard raw.contains(idMarker) else { return false }
+
+        let (frontmatter, body) = Frontmatter.parse(from: raw)
+        let lines = body.components(separatedBy: "\n")
+        var currentSection: ForgeTask.Section = .nextActions
+
+        var outputLines: [String] = []
+        var found = false
+
+        // When a section changes, we remove the original block and re-insert into the new section at the end.
+        var movedTaskBlock: String?
+        var movedSectionHeader: String?
+
+        var i = 0
+        while i < lines.count {
+            let line = lines[i]
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+
+            if trimmed.hasPrefix("## ") {
+                let heading = String(trimmed.dropFirst(3)).trimmingCharacters(in: .whitespaces)
+                if let section = parseSection(heading) {
+                    currentSection = section
+                }
+                outputLines.append(line)
+                i += 1
+                continue
+            }
+
+            if currentSection == .notes {
+                outputLines.append(line)
+                i += 1
+                continue
+            }
+
+            let isTaskLine = trimmed.hasPrefix("- [")
+            if isTaskLine, line.contains(idMarker), let parsed = parseTaskLine(trimmed, section: currentSection, projectName: projectName) {
+                // Capture note lines attached to this task.
+                var task = parsed.task
+                task.projectName = projectName
+
+                var notesLines: [String] = []
+                var rawBlock: [String] = [line]
+                i += 1
+
+                while i < lines.count {
+                    let next = lines[i]
+                    let (isNoteLine, noteContent) = Self.parseNoteLine(next)
+                    if isNoteLine {
+                        notesLines.append(noteContent)
+                        rawBlock.append(next)
+                        i += 1
+                    } else if next.trimmingCharacters(in: .whitespaces).isEmpty && !notesLines.isEmpty {
+                        notesLines.append("")
+                        rawBlock.append(next)
+                        i += 1
+                    } else {
+                        break
+                    }
+                }
+
+                if !notesLines.isEmpty {
+                    task.notes = notesLines.joined(separator: "\n")
+                }
+
+                let originalSection = task.section
+                apply(&task)
+
+                found = true
+
+                // If section changed, remove from here and reinsert later.
+                if task.section != originalSection {
+                    movedTaskBlock = formatTaskBlock(task)
+                    movedSectionHeader = "## \(task.section.rawValue)"
+                } else {
+                    outputLines.append(formatTaskBlock(task))
+                }
+                continue
+            }
+
+            outputLines.append(line)
+            i += 1
+        }
+
+        guard found else { return false }
+
+        var updatedBody = outputLines.joined(separator: "\n")
+        if let moved = movedTaskBlock, let header = movedSectionHeader {
+            updatedBody = insertLineIntoSection(moved, section: header, body: updatedBody)
+        }
+
+        let output = Self.reassemble(frontmatter: frontmatter?.touchingModified(), body: updatedBody)
+        try output.write(toFile: path, atomically: true, encoding: .utf8)
+        return true
+    }
+
     /// Backwards-compatible helper: update due date as date-only.
     public func updateTaskDueDate(withID taskID: String, to date: Date, inFileAt path: String) throws -> Bool {
         try updateTaskDueDate(withID: taskID, to: date, hasTime: false, inFileAt: path)
     }
 
-    /// Insert a line into a named section, or create the section if it does not exist.
+    /// Insert a line (or block) into a named section, or create the section if it does not exist.
     private func insertLineIntoSection(_ line: String, section header: String, body: String) -> String {
         var result = body
         if let range = result.range(of: header) {

@@ -14,6 +14,8 @@ struct Forge: AsyncParsableCommand {
             MoveCommand.self,
             StatusCommand.self,
             BriefCommand.self,
+            TriageCommand.self,
+            SetCommand.self,
             AddCommand.self,
             DoneCommand.self,
             DueCommand.self,
