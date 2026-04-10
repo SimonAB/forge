@@ -23,8 +23,14 @@ __pycache__/
 .pycache/
 
 # Editors / IDE
-.cursor/
+.cursor/*
+!.cursor/hooks.json
+!.cursor/rules/
+!.cursor/rules/**
 .focus
+
+# Release/distribution artefacts
+dist-app/
 
 # Task files and caches (workspace-specific, may contain private data)
 tasks/

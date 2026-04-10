@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "type": "prompt",
+        "timeout": 10,
+        "prompt": "When a session starts in this repo, ask the user: \"Good morning. Would you like your morning brief?\" If the user agrees, run `forge brief --paths --path-format absolute` and then produce the assistant-style morning brief using the prompt embedded in AGENTS.md. Hook input: $ARGUMENTS"
+      }
+    ]
+  }
+}
+
