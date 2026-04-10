@@ -224,6 +224,18 @@ Pick the tightest constraint (one is usually enough). Use `@energy(...)` as a se
 - Triage an inbox item by ID (LLM-friendly, non-interactive): `forge triage <taskID> --to project --project "<name>" --section next --ctx writing --due "2026-04-10 15:00" --sync-after`
 - Update task metadata by ID (LLM-friendly, non-interactive): `forge set <taskID> --due "2026-04-12" --ctx office --sync-after`
 
+### Opening a task (when you ask to be taken to it)
+
+When the user asks to “show” a task or “take me to” a task, prefer to:
+
+- Identify the task via `forge brief --paths --path-format absolute` (or `forge due` / `forge next`), then
+- Open the exact file path using one of:
+  - `open "<project path>"` (open the project directory in Finder)
+  - `open "<TASKS.md path>"` (open the task file directly)
+  - `vim "<TASKS.md path>"` (edit in terminal)
+
+Always ask for confirmation before opening or editing files unless the user explicitly requested it.
+
 ### Focus sessions (optional, but powerful)
 
 Use focus to constrain task listing commands to a life domain (areas) tagged in frontmatter, while optionally including workspace projects depending on config:
