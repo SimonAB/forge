@@ -192,6 +192,8 @@ Pick the tightest constraint (one is usually enough). Use `@energy(...)` as a se
 - Capture directly into inbox: `forge inbox "task text"`
 - Add a next action to a project: `forge add <project> "task text"`
 - Complete a task by ID: `forge done <taskID>`
+- Triage an inbox item by ID (LLM-friendly, non-interactive): `forge triage <taskID> --to project --project "<name>" --section next --ctx writing --due "2026-04-10 15:00" --sync-after`
+- Update task metadata by ID (LLM-friendly, non-interactive): `forge set <taskID> --due "2026-04-12" --ctx office --sync-after`
 
 ### Focus sessions (optional, but powerful)
 

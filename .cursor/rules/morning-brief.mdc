@@ -16,3 +16,8 @@ If the user agrees:
 - Keep it light and action-oriented; do not change tasks or due dates without explicit instruction.
 - If you do make task edits later in the session, run `forge sync` afterwards (unless explicitly told not to).
 
+When you need to make changes, prefer Forge's non-interactive task commands:
+
+- Use `forge set <id> ... --sync-after` to update due/defer/context/waiting in place.
+- Use `forge triage <id> --to ... --sync-after` to move tasks out of inbox into a project/area/someday (and optionally set metadata while filing).
+
