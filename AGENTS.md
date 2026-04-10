@@ -54,6 +54,12 @@ When the user asks the assistant to create or restructure work (e.g. “prepare 
   - `## Notes` (ignored by task parsing)
 - **Task identity**: stable per-line IDs stored as `<!-- id:xxxxxx -->`.
 
+### Task ID policy (important)
+
+- The assistant must **never invent or hand-write task IDs**.
+- IDs are assigned by Forge tooling (e.g. `forge inbox`, `forge add`, `forge process`, sync/indexing) and should be treated as opaque.
+- When drafting new tasks for approval, do not include any `<!-- id:... -->` markers.
+
 ### Task syntax (what Forge understands)
 
 Use inline tags for scheduling and filtering:
