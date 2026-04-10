@@ -229,10 +229,10 @@ Pick the tightest constraint (one is usually enough). Use `@energy(...)` as a se
 When the user asks to “show” a task or “take me to” a task, prefer to:
 
 - Identify the task via `forge brief --paths --path-format absolute` (or `forge due` / `forge next`), then
-- Open the exact file path using one of:
-  - `open "<project path>"` (open the project directory in Finder)
-  - `open "<TASKS.md path>"` (open the task file directly)
-  - `vim "<TASKS.md path>"` (edit in terminal)
+- Choose the most suitable command based on the path:
+  - If it is a **directory**: `open "<project directory>"`
+  - If it is a **markdown file** (`.md`, including `TASKS.md`): default to `vim "<path>"` (fast edit), or `open "<path>"` if the user asked to view rather than edit
+  - For other file types: default to `open "<path>"`
 
 Always ask for confirmation before opening or editing files unless the user explicitly requested it.
 

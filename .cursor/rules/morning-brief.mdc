@@ -31,6 +31,8 @@ When you need to make changes, prefer Forge's non-interactive task commands:
 
 When the user asks to be taken to a specific task, you may use the absolute path from `forge brief --paths --path-format absolute` and run:
 
-- `open "<TASKS.md path>"` or `open "<project directory>"`, or
-- `vim "<TASKS.md path>"`
+- Prefer the command that fits the target:
+  - directories → `open "<dir>"`
+  - markdown files (`.md`, including `TASKS.md`) → `vim "<file>"` (edit) or `open "<file>"` (view)
+  - other files → `open "<file>"`
 
