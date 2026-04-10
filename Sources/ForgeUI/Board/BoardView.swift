@@ -29,6 +29,24 @@ public struct BoardView: View {
         self.viewModel = viewModel
     }
 
+    /// Two-way binding for the toolbar search text that maps empty text to a nil filter.
+    private var searchTextBinding: Binding<String> {
+        Binding(
+            get: { viewModel.searchFilter ?? "" },
+            set: { viewModel.searchFilter = $0.isEmpty ? nil : $0 }
+        )
+    }
+
+    /// True when the board search currently has a non-empty query.
+    private var hasActiveSearchQuery: Bool {
+        !(viewModel.searchFilter ?? "").isEmpty
+    }
+
+    /// Clear the active board search query.
+    private func clearSearchQuery() {
+        viewModel.searchFilter = nil
+    }
+
     public var body: some View {
         Group {
             if viewModel.isLoading && viewModel.projects.isEmpty {
@@ -135,20 +153,25 @@ public struct BoardView: View {
                         .foregroundStyle(.tertiary)
                         .font(.system(size: 11, weight: .medium))
                     #if canImport(AppKit)
-                    ToolbarSearchField(text: Binding(
-                        get: { viewModel.searchFilter ?? "" },
-                        set: { viewModel.searchFilter = $0.isEmpty ? nil : $0 }
-                    ), shouldFocus: $appKitSearchFieldShouldFocus, placeholder: "Search")
+                    ToolbarSearchField(text: searchTextBinding, shouldFocus: $appKitSearchFieldShouldFocus, placeholder: "Search")
                     .frame(minWidth: 140, maxWidth: 220)
                     #else
-                    TextField("Search", text: Binding(
-                        get: { viewModel.searchFilter ?? "" },
-                        set: { viewModel.searchFilter = $0.isEmpty ? nil : $0 }
-                    ))
+                    TextField("Search", text: searchTextBinding)
                     .focused($focusedField, equals: .search)
                     .textFieldStyle(.plain)
                     .frame(minWidth: 140, maxWidth: 220)
                     #endif
+                    if hasActiveSearchQuery {
+                        Button {
+                            clearSearchQuery()
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundStyle(.tertiary)
+                                .font(.system(size: 12))
+                        }
+                        .buttonStyle(.plain)
+                        .help("Clear search")
+                    }
                 }
                 .padding(.horizontal, 6)
                 .padding(.vertical, 4)
@@ -218,6 +241,13 @@ public struct BoardView: View {
                 if isCmdF {
                     NotificationCenter.default.post(name: .forgeBoardFocusSearch, object: nil)
                     return nil // Swallow so macOS doesn't take over with Find…
+                }
+                // Press Esc to clear the active board search.
+                let isEscape = event.keyCode == 53
+                let hasNoModifiers = event.modifierFlags.intersection([.command, .option, .control, .shift]).isEmpty
+                if isEscape && hasNoModifiers && hasActiveSearchQuery {
+                    clearSearchQuery()
+                    return nil
                 }
                 return event
             }
