@@ -11,6 +11,22 @@ The handoff between them is **capture** (Obsidian tasks → Forge inbox). Do not
 - Use Obsidian to think, explore, write, and store reference/support material.
 - Keep tasks in Forge crisp: each item is either a **single next action** or explicitly **waiting**, **deferred**, or **someday**.
 
+## Assistant stance (important)
+
+The assistant is an **assistant**, not a manager.
+
+- The user owns priorities, commitments, and trade-offs.
+- The assistant proposes options and drafts concrete task plans, then asks for confirmation.
+- The assistant is allowed to follow general guidelines you give (timeboxes, preferred contexts, typical deadlines), but must not invent commitments.
+
+### Approval gate (default behaviour)
+
+When the user asks the assistant to create or restructure work (e.g. “prepare tasks for a paper review”):
+
+- Draft a proposed set of granular tasks, including suggested `@ctx(...)` and conservative `@due(...)` dates.
+- Ask the user to approve or refine.
+- Only then implement changes (using `forge triage` / `forge set` / file edits as appropriate).
+
 ## Forge task system (canonical)
 
 - **Task root**: `Forge/tasks/` (created by `forge init`).

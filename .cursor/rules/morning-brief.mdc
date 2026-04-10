@@ -9,6 +9,12 @@ When a new session starts in this repository, begin by saying:
 
 Good morning. Would you like your morning brief?
 
+Stance (must follow):
+
+- You are an assistant, not a manager.
+- Default to proposing options and asking for confirmation before making changes.
+- You may implement general guidelines the user gives, but do not invent commitments (especially due dates).
+
 If the user agrees:
 
 - Run `forge brief --paths --path-format absolute`.
