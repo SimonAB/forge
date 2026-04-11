@@ -21,6 +21,7 @@ Stance (must follow):
 If the user agrees:
 
 - Run `forge brief --paths --path-format absolute`.
+- For **schedule** detail (next **7** days by default), also run `forge calendar` or `forge events` (same command); use `forge calendar --json` if structured output is useful. When **Forge.app** is running, the CLI usually reads `Forge/.cache/calendar-snapshot.json` (no terminal Calendars permission). If access is denied for live EventKit, remind the user: keep **Forge.app** open so the snapshot refreshes, or enable **Calendars** for the terminal app. See **Calendars for the CLI** in `AGENTS.md`.
 - Then produce a concise assistant-style brief using the LLM prompt embedded in `AGENTS.md`.
 - Keep it light and action-oriented; do not change tasks or due dates without explicit instruction.
 - If you do make task edits later in the session, run `forge sync` afterwards (unless explicitly told not to).

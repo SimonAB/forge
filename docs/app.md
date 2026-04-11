@@ -132,6 +132,10 @@ This matches the task discovery behaviour of `forge due`.
 After each sync, the badge counts are refreshed. If new items were captured
 from Reminders, a macOS notification is displayed.
 
+### Calendar snapshot (CLI)
+
+After a successful sync, if **Calendars** access is granted, Forge.app also refreshes **`Forge/.cache/calendar-snapshot.json`**: a read-only JSON export of upcoming events (default **7**-day horizon, same allowlist as `gtd.calendar_include` in `config.yaml`). That file lets the **`forge`** CLI show the **Schedule** section and **`forge calendar`** without granting Calendars to your terminal. Current writes use **schema version 2** (`schemaVersion`, `timeZoneIdentifier`, **`groupedByDay`**, and richer per-event fields such as notes and URLs); see **`PRIVACY.md`**.
+
 ### Sync targets
 
 Configured in `config.yaml`:
@@ -171,6 +175,7 @@ Or from Neovim:
 On first launch, macOS will prompt for access to:
 
 - **Reminders** — required for two-way task sync.
+- **Calendars** — only if you use CLI commands that read Calendar (`forge calendar`, or `forge brief` without `--no-calendar`). Forge does not modify calendar data.
 
 Grant access for full functionality. This is declared in the app's
 `Info.plist`.
@@ -182,6 +187,7 @@ Grant access for full functionality. This is declared in the app's
 - Background sync uses macOS frameworks (EventKit and related APIs) to talk to
   **your** Reminders account; no data is sent to any Forge
   server.
+- Optional **`forge calendar`** and the **`forge brief`** Schedule section read Calendar events locally for terminal output only (read-only). Use **`forge brief --no-calendar`** to skip Calendar.
 - The task index at `Forge/.cache/tasks.db` stores file paths, timestamps, and
   cached counts, not full task text.
 - CLI commands such as `forge sync` and `forge due` use this index for discovery and expose

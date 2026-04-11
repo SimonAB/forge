@@ -6,6 +6,22 @@ The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 ### Unreleased
 
+#### CLI
+
+- **`forge calendar`** / **`forge events`** — read-only listing of **Apple Calendar** events (EventKit); default window **next 7 days** (`ForgeCalendarDefaults.horizonDays`), with `--days`, `--start` (YYYY-MM-DD), and `--json`.
+- **`forge brief`** — **Schedule** section uses the same default horizon; **`--no-calendar`** omits it; **`gtd.calendar_include`** in `config.yaml` can limit which calendar titles are read.
+
+#### Privacy / packaging
+
+- Documented Calendar read access in **`PRIVACY.md`**; **`NSCalendarsUsageDescription`** added to **`packaging/assemble_forge_app.sh`** for Forge.app.
+- **`AGENTS.md`**, **`docs/cli.md`**, and **`.cursor/rules/morning-brief.mdc`** — how to grant **Calendars** to the terminal host app (e.g. Cursor) so `forge brief` can show the Schedule section.
+
+#### Calendar snapshot (Forge.app → CLI)
+
+- **`Forge/.cache/calendar-snapshot.json`** — written by **Forge.app** after each successful background sync; **`forge calendar`**, **`forge events`**, and the **`forge brief`** Schedule section prefer this file when fresh (TTL **15 minutes**), same calendar day, and config matches — avoiding terminal TCC (e.g. **cmux** without Calendar entitlement).
+- **Snapshot schema (v2)** — each event record can include notes (trimmed), URL, EventKit identifiers, recurrence and availability flags, organiser name, attendee count, and **`groupedByDay`** plus **`timeZoneIdentifier`** for easier inspection; older cache files without those keys still decode.
+- **`CalendarEventsResolution`** in ForgeCore — snapshot first, then live EventKit; **`forge calendar --start`** always uses EventKit.
+
 ### [0.9.0] – 2026-03-23
 
 #### Summary

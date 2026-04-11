@@ -371,11 +371,39 @@ final class StatusBarController: NSObject, NSMenuDelegate {
                         body: "\(report.inboxItemsAdded) new item(s) captured from Reminders"
                     )
                 }
+                await self.refreshCalendarSnapshot(config: config, forgeDir: forgeDir)
             } catch {
                 hideSyncProgressWindow()
                 rebuildMenu()
             }
         }
+    }
+
+    /// Writes `calendar-snapshot.json` so the `forge` CLI can show Calendar without terminal TCC (Forge.app has Calendar access).
+    private func refreshCalendarSnapshot(config: ForgeConfig, forgeDir: String) async {
+        let reader = CalendarScheduleReader()
+        do {
+            try await reader.requestAccess()
+        } catch {
+            return
+        }
+        let cal = Calendar.current
+        let now = Date()
+        let (start, end) = CalendarScheduleFormatting.dateWindow(
+            anchor: now,
+            days: ForgeCalendarDefaults.horizonDays,
+            calendar: cal
+        )
+        let events = reader.fetchEvents(from: start, to: end, calendarTitleAllowlist: config.gtd.calendarInclude)
+        let payload = CalendarSnapshotStore.Payload(
+            generatedAt: now,
+            windowStart: start,
+            windowEnd: end,
+            horizonDays: ForgeCalendarDefaults.horizonDays,
+            calendarInclude: config.gtd.calendarInclude,
+            events: events
+        )
+        try? CalendarSnapshotStore.write(forgeDir: forgeDir, payload: payload)
     }
 
     private func showInitialSyncWindowIfNeeded() {

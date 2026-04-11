@@ -183,6 +183,11 @@ Start from [`config.sample.yaml`](config.sample.yaml) and copy it to
   Tasks with an `@ctx()` tag are synced into a separate Reminders list named
   "&lt;reminders_list&gt; • &lt;context&gt;" (e.g. "Forge • email"), so contexts
   appear as lists in the Reminders sidebar.
+- **`gtd.calendar_include`** (optional) — when set, `forge calendar` and the
+  `forge brief` Schedule section only read events from calendars whose **title** matches
+  one of the listed strings (exact match). If omitted or empty, all event
+  calendars are included. This is read-only; Forge never writes to Calendar.
+  **Forge.app** writes **`Forge/.cache/calendar-snapshot.json`** after sync (schema v2 JSON for the CLI; see **`PRIVACY.md`**).
 - **`workspace_tags`** — focus tags that include workspace projects (default:
   `[work]`). Project tasks inherit these tags during sync.
 - **`project_areas`** — maps area IDs to project directory names for the

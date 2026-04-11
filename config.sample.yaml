@@ -50,6 +50,11 @@ gtd:
     - reading
     - anywhere
   reminders_list: Forge
+  # Optional: limit `forge calendar` / `forge brief` Schedule to these Calendar titles (exact match).
+  # Omit or leave empty to include all event calendars.
+  # calendar_include:
+  #   - Work
+  #   - Teaching
 
 workspace_tags:
   - work

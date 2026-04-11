@@ -148,21 +148,26 @@ public enum TerminalPreferences {
 public struct GTDConfig: Codable, Sendable {
     public let contexts: [String]
     public let remindersList: String
+    /// When non-empty, `forge calendar` and the `forge brief` Schedule section only read these Calendar **titles** (case-sensitive). Empty = all event calendars.
+    public let calendarInclude: [String]
 
     enum CodingKeys: String, CodingKey {
         case contexts
         case remindersList = "reminders_list"
+        case calendarInclude = "calendar_include"
     }
 
-    public init(contexts: [String], remindersList: String) {
+    public init(contexts: [String], remindersList: String, calendarInclude: [String] = []) {
         self.contexts = contexts
         self.remindersList = remindersList
+        self.calendarInclude = calendarInclude
     }
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         contexts = try container.decodeIfPresent([String].self, forKey: .contexts) ?? []
         remindersList = try container.decode(String.self, forKey: .remindersList)
+        calendarInclude = try container.decodeIfPresent([String].self, forKey: .calendarInclude) ?? []
     }
 }
 
@@ -340,7 +345,8 @@ extension ForgeConfig {
                     "low-energy", "email", "slack", "calls", "computer",
                     "reading", "watching", "anywhere", "agenda",
                 ],
-                remindersList: "Forge"
+                remindersList: "Forge",
+                calendarInclude: []
             ),
             workspaceTags: ["work"],
             terminal: "auto",

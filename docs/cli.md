@@ -3,7 +3,8 @@
 The `forge` command-line tool manages your kanban board and GTD tasks from the
 terminal, operating directly on the plain-text markdown files in your Forge
 directory. There are no remote services; all commands read and write your local
-files and, for sync, talk to macOS Reminders on your machine.
+files and, for sync, talk to macOS Reminders on your machine. Optional commands
+can read Apple Calendar for schedule context (local only).
 
 ```
 forge <command> [options]
@@ -29,6 +30,8 @@ forge <command> [options]
 | `forge someday` | View or add to the someday/maybe list |
 | `forge rollup` | Update area files with linked project task summaries |
 | `forge due` | Show overdue and upcoming due tasks |
+| `forge brief` | Print a concise daily brief (tasks + Calendar schedule by default) |
+| `forge calendar` / `forge events` | List upcoming Calendar events for the next **7 days** by default (read-only; same command) |
 | `forge focus` | Enter or clear a focus session |
 | `forge init` | Initialise a new Forge workspace |
 | `forge lint` | Lint and fix task markdown files for best practices |
@@ -249,6 +252,70 @@ forge due --areas                 # Include all task-root markdown (inbox, areas
 forge due -d 14 --areas           # 14-day horizon across everything
 forge due --markdown              # Also write Forge/tasks/due.md with clickable links
 forge due -d 14 --areas -m        # Markdown summary including area files
+```
+
+---
+
+## forge brief
+
+Print a compact “good morning” view: commitments (`@due`), inbox, next-action
+candidates, and waiting-for items — designed to paste into an assistant prompt.
+
+```
+forge brief [--days <n>] [--limit <n>] [--paths] [--path-format relative|absolute]
+            [--no-calendar] [--calendar-days <n>]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--days` | Due-date lookahead for the Commitments section (default: 7) |
+| `--limit` | Max items per section (default: 10) |
+| `--paths` | Show source file path per task |
+| `--path-format` | With `--paths`: `relative` or `absolute` |
+| `--no-calendar` | Omit the **Schedule** section (by default, brief reads Apple Calendar; read-only; may prompt for permission) |
+| `--calendar-days` | Schedule section: window length in days (default: 7) |
+
+**Examples:**
+
+```bash
+forge brief
+forge brief --paths --path-format absolute
+forge brief --no-calendar
+forge brief --calendar-days 3
+```
+
+**Calendars permission (macOS):** Prefer **`Forge.app`** (menubar): after each background sync it writes `Forge/.cache/calendar-snapshot.json`. The CLI uses that snapshot when it is **fresh** (default: 15 minutes) and matches your config, so **cmux / Cursor / Terminal** often need **no** Calendars access for `forge brief` or `forge calendar`. If no valid snapshot exists (app not running, stale file, or you use `forge calendar --start …`), Forge falls back to **EventKit** in the terminal — then enable Calendars for your terminal app, or run commands after Forge has refreshed the snapshot.
+
+**Snapshot file contents:** New writes use **schema version 2**: besides the flat **`events`** array, the JSON includes **`schemaVersion`**, **`timeZoneIdentifier`**, and **`groupedByDay`** (events bucketed by calendar day). Each event record may include optional fields such as trimmed **notes**, **URL**, EventKit **identifiers**, organiser name, recurrence and availability flags, and attendee count. Older cache files without those keys still decode. See **`PRIVACY.md`** for what is stored on disk.
+
+---
+
+## forge calendar / forge events
+
+List upcoming events from **Apple Calendar** (read-only). **`forge events`** is an alias for **`forge calendar`** — use whichever you prefer. By default the window is the **next 7 days** from the start of today (local timezone), which matches the **`forge brief`** Schedule section when `--calendar-days` is left at its default.
+
+Uses EventKit on your Mac; nothing is written to Calendar. Optional `gtd.calendar_include` in
+`config.yaml` restricts which calendar **titles** are read (exact match); if
+empty or omitted, all event calendars are used.
+
+```
+forge calendar [--days <n>] [--start YYYY-MM-DD] [--json]
+forge events   [--days <n>] [--start YYYY-MM-DD] [--json]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--days` | Number of calendar days in the window from the anchor day’s midnight (default: **7**) |
+| `--start` | Anchor day (`YYYY-MM-DD`, local timezone); default: today |
+| `--json` | Print JSON (window bounds + events) for scripting or pasting into a chat |
+
+**Examples:**
+
+```bash
+forge calendar              # Next 7 days (default)
+forge events                # Same as forge calendar
+forge calendar --days 14 --start 2026-04-14
+forge calendar --json       # Structured output for assistants
 ```
 
 ---

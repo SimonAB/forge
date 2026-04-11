@@ -18,6 +18,11 @@ This document summarises what data Forge uses, where it lives, and how it moves.
   - This stores file paths, modification times, sizes, and cached per-file
     counts (overdue, due-today, inbox counts).
   - It does **not** store full task text; that remains in markdown.
+  - When **Forge.app** runs background sync, it may also write
+    `Forge/.cache/calendar-snapshot.json` (a short-lived read-only copy of upcoming
+    Calendar events: titles, times, calendar names, locations, optional notes and URLs,
+    stable event and calendar identifiers, and a per-day grouping) so the `forge` CLI
+    can display your schedule without requiring Calendars permission for your terminal app.
 
 - **Preferences and focus**
   - The menubar app stores UI preferences (shortcuts, editor choice, filters)
@@ -36,6 +41,14 @@ This document summarises what data Forge uses, where it lives, and how it moves.
     already configured in System Settings.
   - Forge does not talk to any third-party servers.
 
+- **Apple Calendar (optional, read-only)**
+  - When you run `forge calendar` or `forge brief` (unless you pass `--no-calendar`), Forge uses macOS
+    EventKit to **read** events from your calendars for display in the terminal.
+  - Nothing is written back to Calendar, and nothing is sent to Forge servers.
+  - Optional `gtd.calendar_include` in `config.yaml` limits which calendar
+    **titles** are queried (exact match); if omitted or empty, all event
+    calendars are included.
+
 - **No telemetry or remote services**
   - Forge sends **no usage analytics, telemetry, or task content** to any
     external service.
@@ -49,6 +62,10 @@ This document summarises what data Forge uses, where it lives, and how it moves.
     - Do not grant Reminders permission when prompted, or
     - Avoid calling `forge sync`.
   - All CLI commands and the board app still work against the markdown files.
+
+- **No Calendar access**
+  - Use `forge brief --no-calendar` for a task-only brief, avoid `forge calendar`, and/or deny Calendars
+    permission when prompted. Other commands are unaffected.
 
 - **Local-only storage**
   - Place your Forge directory on:

@@ -88,6 +88,8 @@ cat > "$CONTENTS/Info.plist" << PLIST
     <string>14.0</string>
     <key>NSRemindersUsageDescription</key>
     <string>Forge syncs tasks with Reminders.</string>
+    <key>NSCalendarsUsageDescription</key>
+    <string>Forge can read your Calendar to show upcoming events in the CLI.</string>
     <key>NSAppleEventsUsageDescription</key>
     <string>Forge runs commands in your chosen terminal and shows task notifications.</string>
     <key>SUFeedURL</key>

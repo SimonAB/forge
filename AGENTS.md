@@ -80,7 +80,8 @@ At the start of any Forge “execution” session:
   - Scan today’s page (and yesterday’s if needed) for uncrossed items and commitments.
   - Capture anything actionable into Forge (or into Obsidian `- [ ]` tasks, then export).
 - Run the brief:
-  - `forge brief --paths --path-format absolute`
+  - `forge brief --paths --path-format absolute` (includes a **Schedule** section from Apple Calendar by default; use `--no-calendar` to omit it).
+  - **Calendar (next 7 days) via CLI:** For schedule context, run **`forge calendar`** or **`forge events`** (aliases; default **7** days). Use **`forge calendar --json`** when pasting into an assistant. **`Forge.app`** refreshes **`Forge/.cache/calendar-snapshot.json`** after background sync (JSON **schema version 2**: `groupedByDay`, `timeZoneIdentifier`, and optional per-event fields such as notes and URLs — see **`PRIVACY.md`**); the CLI prefers that file so **terminal apps (e.g. cmux) do not need Calendars access** for normal briefs. If the snapshot is missing or stale, or you pass **`forge calendar --start`**, the CLI uses EventKit in the terminal — then grant Calendars to that terminal app, or ensure Forge.app has run recently.
 - Export unchecked tasks from Obsidian into Forge inbox.
 - Process the inbox to zero (or to “safe zero”: only genuinely unclear items remain).
 - Generate a small “today set” from next actions.
@@ -154,7 +155,7 @@ If it fails those tests, it is not a next action yet; refine it during processin
 
 Non-negotiable morning start (timeboxed; do this before comms):
 
-- `forge brief --paths --path-format absolute` (use this as your “assistant greeting” on arrival).
+- `forge brief --paths --path-format absolute` (use this as your “assistant greeting” on arrival). If the Schedule line shows access denied, fix **Calendars** for your terminal host app (see **Calendars for the CLI** under Session start above).
 - Bullet journal sweep (2 minutes max): capture any open loops, then stop.
 - Commitments scan (2 minutes max): run `forge due`.
   - If a due date is no longer true, renegotiate it (push it or remove it).

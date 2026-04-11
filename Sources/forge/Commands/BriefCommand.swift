@@ -41,6 +41,12 @@ struct BriefCommand: AsyncParsableCommand {
     @Option(name: .long, help: "How to render file paths when --paths is enabled: relative or absolute. Default: relative.")
     var pathFormat: PathFormat = .relative
 
+    @Flag(name: .customLong("no-calendar"), help: "Skip the Schedule section (do not read Apple Calendar).")
+    var noCalendar = false
+
+    @Option(name: .long, help: "Schedule section: include events across the next N days (default: \(ForgeCalendarDefaults.horizonDays), same as `forge calendar`).")
+    var calendarDays: Int = ForgeCalendarDefaults.horizonDays
+
     mutating func run() async throws {
         let config = try ConfigLoader.load()
         let forgeDir = ConfigLoader.forgeDirectory(for: config)
@@ -60,7 +66,9 @@ struct BriefCommand: AsyncParsableCommand {
         print("\n\(bold)Good day.\(reset) \(dim)\(dateLabel)\(reset)")
         let pathsArg = paths ? " --paths" : ""
         let pathFormatArg = paths ? " --path-format \(pathFormat.rawValue)" : ""
-        print("\(dim)Command: forge brief --days \(days) --limit \(limit) --id-format \(idFormat.rawValue)\(pathsArg)\(pathFormatArg)\(reset)")
+        let noCalArg = noCalendar ? " --no-calendar" : ""
+        let calDaysArg = (!noCalendar && calendarDays != ForgeCalendarDefaults.horizonDays) ? " --calendar-days \(calendarDays)" : ""
+        print("\(dim)Command: forge brief --days \(days) --limit \(limit) --id-format \(idFormat.rawValue)\(pathsArg)\(pathFormatArg)\(noCalArg)\(calDaysArg)\(reset)")
         if paths && pathFormat == .absolute {
             print("\(dim)Forge dir:\(reset) \(forgeDir)")
             let roots = config.resolvedProjectRoots
@@ -122,9 +130,9 @@ struct BriefCommand: AsyncParsableCommand {
         }
 
         // Due / commitments view (based on @due).
-        let calendar = Calendar.current
-        let todayStart = calendar.startOfDay(for: now)
-        let horizon = calendar.date(byAdding: .day, value: days, to: todayStart) ?? now
+        let gregorian = Calendar.current
+        let todayStart = gregorian.startOfDay(for: now)
+        let horizon = gregorian.date(byAdding: .day, value: days, to: todayStart) ?? now
 
         let dueItems = taskSources.flatMap { source in
             source.tasks
@@ -168,6 +176,18 @@ struct BriefCommand: AsyncParsableCommand {
             }
         }
         print()
+
+        if !noCalendar {
+            await printCalendarSchedule(
+                config: config,
+                forgeDir: forgeDir,
+                limit: max(0, limit),
+                calendarDays: max(1, calendarDays),
+                bold: bold,
+                dim: dim,
+                reset: reset
+            )
+        }
 
         print("\(bold)Inbox\(reset)")
         if inboxTasks.isEmpty {
@@ -295,6 +315,70 @@ struct BriefCommand: AsyncParsableCommand {
         }
         return counts.max(by: { $0.value < $1.value })?.key
     }
+
+    private func printCalendarSchedule(
+        config: ForgeConfig,
+        forgeDir: String,
+        limit: Int,
+        calendarDays: Int,
+        bold: String,
+        dim: String,
+        reset: String
+    ) async {
+        let timeFormatter = Self.briefCalendarTimeFormatter
+        let dayLineFormatter = Self.briefCalendarDayFormatter
+        print("\(bold)Schedule\(reset) \(dim)(Calendar, next \(calendarDays) day(s))\(reset)")
+        let resolution: CalendarEventsResolution.Result
+        do {
+            resolution = try await CalendarEventsResolution.resolve(
+                forgeDir: forgeDir,
+                config: config,
+                days: calendarDays,
+                customStart: nil
+            )
+        } catch {
+            let msg = (error as? CalendarReaderError)?.description ?? error.localizedDescription
+            print("  \(dim)Could not read Calendar: \(msg)\(reset)\n")
+            return
+        }
+        switch resolution.source {
+        case .forgeAppSnapshot(let generatedAt):
+            let rel = Self.formatSnapshotRelativeAge(generatedAt)
+            print("  \(dim)Source: Forge.app snapshot · updated \(rel)\(reset)")
+        case .liveEventKit:
+            break
+        }
+        let events = resolution.events
+        if events.isEmpty {
+            print("  \(dim)No events in this window.\(reset)\n")
+            return
+        }
+        for ev in events.prefix(max(1, limit)) {
+            let line = CalendarScheduleFormatting.compactLine(ev, timeFormatter: timeFormatter, dateFormatter: dayLineFormatter)
+            print("  • \(line)")
+        }
+        print()
+    }
+
+    private static func formatSnapshotRelativeAge(_ date: Date) -> String {
+        let f = RelativeDateTimeFormatter()
+        f.unitsStyle = .abbreviated
+        return f.localizedString(for: date, relativeTo: Date())
+    }
+
+    private static let briefCalendarTimeFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_GB")
+        f.dateFormat = "HH:mm"
+        return f
+    }()
+
+    private static let briefCalendarDayFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_GB")
+        f.dateFormat = "EEE d MMM"
+        return f
+    }()
 
     private static let briefDateFormatter: DateFormatter = {
         let f = DateFormatter()
