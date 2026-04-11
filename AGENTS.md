@@ -72,6 +72,13 @@ Use inline tags for scheduling and filtering:
 - `@energy(high|medium|low)` (optional)
 - Assignees as `#Name` (also used for waiting filters)
 
+### Kanban projects and folder tags (assistants / Hephaestus)
+
+- **Column state** is a **Finder tag** per project directory, mapped by `board.columns` in `config.yaml` (each column has a display `name` and a `tag` string). **Meta tags** (`board.meta_tags`) and **assignees** use additional Finder tags (see README). Forge’s board UI and **`forge board`** use the same model.
+- **Read** the board and Radar staleness (same `calm` / `watch` / `heat` rules as the Board Radar filter): **`forge board --json`**. Use the JSON `board` object for allowed column names and tags; **do not invent** tag strings that are not in config or in that payload.
+- **Change column** only after explicit user approval: **`forge move <project> <ColumnName>`** (substring match on project directory name; column name from config).
+- **Meta and `#Person` tags:** **`forge project-tag add`**, **`remove`**, and **`list`** — validated against `board.meta_tags` and `#…` assignee tags; **`forge project-tag`** never adds or removes kanban column (workflow) tags (use **`forge move`**). **`--force`** can add/remove other legacy Finder labels; column tags remain blocked.
+
 ## Session start (always)
 
 At the start of any Forge “execution” session:

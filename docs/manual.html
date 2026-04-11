@@ -134,6 +134,10 @@
 <li><strong>CLI (<code>forge</code> command)</strong>:</li>
 <li><code>forge sync</code> – run a full two-way sync between markdown and Reminders.</li>
 <li><code>forge due</code> – list overdue and upcoming tasks from markdown (optionally writing <code>tasks/due.md</code>).</li>
+<li><code>forge brief</code> – compact daily summary for review; includes a read-only <strong>Schedule</strong> section from Apple Calendar by default (<code>--no-calendar</code> to omit).</li>
+<li><code>forge calendar</code> / <code>forge events</code> – list upcoming Calendar events for the next <strong>7 days</strong> by default (read-only; same command). With <strong>Forge.app</strong>, the CLI can read <strong><code>Forge/.cache/calendar-snapshot.json</code></strong> (schema v2: grouped days and richer event metadata; see <strong><code>docs/cli.md</code></strong> / <strong><code>PRIVACY.md</code></strong>).</li>
+<li><code>forge board --json</code> — structured kanban + Radar metrics for scripts and assistants (see <strong><code>docs/cli.md</code></strong>).</li>
+<li><code>forge project-tag</code> — add/remove/list meta and assignee Finder tags on a project folder (see <strong><code>docs/cli.md</code></strong>).</li>
 <li>
 <p>Other commands (<code>forge board</code>, <code>forge process</code>, etc.) provide various GTD and board views.</p>
 </li>

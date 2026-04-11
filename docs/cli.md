@@ -21,6 +21,7 @@ forge <command> [options]
 | `forge add` | Add a task to a project |
 | `forge done` | Mark a task as completed |
 | `forge move` | Move a project between columns |
+| `forge project-tag` | Add, remove, or list meta / assignee Finder tags on a project folder |
 | `forge status` | Summary dashboard of all projects |
 | `forge sync` | Two-way sync with Reminders |
 | `forge process` | Interactively triage inbox items |
@@ -43,13 +44,15 @@ forge <command> [options]
 Display the kanban board showing projects grouped by column.
 
 ```
-forge board [--list] [--column <name>]
+forge board [--list] [--json] [--column <name>] [--assignee <person>]
 ```
 
 | Option | Short | Description |
 |--------|-------|-------------|
 | `--list` | `-l` | Compact single-column list instead of the full board |
+| `--json` | | Print JSON: `board.columns` (names and Finder tags), `meta_tags`, `tag_aliases`, and each project’s column, tags, assignees, and **Radar** metrics (`radarBucket`: `calm` / `watch` / `heat`, `daysSinceActivity`, `activityModificationDate`, `activitySource`) — same rules as the Forge Board Radar filter |
 | `--column` | `-c` | Filter to a specific column (e.g. `Active`, `Write`) |
+| `--assignee` | `-a` | Filter to projects with this assignee (matches `#Person` Finder tags) |
 
 **Examples:**
 
@@ -57,7 +60,15 @@ forge board [--list] [--column <name>]
 forge board                  # Full board with columns
 forge board --list           # Compact list view
 forge board -c Active        # Only active projects
+forge board --json         # Machine-readable board + Radar (for assistants / scripts)
+forge board --json -c Write
 ```
+
+### Kanban for assistants (e.g. Hephaestus)
+
+- **Read state:** `forge board --json` — use `board.columns` and `board.metaTags` from the payload together with `config.yaml`; do not invent Finder tag strings that are not listed there (columns) or in `meta_tags`.
+- **Change column:** only after explicit user approval: `forge move <project> <ColumnName>` — column names are the `name` fields from `board.columns` in config (see **`forge move`** below).
+- **Meta tags and assignees:** `forge project-tag add|remove|list` — validated against `board.meta_tags` and `#Person` tags; kanban column tags are never added or removed here (use **`forge move`**).
 
 ---
 
@@ -339,6 +350,38 @@ Both arguments support prefix matching (e.g. `act` matches `Active`).
 
 ```bash
 forge move manuscript Review
+```
+
+---
+
+## forge project-tag
+
+Add, remove, or list **Finder tags** on a project directory for **meta** (`board.meta_tags`) and **assignee** (`#Name`) labels. **Kanban column** (workflow) tags are only changed with **`forge move`** — this command refuses workflow tags so column state stays consistent.
+
+```
+forge project-tag add <project> <tag> [--force]
+forge project-tag remove <project> <tag> [--force]
+forge project-tag list <project> [--json]
+```
+
+| Subcommand | Arguments | Description |
+|------------|-----------|-------------|
+| `add` | `<project>`, `<tag>` | Adds the tag if not already present. Without `--force`, the tag must be listed in `board.meta_tags` or be a `#Person` assignee tag. |
+| `remove` | `<project>`, `<tag>` | Removes the tag by exact string match. Same validation as `add`. |
+| `list` | `<project>` | Prints all Finder tags with a **kind** hint: `column`, `meta`, `assignee`, `project_scope` (if `project_tag` in config), or `other`. |
+
+| Option | Description |
+|--------|-------------|
+| `--force` | On **add** / **remove**, allow tags not in `meta_tags` and not `#…` assignee (e.g. legacy labels). **Workflow column tags are still rejected** — use `forge move`. |
+| `--json` | On **list**, print `{ "project", "path", "tags": [{ "name", "kind" }] }`. |
+
+**Examples:**
+
+```bash
+forge project-tag list "Oncho-MIRS-AI_Gates"
+forge project-tag add "Oncho-MIRS-AI_Gates" "URGENT ⚠️"
+forge project-tag remove Apodemus-DTV_Vaccines "URGENT ⚠️"
+forge project-tag list SomeProject --json
 ```
 
 ---

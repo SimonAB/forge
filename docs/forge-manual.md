@@ -59,6 +59,8 @@ If you want a flexible backbone that supports these paradigms but still allows y
   - `forge due` – list overdue and upcoming tasks from markdown (optionally writing `tasks/due.md`).
   - `forge brief` – compact daily summary for review; includes a read-only **Schedule** section from Apple Calendar by default (`--no-calendar` to omit).
   - `forge calendar` / `forge events` – list upcoming Calendar events for the next **7 days** by default (read-only; same command). With **Forge.app**, the CLI can read **`Forge/.cache/calendar-snapshot.json`** (schema v2: grouped days and richer event metadata; see **`docs/cli.md`** / **`PRIVACY.md`**).
+  - `forge board --json` — structured kanban + Radar metrics for scripts and assistants (see **`docs/cli.md`**).
+  - `forge project-tag` — add/remove/list meta and assignee Finder tags on a project folder (see **`docs/cli.md`**).
   - Other commands (`forge board`, `forge process`, etc.) provide various GTD and board views.
 
 - **Menubar app (Forge.app)**:

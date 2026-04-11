@@ -104,8 +104,13 @@ This document summarises what data Forge uses, where it lives, and how it moves.
 <li>Forge maintains a small local SQLite database at <code>Forge/.cache/tasks.db</code>.</li>
 <li>This stores file paths, modification times, sizes, and cached per-file
     counts (overdue, due-today, inbox counts).</li>
+<li>It does <strong>not</strong> store full task text; that remains in markdown.</li>
 <li>
-<p>It does <strong>not</strong> store full task text; that remains in markdown.</p>
+<p>When <strong>Forge.app</strong> runs background sync, it may also write
+    <code>Forge/.cache/calendar-snapshot.json</code> (a short-lived read-only copy of upcoming
+    Calendar events: titles, times, calendar names, locations, optional notes and URLs,
+    stable event and calendar identifiers, and a per-day grouping) so the <code>forge</code> CLI
+    can display your schedule without requiring Calendars permission for your terminal app.</p>
 </li>
 <li>
 <p><strong>Preferences and focus</strong></p>
@@ -130,6 +135,17 @@ This document summarises what data Forge uses, where it lives, and how it moves.
 <p>Forge does not talk to any third-party servers.</p>
 </li>
 <li>
+<p><strong>Apple Calendar (optional, read-only)</strong></p>
+</li>
+<li>When you run <code>forge calendar</code> or <code>forge brief</code> (unless you pass <code>--no-calendar</code>), Forge uses macOS
+    EventKit to <strong>read</strong> events from your calendars for display in the terminal.</li>
+<li>Nothing is written back to Calendar, and nothing is sent to Forge servers.</li>
+<li>
+<p>Optional <code>gtd.calendar_include</code> in <code>config.yaml</code> limits which calendar
+    <strong>titles</strong> are queried (exact match); if omitted or empty, all event
+    calendars are included.</p>
+</li>
+<li>
 <p><strong>No telemetry or remote services</strong></p>
 </li>
 <li>Forge sends <strong>no usage analytics, telemetry, or task content</strong> to any
@@ -147,6 +163,13 @@ This document summarises what data Forge uses, where it lives, and how it moves.
 </li>
 <li>
 <p>All CLI commands and the board app still work against the markdown files.</p>
+</li>
+<li>
+<p><strong>No Calendar access</strong></p>
+</li>
+<li>
+<p>Use <code>forge brief --no-calendar</code> for a task-only brief, avoid <code>forge calendar</code>, and/or deny Calendars
+    permission when prompted. Other commands are unaffected.</p>
 </li>
 <li>
 <p><strong>Local-only storage</strong></p>

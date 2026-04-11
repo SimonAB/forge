@@ -214,7 +214,7 @@ public final class BoardViewModel {
         }
         if let radarKey = radarFilterKey, !radarKey.isEmpty {
             let now = Date()
-            list = list.filter { radarBucket(for: $0, now: now) == radarKey }
+            list = list.filter { KanbanRadar.bucket(for: $0, now: now).rawValue == radarKey }
         }
         if let assignee = assigneeFilter, !assignee.isEmpty {
             list = list.filter { $0.assignees.contains(assignee) }
@@ -262,48 +262,5 @@ public final class BoardViewModel {
         return match(project.name) || match(project.path)
             || project.metaTags.contains { match($0) }
             || project.tags.contains { match($0) }
-    }
-    /// Compute a simple "radar bucket" for a project combining urgency and neglect.
-    ///
-    /// - Parameters:
-    ///   - project: Project to score.
-    ///   - now: Current time (default is `Date()`; injected for testability).
-    /// - Returns: A string key representing the radar bucket: "calm", "watch", or "heat".
-    private func radarBucket(for project: Project, now: Date) -> String {
-        // Treat any meta tag whose base label starts with "URGENT" (e.g. "URGENT ⚠️") as urgent.
-        let hasUrgentTag = project.metaTags.contains { tag in
-            tag.uppercased().hasPrefix("URGENT")
-        }
-        
-        let fm = FileManager.default
-        let modificationDate: Date
-        // Prefer the TASKS.md file inside the project directory as the activity signal.
-        let tasksPath = (project.path as NSString).appendingPathComponent("TASKS.md")
-        if let attrs = try? fm.attributesOfItem(atPath: tasksPath),
-           let mtime = attrs[.modificationDate] as? Date {
-            modificationDate = mtime
-        } else if let attrs = try? fm.attributesOfItem(atPath: project.path),
-                  let mtime = attrs[.modificationDate] as? Date {
-            // Fallback: use the project folder itself if TASKS.md is missing.
-            modificationDate = mtime
-        } else {
-            modificationDate = .distantPast
-        }
-        
-        let secondsSinceChange = now.timeIntervalSince(modificationDate)
-        let daysSinceChange = secondsSinceChange / (60 * 60 * 24)
-        
-        // Primary heat: explicitly urgent projects, or very neglected ones.
-        if hasUrgentTag || daysSinceChange >= 21 {
-            return "heat"
-        }
-        
-        // Watch list: projects that have not moved for a week or more.
-        if daysSinceChange >= 7 {
-            return "watch"
-        }
-        
-        // Recently-touched, non-urgent projects.
-        return "calm"
     }
 }

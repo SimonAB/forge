@@ -86,7 +86,8 @@
 <p>The <code>forge</code> command-line tool manages your kanban board and GTD tasks from the
 terminal, operating directly on the plain-text markdown files in your Forge
 directory. There are no remote services; all commands read and write your local
-files and, for sync, talk to macOS Reminders on your machine.</p>
+files and, for sync, talk to macOS Reminders on your machine. Optional commands
+can read Apple Calendar for schedule context (local only).</p>
 <pre><code>forge &lt;command&gt; [options]
 </code></pre>
 <h2>Commands at a glance</h2>
@@ -127,6 +128,10 @@ files and, for sync, talk to macOS Reminders on your machine.</p>
 <td>Move a project between columns</td>
 </tr>
 <tr>
+<td><code>forge project-tag</code></td>
+<td>Add, remove, or list meta / assignee Finder tags on a project folder</td>
+</tr>
+<tr>
 <td><code>forge status</code></td>
 <td>Summary dashboard of all projects</td>
 </tr>
@@ -163,6 +168,14 @@ files and, for sync, talk to macOS Reminders on your machine.</p>
 <td>Show overdue and upcoming due tasks</td>
 </tr>
 <tr>
+<td><code>forge brief</code></td>
+<td>Print a concise daily brief (tasks + Calendar schedule by default)</td>
+</tr>
+<tr>
+<td><code>forge calendar</code> / <code>forge events</code></td>
+<td>List upcoming Calendar events for the next <strong>7 days</strong> by default (read-only; same command)</td>
+</tr>
+<tr>
 <td><code>forge focus</code></td>
 <td>Enter or clear a focus session</td>
 </tr>
@@ -179,7 +192,7 @@ files and, for sync, talk to macOS Reminders on your machine.</p>
 <hr />
 <h2>forge board</h2>
 <p>Display the kanban board showing projects grouped by column.</p>
-<pre><code>forge board [--list] [--column &lt;name&gt;]
+<pre><code>forge board [--list] [--json] [--column &lt;name&gt;] [--assignee &lt;person&gt;]
 </code></pre>
 <table>
 <thead>
@@ -196,9 +209,19 @@ files and, for sync, talk to macOS Reminders on your machine.</p>
 <td>Compact single-column list instead of the full board</td>
 </tr>
 <tr>
+<td><code>--json</code></td>
+<td></td>
+<td>Print JSON: <code>board.columns</code> (names and Finder tags), <code>meta_tags</code>, <code>tag_aliases</code>, and each project’s column, tags, assignees, and <strong>Radar</strong> metrics (<code>radarBucket</code>: <code>calm</code> / <code>watch</code> / <code>heat</code>, <code>daysSinceActivity</code>, <code>activityModificationDate</code>, <code>activitySource</code>) — same rules as the Forge Board Radar filter</td>
+</tr>
+<tr>
 <td><code>--column</code></td>
 <td><code>-c</code></td>
 <td>Filter to a specific column (e.g. <code>Active</code>, <code>Write</code>)</td>
+</tr>
+<tr>
+<td><code>--assignee</code></td>
+<td><code>-a</code></td>
+<td>Filter to projects with this assignee (matches <code>#Person</code> Finder tags)</td>
 </tr>
 </tbody>
 </table>
@@ -206,7 +229,15 @@ files and, for sync, talk to macOS Reminders on your machine.</p>
 <pre><code class="language-bash">forge board                  # Full board with columns
 forge board --list           # Compact list view
 forge board -c Active        # Only active projects
+forge board --json         # Machine-readable board + Radar (for assistants / scripts)
+forge board --json -c Write
 </code></pre>
+<h3>Kanban for assistants (e.g. Hephaestus)</h3>
+<ul>
+<li><strong>Read state:</strong> <code>forge board --json</code> — use <code>board.columns</code> and <code>board.metaTags</code> from the payload together with <code>config.yaml</code>; do not invent Finder tag strings that are not listed there (columns) or in <code>meta_tags</code>.</li>
+<li><strong>Change column:</strong> only after explicit user approval: <code>forge move &lt;project&gt; &lt;ColumnName&gt;</code> — column names are the <code>name</code> fields from <code>board.columns</code> in config (see <strong><code>forge move</code></strong> below).</li>
+<li><strong>Meta tags and assignees:</strong> <code>forge project-tag add|remove|list</code> — validated against <code>board.meta_tags</code> and <code>#Person</code> tags; kanban column tags are never added or removed here (use <strong><code>forge move</code></strong>).</li>
+</ul>
 <hr />
 <h2>forge projects</h2>
 <p>Show tasks grouped by project, with summary counts and status indicators.</p>
@@ -441,6 +472,92 @@ forge due --markdown              # Also write Forge/tasks/due.md with clickable
 forge due -d 14 --areas -m        # Markdown summary including area files
 </code></pre>
 <hr />
+<h2>forge brief</h2>
+<p>Print a compact “good morning” view: commitments (<code>@due</code>), inbox, next-action
+candidates, and waiting-for items — designed to paste into an assistant prompt.</p>
+<pre><code>forge brief [--days &lt;n&gt;] [--limit &lt;n&gt;] [--paths] [--path-format relative|absolute]
+            [--no-calendar] [--calendar-days &lt;n&gt;]
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--days</code></td>
+<td>Due-date lookahead for the Commitments section (default: 7)</td>
+</tr>
+<tr>
+<td><code>--limit</code></td>
+<td>Max items per section (default: 10)</td>
+</tr>
+<tr>
+<td><code>--paths</code></td>
+<td>Show source file path per task</td>
+</tr>
+<tr>
+<td><code>--path-format</code></td>
+<td>With <code>--paths</code>: <code>relative</code> or <code>absolute</code></td>
+</tr>
+<tr>
+<td><code>--no-calendar</code></td>
+<td>Omit the <strong>Schedule</strong> section (by default, brief reads Apple Calendar; read-only; may prompt for permission)</td>
+</tr>
+<tr>
+<td><code>--calendar-days</code></td>
+<td>Schedule section: window length in days (default: 7)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Examples:</strong></p>
+<pre><code class="language-bash">forge brief
+forge brief --paths --path-format absolute
+forge brief --no-calendar
+forge brief --calendar-days 3
+</code></pre>
+<p><strong>Calendars permission (macOS):</strong> Prefer <strong><code>Forge.app</code></strong> (menubar): after each background sync it writes <code>Forge/.cache/calendar-snapshot.json</code>. The CLI uses that snapshot when it is <strong>fresh</strong> (default: 15 minutes) and matches your config, so <strong>cmux / Cursor / Terminal</strong> often need <strong>no</strong> Calendars access for <code>forge brief</code> or <code>forge calendar</code>. If no valid snapshot exists (app not running, stale file, or you use <code>forge calendar --start …</code>), Forge falls back to <strong>EventKit</strong> in the terminal — then enable Calendars for your terminal app, or run commands after Forge has refreshed the snapshot.</p>
+<p><strong>Snapshot file contents:</strong> New writes use <strong>schema version 2</strong>: besides the flat <strong><code>events</code></strong> array, the JSON includes <strong><code>schemaVersion</code></strong>, <strong><code>timeZoneIdentifier</code></strong>, and <strong><code>groupedByDay</code></strong> (events bucketed by calendar day). Each event record may include optional fields such as trimmed <strong>notes</strong>, <strong>URL</strong>, EventKit <strong>identifiers</strong>, organiser name, recurrence and availability flags, and attendee count. Older cache files without those keys still decode. See <strong><code>PRIVACY.md</code></strong> for what is stored on disk.</p>
+<hr />
+<h2>forge calendar / forge events</h2>
+<p>List upcoming events from <strong>Apple Calendar</strong> (read-only). <strong><code>forge events</code></strong> is an alias for <strong><code>forge calendar</code></strong> — use whichever you prefer. By default the window is the <strong>next 7 days</strong> from the start of today (local timezone), which matches the <strong><code>forge brief</code></strong> Schedule section when <code>--calendar-days</code> is left at its default.</p>
+<p>Uses EventKit on your Mac; nothing is written to Calendar. Optional <code>gtd.calendar_include</code> in
+<code>config.yaml</code> restricts which calendar <strong>titles</strong> are read (exact match); if
+empty or omitted, all event calendars are used.</p>
+<pre><code>forge calendar [--days &lt;n&gt;] [--start YYYY-MM-DD] [--json]
+forge events   [--days &lt;n&gt;] [--start YYYY-MM-DD] [--json]
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--days</code></td>
+<td>Number of calendar days in the window from the anchor day’s midnight (default: <strong>7</strong>)</td>
+</tr>
+<tr>
+<td><code>--start</code></td>
+<td>Anchor day (<code>YYYY-MM-DD</code>, local timezone); default: today</td>
+</tr>
+<tr>
+<td><code>--json</code></td>
+<td>Print JSON (window bounds + events) for scripting or pasting into a chat</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Examples:</strong></p>
+<pre><code class="language-bash">forge calendar              # Next 7 days (default)
+forge events                # Same as forge calendar
+forge calendar --days 14 --start 2026-04-14
+forge calendar --json       # Structured output for assistants
+</code></pre>
+<hr />
 <h2>forge move</h2>
 <p>Move a project to a different kanban column by changing its Finder tag.</p>
 <pre><code>forge move &lt;project&gt; &lt;column&gt;
@@ -466,6 +583,63 @@ forge due -d 14 --areas -m        # Markdown summary including area files
 <p>Both arguments support prefix matching (e.g. <code>act</code> matches <code>Active</code>).</p>
 <p><strong>Example:</strong></p>
 <pre><code class="language-bash">forge move manuscript Review
+</code></pre>
+<hr />
+<h2>forge project-tag</h2>
+<p>Add, remove, or list <strong>Finder tags</strong> on a project directory for <strong>meta</strong> (<code>board.meta_tags</code>) and <strong>assignee</strong> (<code>#Name</code>) labels. <strong>Kanban column</strong> (workflow) tags are only changed with <strong><code>forge move</code></strong> — this command refuses workflow tags so column state stays consistent.</p>
+<pre><code>forge project-tag add &lt;project&gt; &lt;tag&gt; [--force]
+forge project-tag remove &lt;project&gt; &lt;tag&gt; [--force]
+forge project-tag list &lt;project&gt; [--json]
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Subcommand</th>
+<th>Arguments</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>add</code></td>
+<td><code>&lt;project&gt;</code>, <code>&lt;tag&gt;</code></td>
+<td>Adds the tag if not already present. Without <code>--force</code>, the tag must be listed in <code>board.meta_tags</code> or be a <code>#Person</code> assignee tag.</td>
+</tr>
+<tr>
+<td><code>remove</code></td>
+<td><code>&lt;project&gt;</code>, <code>&lt;tag&gt;</code></td>
+<td>Removes the tag by exact string match. Same validation as <code>add</code>.</td>
+</tr>
+<tr>
+<td><code>list</code></td>
+<td><code>&lt;project&gt;</code></td>
+<td>Prints all Finder tags with a <strong>kind</strong> hint: <code>column</code>, <code>meta</code>, <code>assignee</code>, <code>project_scope</code> (if <code>project_tag</code> in config), or <code>other</code>.</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--force</code></td>
+<td>On <strong>add</strong> / <strong>remove</strong>, allow tags not in <code>meta_tags</code> and not <code>#…</code> assignee (e.g. legacy labels). <strong>Workflow column tags are still rejected</strong> — use <code>forge move</code>.</td>
+</tr>
+<tr>
+<td><code>--json</code></td>
+<td>On <strong>list</strong>, print <code>{ "project", "path", "tags": [{ "name", "kind" }] }</code>.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Examples:</strong></p>
+<pre><code class="language-bash">forge project-tag list &quot;Oncho-MIRS-AI_Gates&quot;
+forge project-tag add &quot;Oncho-MIRS-AI_Gates&quot; &quot;URGENT ⚠️&quot;
+forge project-tag remove Apodemus-DTV_Vaccines &quot;URGENT ⚠️&quot;
+forge project-tag list SomeProject --json
 </code></pre>
 <hr />
 <h2>forge status</h2>

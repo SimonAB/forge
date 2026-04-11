@@ -86,6 +86,24 @@
 <p>All notable changes to this project will be documented in this file.</p>
 <p>The format loosely follows <a href="https://keepachangelog.com/en/1.1.0/">Keep a Changelog</a>.</p>
 <h3>Unreleased</h3>
+<h4>CLI</h4>
+<ul>
+<li><strong><code>forge board --json</code></strong> — machine-readable kanban: <code>board.columns</code>, <code>meta_tags</code>, <code>tag_aliases</code>, and per-project column, tags, assignees, plus <strong>Radar</strong> fields (<code>radarBucket</code>, <code>daysSinceActivity</code>, <code>activityModificationDate</code>, <code>activitySource</code>) aligned with the board UI. <strong><code>KanbanRadar</code></strong> in ForgeCore centralises Radar logic (also used by <strong><code>forge-menubar</code> / <code>ForgeUI</code></strong>).</li>
+<li><strong><code>forge project-tag</code></strong> — <code>add</code>, <code>remove</code>, and <code>list</code> for <strong>meta</strong> and <strong><code>#Person</code></strong> Finder tags on project directories (<code>ProjectFolderTagPolicy</code> validates against <code>board.meta_tags</code>; workflow column tags use <strong><code>forge move</code></strong> only).</li>
+<li><strong><code>forge calendar</code></strong> / <strong><code>forge events</code></strong> — read-only listing of <strong>Apple Calendar</strong> events (EventKit); default window <strong>next 7 days</strong> (<code>ForgeCalendarDefaults.horizonDays</code>), with <code>--days</code>, <code>--start</code> (YYYY-MM-DD), and <code>--json</code>.</li>
+<li><strong><code>forge brief</code></strong> — <strong>Schedule</strong> section uses the same default horizon; <strong><code>--no-calendar</code></strong> omits it; <strong><code>gtd.calendar_include</code></strong> in <code>config.yaml</code> can limit which calendar titles are read.</li>
+</ul>
+<h4>Privacy / packaging</h4>
+<ul>
+<li>Documented Calendar read access in <strong><code>PRIVACY.md</code></strong>; <strong><code>NSCalendarsUsageDescription</code></strong> added to <strong><code>packaging/assemble_forge_app.sh</code></strong> for Forge.app.</li>
+<li><strong><code>AGENTS.md</code></strong>, <strong><code>docs/cli.md</code></strong>, and <strong><code>.cursor/rules/morning-brief.mdc</code></strong> — how to grant <strong>Calendars</strong> to the terminal host app (e.g. Cursor) so <code>forge brief</code> can show the Schedule section.</li>
+</ul>
+<h4>Calendar snapshot (Forge.app → CLI)</h4>
+<ul>
+<li><strong><code>Forge/.cache/calendar-snapshot.json</code></strong> — written by <strong>Forge.app</strong> after each successful background sync; <strong><code>forge calendar</code></strong>, <strong><code>forge events</code></strong>, and the <strong><code>forge brief</code></strong> Schedule section prefer this file when fresh (TTL <strong>15 minutes</strong>), same calendar day, and config matches — avoiding terminal TCC (e.g. <strong>cmux</strong> without Calendar entitlement).</li>
+<li><strong>Snapshot schema (v2)</strong> — each event record can include notes (trimmed), URL, EventKit identifiers, recurrence and availability flags, organiser name, attendee count, and <strong><code>groupedByDay</code></strong> plus <strong><code>timeZoneIdentifier</code></strong> for easier inspection; older cache files without those keys still decode.</li>
+<li><strong><code>CalendarEventsResolution</code></strong> in ForgeCore — snapshot first, then live EventKit; <strong><code>forge calendar --start</code></strong> always uses EventKit.</li>
+</ul>
 <h3>[0.9.0] – 2026-03-23</h3>
 <h4>Summary</h4>
 <ul>

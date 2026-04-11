@@ -284,6 +284,11 @@ tasks live in a <code>TASKS.md</code> file inside the project directory.</p>
   Tasks with an <code>@ctx()</code> tag are synced into a separate Reminders list named
   "&lt;reminders_list&gt; • &lt;context&gt;" (e.g. "Forge • email"), so contexts
   appear as lists in the Reminders sidebar.</li>
+<li><strong><code>gtd.calendar_include</code></strong> (optional) — when set, <code>forge calendar</code> and the
+  <code>forge brief</code> Schedule section only read events from calendars whose <strong>title</strong> matches
+  one of the listed strings (exact match). If omitted or empty, all event
+  calendars are included. This is read-only; Forge never writes to Calendar.
+  <strong>Forge.app</strong> writes <strong><code>Forge/.cache/calendar-snapshot.json</code></strong> after sync (schema v2 JSON for the CLI; see <strong><code>PRIVACY.md</code></strong>).</li>
 <li><strong><code>workspace_tags</code></strong> — focus tags that include workspace projects (default:
   <code>[work]</code>). Project tasks inherit these tags during sync.</li>
 <li><strong><code>project_areas</code></strong> — maps area IDs to project directory names for the

@@ -1,0 +1,17 @@
+---
+description: Kanban folder tags and Forge CLI for assistants (Hephaestus-style project oversight).
+globs:
+  - "**/config.yaml"
+  - "tasks/**/*.md"
+alwaysApply: false
+---
+
+When helping with **project workflow** (kanban columns, stale projects, Radar), use Forge as the interface:
+
+- **Read:** `forge board --json` — includes `board.columns` (names and Finder `tag` strings), `meta_tags`, `tag_aliases`, and each project’s `column`, `tags`, `meta_tags`, `assignees`, and Radar fields (`radarBucket`: `calm` / `watch` / `heat`, plus `daysSinceActivity`, `activityModificationDate`, `activitySource`).
+- **Inspect tags on one folder:** `forge project-tag list <project> [--json]`.
+- **Do not** invent column or meta tag strings; take them from `config.yaml` or from the `board` object in `forge board --json`.
+- **Move a project to another column** only after the user explicitly approves: `forge move <project> <ColumnName>` (project = directory name or unique substring; column = configured column **name**).
+- **Add / remove meta or `#Person` tags** only after the user approves: `forge project-tag add|remove <project> <tag>` — never add or remove workflow column tags here (`forge project-tag` rejects them); use `forge move` for columns.
+
+See **Kanban for assistants** and **`forge project-tag`** in `docs/cli.md` and **Kanban projects and folder tags** in `AGENTS.md`.
