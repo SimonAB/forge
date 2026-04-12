@@ -6,7 +6,7 @@
     <title>Forge</title>
     <meta
       name="description"
-      content="Local, markdown-based project and task management for macOS — kanban board, GTD workflows, and Apple Reminders sync."
+      content="Local, markdown-based project and task management for macOS — kanban board, GTD workflows, Apple Reminders sync, and flexible assistant workflows (local or cloud LLMs)."
     />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -100,6 +100,9 @@
         <p class="hero__tagline">
           Kanban board, GTD-style workflows, and plain-text markdown — with optional
           two-way sync to Apple Reminders. No servers; your files stay on your Mac.
+          Use any assistant you like: <strong>privacy-first local models</strong> (for example
+          <a href="privacy.html#ai-assistants">Ollama with Pi</a>) or more capable
+          <strong>cloud</strong> tools — the choice is yours.
         </p>
         <div class="hero__actions">
           <a class="btn btn--brand" href="#quick-start">Quick start</a>
@@ -179,7 +182,17 @@
             <h3 class="feature-card__title">Local-first privacy</h3>
             <p class="feature-card__text">
               No Forge cloud. A small local cache holds paths and timestamps — not your
-              task bodies. See <code class="inline-code">PRIVACY.md</code> for detail.
+              task bodies. See the <a href="privacy.html">privacy overview</a> for detail.
+            </p>
+          </article>
+          <article class="feature-card">
+            <div class="feature-card__icon" aria-hidden="true">🤖</div>
+            <h3 class="feature-card__title">Assistants &amp; LLMs</h3>
+            <p class="feature-card__text">
+              Forge does not lock you into one AI stack. Prefer <strong>local inference</strong>
+              (Ollama and Pi) when task text should stay on your Mac, or use
+              <strong>cloud</strong> models when you need more capability — adapt the pairing to
+              your risk and workflow. <a href="privacy.html#ai-assistants">Local setup and trade-offs</a>.
             </p>
           </article>
         </div>
@@ -389,7 +402,7 @@ zsh ~/Documents/Forge/build.sh</code></pre>
               target="_blank"
               rel="noopener noreferrer"
               >source</a
-            >) — data model and sync
+            >) — data model, sync, and assistant / LLM options
           </li>
           <li>
             <a href="manual.html">Forge manual</a>

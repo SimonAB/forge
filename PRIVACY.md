@@ -97,7 +97,7 @@ This document summarises what data Forge uses, where it lives, and how it moves.
     - When sharing snippets, strip or replace any personal paths or project
       names.
 
-### AI assistants and local language models
+<h3 id="ai-assistants">AI assistants and local language models</h3>
 
 Pasting `forge brief` output, task lists, or project paths into a **cloud-hosted**
 assistant sends that material to the provider’s infrastructure. For **strong

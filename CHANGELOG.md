@@ -19,6 +19,7 @@ The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.
   summary and links in **`PRIVACY.md`**, cross-references in **`README.md`**,
   **`AGENTS.md`**, **`docs/app.md`**, **`docs/cli.md`**, **`docs/forge-manual.md`**, and
   **`.cursor/rules/morning-brief.mdc`**.
+- **GitHub Pages** landing page (**`docs/index.html`**) — seventh feature card (**Assistants & LLMs**), hero copy, and meta description highlighting flexible **local vs cloud** assistant choice; stable fragment **`#ai-assistants`** on the privacy page (**`PRIVACY.md`** / **`docs/privacy.html`**).
 
 #### Privacy / packaging
 

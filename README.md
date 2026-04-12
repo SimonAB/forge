@@ -135,9 +135,10 @@ See `PRIVACY.md` for a fuller description of what Forge stores, how sync works,
 and how to run in markdown-only or local-only modes.
 
 If you use an **AI assistant** with Forge output (for example pasting `forge brief`
-into a chat), consider **Ollama with the Pi coding agent** for privacy: local
-inference on your Mac, with optional manual editor configuration to the same API.
-See **AI assistants and local language models** in `PRIVACY.md` for setup.
+into a chat), you can choose what fits: **Ollama with the Pi coding agent** for
+privacy-first local inference on your Mac, or a **cloud** assistant when you need
+more capability — Forge stays agnostic. See **AI assistants and local language models**
+in [`PRIVACY.md`](PRIVACY.md#ai-assistants) for setup and trade-offs.
 
 ## Directory layout
 
