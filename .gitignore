@@ -1,3 +1,6 @@
+# Local upstream fork / PR work (not part of this repo)
+_upstream/
+
 # Sparkle release tarball extract (local tooling; see packaging docs)
 packaging/sparkle-*-dist/
 
