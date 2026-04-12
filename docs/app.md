@@ -195,6 +195,8 @@ Grant access for full functionality. This is declared in the app's
   roots.
 - You keep full control over where the Forge directory lives (for example on an
   encrypted volume, in a git repository, or in a local-only folder).
+- If you use an **LLM** with Forge output, prefer **Ollama with Pi** for local
+  inference; see **`PRIVACY.md`** (**AI assistants and local language models**).
 
 ---
 

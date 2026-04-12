@@ -70,6 +70,10 @@ forge board --json -c Write
 - **Change column:** only after explicit user approval: `forge move <project> <ColumnName>` — column names are the `name` fields from `board.columns` in config (see **`forge move`** below).
 - **Meta tags and assignees:** `forge project-tag add|remove|list` — validated against `board.meta_tags` and `#Person` tags; kanban column tags are never added or removed here (use **`forge move`**).
 
+**Privacy:** Assistant prompts that include `forge` output may contain task text and
+paths. For **local-only** inference, use **Ollama** with the **Pi** coding agent
+(recommended in **`PRIVACY.md`**, **AI assistants and local language models**).
+
 ---
 
 ## forge projects

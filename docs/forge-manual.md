@@ -34,6 +34,14 @@ In terms of management style, Forge borrows:
 
 If you want a flexible backbone that supports these paradigms but still allows you to evolve your own naming conventions, folder layouts, and tag schemes over time, Forge aims to give you that structure without forcing a single “correct” organisational system.
 
+## Optional: AI assistants and privacy
+
+Some people paste `forge brief` or task output into a coding assistant. For
+**privacy**, this project recommends **Ollama** with the **Pi** coding agent
+(install Ollama, pull a local model, install `@mariozechner/pi-coding-agent`, then
+`ollama launch pi` — see **`PRIVACY.md`**, section **AI assistants and local
+language models**, for step-by-step notes and links).
+
 ## Core concepts
 
 - **Forge directory**: A folder (often `~/Documents/Forge`) containing:

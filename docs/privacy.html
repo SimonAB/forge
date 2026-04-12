@@ -212,6 +212,35 @@ sample &lt;PID&gt; 10 -file forge-menubar-startup.txt</code></p>
 </ul>
 </li>
 </ul>
+<h3>AI assistants and local language models</h3>
+<p>Pasting <code>forge brief</code> output, task lists, or project paths into a <strong>cloud-hosted</strong>
+assistant sends that material to the provider’s infrastructure. For <strong>strong
+privacy</strong> when using LLM-assisted coding or task workflows, this project
+recommends <strong>Ollama with <a href="https://github.com/badlogic/pi-mono">Pi</a></strong> — the
+minimal coding agent integrated with Ollama (“Ollama Pi” in upstream docs).
+Inference can stay on your Mac via Ollama’s local API; prompts and responses do
+not need to leave the machine if you use <strong>local</strong> models only.</p>
+<p><strong>Typical setup:</strong></p>
+<ol>
+<li>Install <strong><a href="https://ollama.com">Ollama</a></strong> for macOS and ensure the service is
+   running (menu bar app or <code>ollama serve</code>) so the API is available at
+   <code>http://127.0.0.1:11434</code>.</li>
+<li>Pull a <strong>local</strong> model, for example: <code>ollama pull qwen3-coder</code> — choose a
+   size that fits your RAM and latency expectations.</li>
+<li>Install Pi: <code>npm install -g @mariozechner/pi-coding-agent</code>.</li>
+<li>Run <strong><code>ollama launch pi</code></strong> — this wires Ollama in as a provider and starts
+   an interactive session. For configuration without launching, use
+   <strong><code>ollama launch pi --config</code></strong>.</li>
+<li>For privacy, use <strong>local</strong> model names in Pi/Ollama. Avoid cloud-backed
+   options (for example models or flags advertised as <strong>cloud</strong>) if you require
+   prompts to stay off third-party inference.</li>
+</ol>
+<p><strong>Manual configuration</strong> (without <code>ollama launch pi</code>) is documented in Ollama’s
+<strong><a href="https://docs.ollama.com/integrations/pi">Pi integration guide</a></strong> (notably
+<code>~/.pi/agent/models.json</code> and <code>~/.pi/agent/settings.json</code>).</p>
+<p><strong>Editors (e.g. Cursor):</strong> Many tools support an OpenAI-compatible <strong>base URL</strong>
+pointing at <code>http://127.0.0.1:11434/v1</code> with a placeholder API key, so chat can
+use Ollama locally; refer to your editor’s settings for “Ollama” or “local LLM”.</p>
 <h3>Your responsibilities</h3>
 <p>Forge keeps all data local and under your control, but you remain responsible
 for:</p>

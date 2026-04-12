@@ -13,6 +13,13 @@ The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.
 - **`forge calendar`** / **`forge events`** — read-only listing of **Apple Calendar** events (EventKit); default window **next 7 days** (`ForgeCalendarDefaults.horizonDays`), with `--days`, `--start` (YYYY-MM-DD), and `--json`.
 - **`forge brief`** — **Schedule** section uses the same default horizon; **`--no-calendar`** omits it; **`gtd.calendar_include`** in `config.yaml` can limit which calendar titles are read.
 
+#### Documentation
+
+- Recommended **Ollama with Pi** for privacy-conscious LLM-assisted workflows; setup
+  summary and links in **`PRIVACY.md`**, cross-references in **`README.md`**,
+  **`AGENTS.md`**, **`docs/app.md`**, **`docs/cli.md`**, **`docs/forge-manual.md`**, and
+  **`.cursor/rules/morning-brief.mdc`**.
+
 #### Privacy / packaging
 
 - Documented Calendar read access in **`PRIVACY.md`**; **`NSCalendarsUsageDescription`** added to **`packaging/assemble_forge_app.sh`** for Forge.app.

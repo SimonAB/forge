@@ -97,6 +97,39 @@ This document summarises what data Forge uses, where it lives, and how it moves.
     - When sharing snippets, strip or replace any personal paths or project
       names.
 
+### AI assistants and local language models
+
+Pasting `forge brief` output, task lists, or project paths into a **cloud-hosted**
+assistant sends that material to the provider’s infrastructure. For **strong
+privacy** when using LLM-assisted coding or task workflows, this project
+recommends **Ollama with [Pi](https://github.com/badlogic/pi-mono)** — the
+minimal coding agent integrated with Ollama (“Ollama Pi” in upstream docs).
+Inference can stay on your Mac via Ollama’s local API; prompts and responses do
+not need to leave the machine if you use **local** models only.
+
+**Typical setup:**
+
+1. Install **[Ollama](https://ollama.com)** for macOS and ensure the service is
+   running (menu bar app or `ollama serve`) so the API is available at
+   `http://127.0.0.1:11434`.
+2. Pull a **local** model, for example: `ollama pull qwen3-coder` — choose a
+   size that fits your RAM and latency expectations.
+3. Install Pi: `npm install -g @mariozechner/pi-coding-agent`.
+4. Run **`ollama launch pi`** — this wires Ollama in as a provider and starts
+   an interactive session. For configuration without launching, use
+   **`ollama launch pi --config`**.
+5. For privacy, use **local** model names in Pi/Ollama. Avoid cloud-backed
+   options (for example models or flags advertised as **cloud**) if you require
+   prompts to stay off third-party inference.
+
+**Manual configuration** (without `ollama launch pi`) is documented in Ollama’s
+**[Pi integration guide](https://docs.ollama.com/integrations/pi)** (notably
+`~/.pi/agent/models.json` and `~/.pi/agent/settings.json`).
+
+**Editors (e.g. Cursor):** Many tools support an OpenAI-compatible **base URL**
+pointing at `http://127.0.0.1:11434/v1` with a placeholder API key, so chat can
+use Ollama locally; refer to your editor’s settings for “Ollama” or “local LLM”.
+
 ### Your responsibilities
 
 Forge keeps all data local and under your control, but you remain responsible

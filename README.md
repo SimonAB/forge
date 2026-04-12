@@ -134,6 +134,11 @@ files in the Forge directory, shared across machines however you choose to sync.
 See `PRIVACY.md` for a fuller description of what Forge stores, how sync works,
 and how to run in markdown-only or local-only modes.
 
+If you use an **AI assistant** with Forge output (for example pasting `forge brief`
+into a chat), consider **Ollama with the Pi coding agent** for privacy: local
+inference on your Mac, with optional manual editor configuration to the same API.
+See **AI assistants and local language models** in `PRIVACY.md` for setup.
+
 ## Directory layout
 
 ```

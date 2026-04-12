@@ -238,6 +238,9 @@ forge board --json -c Write
 <li><strong>Change column:</strong> only after explicit user approval: <code>forge move &lt;project&gt; &lt;ColumnName&gt;</code> — column names are the <code>name</code> fields from <code>board.columns</code> in config (see <strong><code>forge move</code></strong> below).</li>
 <li><strong>Meta tags and assignees:</strong> <code>forge project-tag add|remove|list</code> — validated against <code>board.meta_tags</code> and <code>#Person</code> tags; kanban column tags are never added or removed here (use <strong><code>forge move</code></strong>).</li>
 </ul>
+<p><strong>Privacy:</strong> Assistant prompts that include <code>forge</code> output may contain task text and
+paths. For <strong>local-only</strong> inference, use <strong>Ollama</strong> with the <strong>Pi</strong> coding agent
+(recommended in <strong><code>PRIVACY.md</code></strong>, <strong>AI assistants and local language models</strong>).</p>
 <hr />
 <h2>forge projects</h2>
 <p>Show tasks grouped by project, with summary counts and status indicators.</p>

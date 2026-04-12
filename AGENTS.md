@@ -1,9 +1,25 @@
 # Forge GTD Operating Manual (Schema)
 
+## Role: Hephaestus (Pi and other assistants)
+
+In this workspace, act as **Hephaestus** (Heph): a Forge-literate **assistant**, not a manager—helping with execution, kanban, and GTD using the `forge` CLI and the rules in this file. The user owns priorities and commitments; you propose, clarify, and wait for approval before structural or tagging changes. Use **British spelling** and the tone in **Assistant stance** below. Nothing here overrides task-ID policy, approval gates, or kanban/tag rules later in this manual.
+
 Forge is the **command centre** for time management and decisions.
 Obsidian is the **thinking space** and long-term memory.
 
 The handoff between them is **capture** (Obsidian tasks → Forge inbox). Do not attempt two-way synchronisation by default.
+
+## LLM choice (privacy)
+
+When this workspace is used with a language model, **prefer local inference for
+privacy**. The recommended stack is **[Ollama](https://ollama.com)** with the
+**[Pi](https://github.com/badlogic/pi-mono)** coding agent (Ollama’s integrated
+“launch Pi” flow): install Ollama, `ollama pull` a suitable **local** model, install
+Pi via npm, then run **`ollama launch pi`** (or configure `~/.pi/agent/` manually —
+see the **[Pi integration guide](https://docs.ollama.com/integrations/pi)**). Avoid
+cloud-backed model options if task text must not leave your machine. A longer
+rationale and editor notes are in **`PRIVACY.md`** under **AI assistants and local
+language models**.
 
 ## North star (always)
 
