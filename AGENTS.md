@@ -73,8 +73,9 @@ When the user asks the assistant to create or restructure work (e.g. "prepare ta
 ### Task ID policy (important)
 
 - The assistant must **never invent or hand-write task IDs**.
-- IDs are assigned by Forge tooling (e.g. `forge inbox`, `forge add`, `forge process`, sync/indexing) and should be treated as opaque.
+- IDs are assigned by Forge tooling (`forge inbox`, `forge add`, `forge process`, sync/indexing) and should be treated as opaque.
 - When drafting new tasks for approval, do not include any `<!-- id:... -->` markers.
+- **Do not edit existing `<!-- id:... -->` fields** - these are stable identifiers managed by Forge. If you need to reference a task by ID, use the ID from task listings but never modify it in file edits.
 
 ### Task syntax (what Forge understands)
 
