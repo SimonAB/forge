@@ -42,3 +42,6 @@ tasks/
 # Local configuration (contains machine- and person-specific paths/projects)
 config.yaml
 config.real.yaml
+
+# Personal templates (local copies; not part of upstream source)
+templates/
