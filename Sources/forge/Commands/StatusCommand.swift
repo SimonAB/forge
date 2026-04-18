@@ -54,10 +54,15 @@ struct StatusCommand: AsyncParsableCommand {
     }
 
     private func ansiColour(for finderColour: Int) -> String {
+        // Catppuccin Mocha palette (truecolour), aligned with `KanbanRenderer`.
         let map: [Int: String] = [
-            1: "\u{1B}[90m", 2: "\u{1B}[32m", 3: "\u{1B}[35m",
-            4: "\u{1B}[34m", 5: "\u{1B}[33m", 6: "\u{1B}[38;5;208m",
-            7: "\u{1B}[31m",
+            1: "\u{1B}[38;2;108;112;134m", // Overlay0  #6C7086
+            2: "\u{1B}[38;2;166;227;161m", // Green     #A6E3A1
+            3: "\u{1B}[38;2;203;166;247m", // Mauve     #CBA6F7
+            4: "\u{1B}[38;2;137;180;250m", // Blue      #89B4FA
+            5: "\u{1B}[38;2;249;226;175m", // Yellow    #F9E2AF
+            6: "\u{1B}[38;2;250;179;135m", // Peach     #FAB387
+            7: "\u{1B}[38;2;243;139;168m", // Red       #F38BA8
         ]
         return map[finderColour] ?? ""
     }

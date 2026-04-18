@@ -4,15 +4,16 @@ import Foundation
 public struct KanbanRenderer: Sendable {
 
     /// ANSI colour codes for kanban column headers/cells (index = config column colour).
-    /// 1=Grey, 2=Green, 3=Purple, 4=Blue, 5=Yellow, 6=Orange, 7=Red
+    /// Mapped to Catppuccin Mocha palette (truecolour) for a cohesive scheme:
+    /// 1=Grey(Overlay0), 2=Green, 3=Purple(Mauve), 4=Blue, 5=Yellow, 6=Orange(Peach), 7=Red
     private static let finderColourToANSI: [Int: String] = [
-        1: "\u{1B}[90m",   // Grey  (Paused)
-        2: "\u{1B}[32m",   // Green
-        3: "\u{1B}[35m",   // Purple
-        4: "\u{1B}[34m",   // Blue
-        5: "\u{1B}[33m",   // Yellow
-        6: "\u{1B}[38;5;208m", // Orange (256-colour)
-        7: "\u{1B}[31m",   // Red
+        1: "\u{1B}[38;2;108;112;134m", // Overlay0  #6C7086
+        2: "\u{1B}[38;2;166;227;161m", // Green     #A6E3A1
+        3: "\u{1B}[38;2;203;166;247m", // Mauve     #CBA6F7
+        4: "\u{1B}[38;2;137;180;250m", // Blue      #89B4FA
+        5: "\u{1B}[38;2;249;226;175m", // Yellow    #F9E2AF
+        6: "\u{1B}[38;2;250;179;135m", // Peach     #FAB387
+        7: "\u{1B}[38;2;243;139;168m", // Red       #F38BA8
     ]
 
     private static let reset = "\u{1B}[0m"

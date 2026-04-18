@@ -5,13 +5,14 @@ import ForgeCore
 /// 1=Grey, 2=Green, 3=Purple, 4=Blue, 5=Yellow, 6=Orange, 7=Red.
 func columnColor(for colourIndex: Int) -> Color {
     switch colourIndex {
-    case 1: return .gray
-    case 2: return .green
-    case 3: return .purple
-    case 4: return .blue
-    case 5: return .yellow
-    case 6: return .orange
-    case 7: return .red
+    // Catppuccin Mocha palette (sRGB).
+    case 1: return Color(red: 108 / 255, green: 112 / 255, blue: 134 / 255) // Overlay0 #6C7086
+    case 2: return Color(red: 166 / 255, green: 227 / 255, blue: 161 / 255) // Green    #A6E3A1
+    case 3: return Color(red: 203 / 255, green: 166 / 255, blue: 247 / 255) // Mauve    #CBA6F7
+    case 4: return Color(red: 137 / 255, green: 180 / 255, blue: 250 / 255) // Blue     #89B4FA
+    case 5: return Color(red: 249 / 255, green: 226 / 255, blue: 175 / 255) // Yellow   #F9E2AF
+    case 6: return Color(red: 250 / 255, green: 179 / 255, blue: 135 / 255) // Peach    #FAB387
+    case 7: return Color(red: 243 / 255, green: 139 / 255, blue: 168 / 255) // Red      #F38BA8
     default: return .secondary
     }
 }
