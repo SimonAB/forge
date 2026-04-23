@@ -83,11 +83,9 @@
     <main id="main" class="doc-page">
       <article class="doc-content">
 <h1>Forge CLI</h1>
-<p>The <code>forge</code> command-line tool manages your kanban board and GTD tasks from the
-terminal, operating directly on the plain-text markdown files in your Forge
-directory. There are no remote services; all commands read and write your local
-files and, for sync, talk to macOS Reminders on your machine. Optional commands
-can read Apple Calendar for schedule context (local only).</p>
+<p>The <code>forge</code> command-line tool manages your kanban board from the terminal,
+operating directly on your project folders and their <strong>Finder tags</strong>. There are
+no remote services; commands read and write only local state.</p>
 <pre><code>forge &lt;command&gt; [options]
 </code></pre>
 <h2>Commands at a glance</h2>
@@ -104,26 +102,6 @@ can read Apple Calendar for schedule context (local only).</p>
 <td>Display the kanban board</td>
 </tr>
 <tr>
-<td><code>forge projects</code></td>
-<td>Show tasks per project</td>
-</tr>
-<tr>
-<td><code>forge next</code></td>
-<td>Show all next actions</td>
-</tr>
-<tr>
-<td><code>forge inbox</code></td>
-<td>View or capture inbox tasks</td>
-</tr>
-<tr>
-<td><code>forge add</code></td>
-<td>Add a task to a project</td>
-</tr>
-<tr>
-<td><code>forge done</code></td>
-<td>Mark a task as completed</td>
-</tr>
-<tr>
 <td><code>forge move</code></td>
 <td>Move a project between columns</td>
 </tr>
@@ -136,56 +114,8 @@ can read Apple Calendar for schedule context (local only).</p>
 <td>Summary dashboard of all projects</td>
 </tr>
 <tr>
-<td><code>forge sync</code></td>
-<td>Two-way sync with Reminders</td>
-</tr>
-<tr>
-<td><code>forge process</code></td>
-<td>Interactively triage inbox items</td>
-</tr>
-<tr>
-<td><code>forge review</code></td>
-<td>Guided weekly review checklist</td>
-</tr>
-<tr>
-<td><code>forge waiting</code></td>
-<td>Show all waiting-for items</td>
-</tr>
-<tr>
-<td><code>forge contexts</code></td>
-<td>Show tasks grouped by context</td>
-</tr>
-<tr>
-<td><code>forge someday</code></td>
-<td>View or add to the someday/maybe list</td>
-</tr>
-<tr>
-<td><code>forge rollup</code></td>
-<td>Update area files with linked project task summaries</td>
-</tr>
-<tr>
-<td><code>forge due</code></td>
-<td>Show overdue and upcoming due tasks</td>
-</tr>
-<tr>
-<td><code>forge brief</code></td>
-<td>Print a concise daily brief (tasks + Calendar schedule by default)</td>
-</tr>
-<tr>
 <td><code>forge calendar</code> / <code>forge events</code></td>
-<td>List upcoming Calendar events for the next <strong>7 days</strong> by default (read-only; same command)</td>
-</tr>
-<tr>
-<td><code>forge focus</code></td>
-<td>Enter or clear a focus session</td>
-</tr>
-<tr>
-<td><code>forge init</code></td>
-<td>Initialise a new Forge workspace</td>
-</tr>
-<tr>
-<td><code>forge lint</code></td>
-<td>Lint and fix task markdown files for best practices</td>
+<td>List upcoming Calendar events (read-only; same command)</td>
 </tr>
 </tbody>
 </table>
@@ -211,7 +141,7 @@ can read Apple Calendar for schedule context (local only).</p>
 <tr>
 <td><code>--json</code></td>
 <td></td>
-<td>Print JSON: <code>board.columns</code> (names and Finder tags), <code>meta_tags</code>, <code>tag_aliases</code>, and each project’s column, tags, assignees, and <strong>Radar</strong> metrics (<code>radarBucket</code>: <code>calm</code> / <code>watch</code> / <code>heat</code>, <code>daysSinceActivity</code>, <code>activityModificationDate</code>, <code>activitySource</code>) — same rules as the Forge Board Radar filter</td>
+<td>Print JSON: <code>board.columns</code> (names and Finder tags), <code>meta_tags</code>, <code>tag_aliases</code>, and each project’s column, tags, assignees, plus <strong>Radar</strong> fields (<code>radarBucket</code>, <code>daysSinceActivity</code>, <code>activityModificationDate</code>, <code>activitySource</code>)</td>
 </tr>
 <tr>
 <td><code>--column</code></td>
@@ -226,154 +156,15 @@ can read Apple Calendar for schedule context (local only).</p>
 </tbody>
 </table>
 <p><strong>Examples:</strong></p>
-<pre><code class="language-bash">forge board                  # Full board with columns
-forge board --list           # Compact list view
-forge board -c Active        # Only active projects
-forge board --json         # Machine-readable board + Radar (for assistants / scripts)
+<pre><code class="language-bash">forge board
+forge board --list
+forge board --json
 forge board --json -c Write
 </code></pre>
-<h3>Kanban for assistants (e.g. Hephaestus)</h3>
-<ul>
-<li><strong>Read state:</strong> <code>forge board --json</code> — use <code>board.columns</code> and <code>board.metaTags</code> from the payload together with <code>config.yaml</code>; do not invent Finder tag strings that are not listed there (columns) or in <code>meta_tags</code>.</li>
-<li><strong>Change column:</strong> only after explicit user approval: <code>forge move &lt;project&gt; &lt;ColumnName&gt;</code> — column names are the <code>name</code> fields from <code>board.columns</code> in config (see <strong><code>forge move</code></strong> below).</li>
-<li><strong>Meta tags and assignees:</strong> <code>forge project-tag add|remove|list</code> — validated against <code>board.meta_tags</code> and <code>#Person</code> tags; kanban column tags are never added or removed here (use <strong><code>forge move</code></strong>).</li>
-</ul>
-<p><strong>Privacy:</strong> Assistant prompts that include <code>forge</code> output may contain task text and
-paths. For <strong>local-only</strong> inference, use <strong>Ollama</strong> with the <strong>Pi</strong> coding agent
-(recommended in <strong><code>PRIVACY.md</code></strong>, <strong>AI assistants and local language models</strong>).</p>
 <hr />
-<h2>forge projects</h2>
-<p>Show tasks grouped by project, with summary counts and status indicators.</p>
-<pre><code>forge projects [--project &lt;name&gt;] [--column &lt;col&gt;] [--all] [--deferred] [--focus &lt;tag&gt;]
-</code></pre>
-<table>
-<thead>
-<tr>
-<th>Option</th>
-<th>Short</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--project</code></td>
-<td><code>-p</code></td>
-<td>Filter to a single project (substring match)</td>
-</tr>
-<tr>
-<td><code>--column</code></td>
-<td><code>-c</code></td>
-<td>Filter to a kanban column (e.g. <code>Active</code>, <code>Write</code>)</td>
-</tr>
-<tr>
-<td><code>--all</code></td>
-<td><code>-a</code></td>
-<td>Include completed tasks (last 5 shown per project)</td>
-</tr>
-<tr>
-<td><code>--deferred</code></td>
-<td><code>-d</code></td>
-<td>Include deferred tasks (hidden by default)</td>
-</tr>
-<tr>
-<td><code>--focus</code></td>
-<td></td>
-<td>Focus on a specific tag (overrides persistent focus)</td>
-</tr>
-</tbody>
-</table>
-<p>Each project is listed with its kanban column, pending/overdue/deferred/done
-counts, and tasks grouped by section (Next Actions, Waiting For). Shipped
-projects are excluded by default unless <code>--project</code> or <code>--column</code> is used.</p>
-<p><strong>Examples:</strong></p>
-<pre><code class="language-bash">forge projects                    # All non-shipped projects with tasks
-forge projects -p manuscript      # Drill into one project
-forge projects -c Active          # Only active-column projects
-forge projects --all              # Include completed tasks
-forge projects --deferred         # Show deferred tasks too
-</code></pre>
-<hr />
-<h2>forge next</h2>
-<p>Show all next actions across projects and areas.</p>
-<pre><code>forge next [--project &lt;name&gt;] [--context &lt;ctx&gt;] [--all] [--deferred] [--focus &lt;tag&gt;]
-</code></pre>
-<table>
-<thead>
-<tr>
-<th>Option</th>
-<th>Short</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--project</code></td>
-<td><code>-p</code></td>
-<td>Filter by project name (substring match)</td>
-</tr>
-<tr>
-<td><code>--context</code></td>
-<td><code>-c</code></td>
-<td>Filter by context (e.g. <code>office</code>, <code>email</code>)</td>
-</tr>
-<tr>
-<td><code>--all</code></td>
-<td><code>-a</code></td>
-<td>Include waiting-for items alongside next actions</td>
-</tr>
-<tr>
-<td><code>--deferred</code></td>
-<td><code>-d</code></td>
-<td>Include deferred tasks (hidden by default)</td>
-</tr>
-<tr>
-<td><code>--focus</code></td>
-<td></td>
-<td>Focus on a specific tag (overrides persistent focus)</td>
-</tr>
-</tbody>
-</table>
-<p>Tasks are shown grouped by project. Overdue items are marked with a red
-indicator, due-today items with yellow. <strong>Deferred tasks</strong> (those with a
-<code>@defer</code> date in the future) are hidden by default — use <code>--deferred</code> to
-include them. Shipped and Paused projects are excluded unless <code>--project</code> is
-used. When a focus session is active (see <code>forge focus</code>), only matching areas
-and projects are shown.</p>
-<p><strong>Examples:</strong></p>
-<pre><code class="language-bash">forge next                        # All next actions
-forge next -c deep-work           # Only deep-work context
-forge next -p &quot;field study&quot;       # Tasks for a specific project
-forge next --all                  # Include waiting-for items
-forge next --deferred             # Include deferred tasks
-forge next --focus personal       # Only personal areas
-</code></pre>
-<hr />
-<h2>forge inbox</h2>
-<p>View or capture tasks to the GTD inbox.</p>
-<pre><code>forge inbox [text...]
-</code></pre>
-<ul>
-<li><strong>No arguments:</strong> shows all pending inbox items with IDs and due dates.</li>
-<li><strong>With text:</strong> creates a new task in <code>inbox.md</code> with a generated ID.</li>
-</ul>
-<p>Inline tags are supported in the text: <code>@due(DATE)</code>, <code>@ctx(CONTEXT)</code>.</p>
-<p>Due tags accept either a date-only form:</p>
-<ul>
-<li><code>@due(YYYY-MM-DD)</code></li>
-</ul>
-<p>or a timed form:</p>
-<ul>
-<li><code>@due(YYYY-MM-DD HH:mm)</code> (24-hour clock, local time)</li>
-</ul>
-<p><strong>Examples:</strong></p>
-<pre><code class="language-bash">forge inbox                             # View inbox
-forge inbox &quot;Buy lab supplies&quot;          # Quick capture
-forge inbox &quot;Submit form @due(2026-04-01) @ctx(email)&quot;
-</code></pre>
-<hr />
-<h2>forge add</h2>
-<p>Add a task directly to a project's <code>TASKS.md</code>.</p>
-<pre><code>forge add &lt;project&gt; &lt;text...&gt;
+<h2>forge move</h2>
+<p>Move a project to a different kanban column by changing its Finder tag.</p>
+<pre><code>forge move &lt;project&gt; &lt;column&gt;
 </code></pre>
 <table>
 <thead>
@@ -388,144 +179,30 @@ forge inbox &quot;Submit form @due(2026-04-01) @ctx(email)&quot;
 <td>Project directory name or unique substring</td>
 </tr>
 <tr>
-<td><code>text</code></td>
-<td>Task description with optional inline tags</td>
+<td><code>column</code></td>
+<td>Target column name (must match configured column names)</td>
 </tr>
 </tbody>
 </table>
-<p>Supported inline tags: <code>@defer(DATE)</code>, <code>@due(DATE)</code>, <code>@ctx(CONTEXT)</code>,
-<code>@energy(LEVEL)</code>, <code>@waiting(PERSON)</code>, <code>@repeat(RULE)</code>. Using <code>@waiting</code>
-automatically places the task in the Waiting For section. See <strong>Repeating
-tasks</strong> and <strong>Deferred tasks</strong> below for details.</p>
-<p><strong>Examples:</strong></p>
-<pre><code class="language-bash">forge add &quot;field study&quot; &quot;Collect samples @ctx(lab) @due(2026-05-01)&quot;
-forge add manuscript &quot;Chase reviewer @waiting(Dr Smith) @ctx(email)&quot;
-forge add admin &quot;Submit report @due(2026-03-14) @repeat(every 2w)&quot;
-forge add home &quot;Change filters @due(2026-03-07) @repeat(3m)&quot;
-forge add admin &quot;Prepare conference talk @defer(2026-05-01) @due(2026-06-01)&quot;
-</code></pre>
-<hr />
-<h2>forge done</h2>
-<p>Mark a task as completed by its 6-character ID.</p>
-<pre><code>forge done &lt;taskID&gt;
-</code></pre>
-<p>Searches all project <code>TASKS.md</code> files and area markdown files. The task is
-checked off (<code>[x]</code>) and a <code>@done(DATE)</code> tag is appended.</p>
-<p>For <strong>repeating tasks</strong>, completing one instance automatically creates the
-next instance with a recalculated due date (see <strong>Repeating tasks</strong>). If the
-task also has a <code>@defer</code> date, the gap between defer and due is preserved in
-the next instance.</p>
 <p><strong>Example:</strong></p>
-<pre><code class="language-bash">forge done a1b2c3
+<pre><code class="language-bash">forge move manuscript Review
 </code></pre>
 <hr />
-<h2>forge due</h2>
-<p>Show overdue and upcoming due tasks across all <code>TASKS.md</code> files found
-under your configured <code>project_roots</code>, regardless of nesting depth.</p>
-<pre><code>forge due [--days &lt;n&gt;] [--areas] [--markdown] [--rebuild-index]
+<h2>forge project-tag</h2>
+<p>Add, remove, or list <strong>Finder tags</strong> on a project directory for <strong>meta</strong> (<code>board.meta_tags</code>)
+and <strong>assignee</strong> (<code>#Name</code>) labels. <strong>Kanban column</strong> (workflow) tags are only changed
+with <strong><code>forge move</code></strong>.</p>
+<pre><code>forge project-tag add &lt;project&gt; &lt;tag&gt; [--force]
+forge project-tag remove &lt;project&gt; &lt;tag&gt; [--force]
+forge project-tag list &lt;project&gt; [--json]
 </code></pre>
-<table>
-<thead>
-<tr>
-<th>Option</th>
-<th>Short</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--days</code></td>
-<td><code>-d</code></td>
-<td>Lookahead window in days (default: 7)</td>
-</tr>
-<tr>
-<td><code>--areas</code></td>
-<td><code>-a</code></td>
-<td>Also include tasks from every <code>Forge/tasks/*.md</code> file except the generated <code>due.md</code> summary (covers inbox, someday/maybe, and area files)</td>
-</tr>
-<tr>
-<td><code>--markdown</code></td>
-<td><code>-m</code></td>
-<td>Also write a markdown summary to <code>Forge/tasks/due.md</code></td>
-</tr>
-<tr>
-<td><code>--rebuild-index</code></td>
-<td></td>
-<td>Rebuild the task index database before computing due tasks (forces a full rescan of project roots)</td>
-</tr>
-</tbody>
-</table>
-<p>Tasks are grouped into three sections:</p>
-<ol>
-<li><strong>Overdue</strong> — due date has passed (red)</li>
-<li><strong>Due today</strong> — due date is today (yellow)</li>
-<li><strong>Upcoming</strong> — due within the lookahead window (green)</li>
-</ol>
-<p>Each task shows its due date, source file label, context, and ID.</p>
-<p>The menu bar companion app uses the same task index and discovery rules, so
-the overdue/due-today badge counts in the menu bar should match <code>forge due</code>.
-Clicking the overdue or due-today item in the menu bar opens <code>forge due</code>
-in the terminal.</p>
-<p><strong>Examples:</strong></p>
-<pre><code class="language-bash">forge due                         # Overdue + due within 7 days (TASKS.md only)
-forge due -d 30                   # Wider 30-day horizon
-forge due --areas                 # Include all task-root markdown (inbox, areas, someday, etc.; skips due.md)
-forge due -d 14 --areas           # 14-day horizon across everything
-forge due --markdown              # Also write Forge/tasks/due.md with clickable links
-forge due -d 14 --areas -m        # Markdown summary including area files
-</code></pre>
-<hr />
-<h2>forge brief</h2>
-<p>Print a compact “good morning” view: commitments (<code>@due</code>), inbox, next-action
-candidates, and waiting-for items — designed to paste into an assistant prompt.</p>
-<pre><code>forge brief [--days &lt;n&gt;] [--limit &lt;n&gt;] [--paths] [--path-format relative|absolute]
-            [--no-calendar] [--calendar-days &lt;n&gt;]
-</code></pre>
-<table>
-<thead>
-<tr>
-<th>Option</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--days</code></td>
-<td>Due-date lookahead for the Commitments section (default: 7)</td>
-</tr>
-<tr>
-<td><code>--limit</code></td>
-<td>Max items per section (default: 10)</td>
-</tr>
-<tr>
-<td><code>--paths</code></td>
-<td>Show source file path per task</td>
-</tr>
-<tr>
-<td><code>--path-format</code></td>
-<td>With <code>--paths</code>: <code>relative</code> or <code>absolute</code></td>
-</tr>
-<tr>
-<td><code>--no-calendar</code></td>
-<td>Omit the <strong>Schedule</strong> section (by default, brief reads Apple Calendar; read-only; may prompt for permission)</td>
-</tr>
-<tr>
-<td><code>--calendar-days</code></td>
-<td>Schedule section: window length in days (default: 7)</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Examples:</strong></p>
-<pre><code class="language-bash">forge brief
-forge brief --paths --path-format absolute
-forge brief --no-calendar
-forge brief --calendar-days 3
-</code></pre>
-<p><strong>Calendars permission (macOS):</strong> Prefer <strong><code>Forge.app</code></strong> (menubar): after each background sync it writes <code>Forge/.cache/calendar-snapshot.json</code>. The CLI uses that snapshot when it is <strong>fresh</strong> (default: 15 minutes) and matches your config, so <strong>cmux / Cursor / Terminal</strong> often need <strong>no</strong> Calendars access for <code>forge brief</code> or <code>forge calendar</code>. If no valid snapshot exists (app not running, stale file, or you use <code>forge calendar --start …</code>), Forge falls back to <strong>EventKit</strong> in the terminal — then enable Calendars for your terminal app, or run commands after Forge has refreshed the snapshot.</p>
-<p><strong>Snapshot file contents:</strong> New writes use <strong>schema version 2</strong>: besides the flat <strong><code>events</code></strong> array, the JSON includes <strong><code>schemaVersion</code></strong>, <strong><code>timeZoneIdentifier</code></strong>, and <strong><code>groupedByDay</code></strong> (events bucketed by calendar day). Each event record may include optional fields such as trimmed <strong>notes</strong>, <strong>URL</strong>, EventKit <strong>identifiers</strong>, organiser name, recurrence and availability flags, and attendee count. Older cache files without those keys still decode. See <strong><code>PRIVACY.md</code></strong> for what is stored on disk.</p>
 <hr />
 <h2>forge calendar / forge events</h2>
-<p>List upcoming events from <strong>Apple Calendar</strong> (read-only). <strong><code>forge events</code></strong> is an alias for <strong><code>forge calendar</code></strong> — use whichever you prefer. By default the window is the <strong>next 7 days</strong> from the start of today (local timezone), which matches the <strong><code>forge brief</code></strong> Schedule section when <code>--calendar-days</code> is left at its default.</p>
+<p>List upcoming events from <strong>Apple Calendar</strong> (read-only). <strong><code>forge events</code></strong> is an alias
+for <strong><code>forge calendar</code></strong> — use whichever you prefer.</p>
+<hr />
+<h2>forge calendar / forge events</h2>
+<p>List upcoming events from <strong>Apple Calendar</strong> (read-only). <strong><code>forge events</code></strong> is an alias for <strong><code>forge calendar</code></strong> — use whichever you prefer. By default the window is the <strong>next 7 days</strong> from the start of today (local timezone).</p>
 <p>Uses EventKit on your Mac; nothing is written to Calendar. Optional <code>gtd.calendar_include</code> in
 <code>config.yaml</code> restricts which calendar <strong>titles</strong> are read (exact match); if
 empty or omitted, all event calendars are used.</p>
@@ -651,430 +328,6 @@ total projects, active count, and URGENT count.</p>
 <pre><code>forge status
 </code></pre>
 <hr />
-<h2>forge sync</h2>
-<p>Two-way synchronisation with Apple Reminders.</p>
-<pre><code>forge sync [--verbose] [--rebuild-index]
-</code></pre>
-<table>
-<thead>
-<tr>
-<th>Option</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--verbose</code></td>
-<td>Show detailed sync actions</td>
-</tr>
-<tr>
-<td><code>--rebuild-index</code></td>
-<td>Rebuild the task index database before syncing (forces a full rescan of project roots)</td>
-</tr>
-</tbody>
-</table>
-<p><strong>What gets synced:</strong></p>
-<ul>
-<li>All tasks from project <code>TASKS.md</code> files and area markdown files.</li>
-<li>Tasks with <code>@due</code> dates are created as Reminders.</li>
-<li>Completing a task in Forge marks the corresponding Reminder as complete.</li>
-<li>Completing a Reminder marks the corresponding Forge task as done.</li>
-<li>New items added to the "Forge" Reminders list are imported to the inbox.</li>
-<li><strong>Context lists:</strong> Tasks are placed in Reminders by <code>@ctx()</code> — the base list is
-  <code>reminders_list</code> (e.g. "Forge"); tasks with a context go into a list named
-  "Forge • &lt;context&gt;" (e.g. "Forge • email", "Forge • office"). Lists are
-  created on demand. This mirrors your GTD contexts as separate lists in the
-  Reminders sidebar.</li>
-<li>Completing a task in Forge marks the corresponding Reminder as complete.</li>
-<li><strong>Reminders → Markdown:</strong> If you change a reminder’s due date in Reminders.app, the next
-  sync updates the task’s <code>@due(...)</code> in the markdown file so due dates stay in sync both ways.</li>
-<li>Area tags from YAML frontmatter are propagated to Reminders (notes field) and Finder tags on area files.</li>
-<li>Project tasks inherit <code>workspace_tags</code> from <code>config.yaml</code>.</li>
-</ul>
-<p>The sync targets are configured in <code>config.yaml</code> under <code>gtd.reminders_list</code>
-.</p>
-<p>Each sync also refreshes the read-only due summary at <code>Forge/tasks/due.md</code>
-using a 7-day horizon and including both project and area tasks, so that
-file always reflects the latest synced state.</p>
-<hr />
-<h2>forge process</h2>
-<p>Interactively triage inbox items into projects.</p>
-<pre><code>forge process
-</code></pre>
-<p>For each pending inbox task, you are prompted to:</p>
-<table>
-<thead>
-<tr>
-<th>Input</th>
-<th>Action</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Number</td>
-<td>Move to the corresponding project's <code>TASKS.md</code></td>
-</tr>
-<tr>
-<td><code>s</code></td>
-<td>Move to <code>someday-maybe.md</code></td>
-</tr>
-<tr>
-<td><code>d</code></td>
-<td>Delete (mark as completed in inbox)</td>
-</tr>
-<tr>
-<td><code>k</code></td>
-<td>Keep in inbox</td>
-</tr>
-</tbody>
-</table>
-<hr />
-<h2>forge waiting</h2>
-<p>Show all waiting-for items across projects and areas.</p>
-<pre><code>forge waiting [--focus &lt;tag&gt;]
-</code></pre>
-<table>
-<thead>
-<tr>
-<th>Option</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--focus</code></td>
-<td>Focus on a specific tag (overrides persistent focus)</td>
-</tr>
-</tbody>
-</table>
-<p>Displays each item with the person being waited on, the "since" date if
-available, and the task ID. Respects the active focus session.</p>
-<hr />
-<h2>forge contexts</h2>
-<p>Show tasks grouped by their <code>@ctx()</code> tag.</p>
-<pre><code>forge contexts [context] [--focus &lt;tag&gt;]
-</code></pre>
-<table>
-<thead>
-<tr>
-<th>Argument / Option</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>context</code></td>
-<td>Optional — filter to a single context</td>
-</tr>
-<tr>
-<td><code>--focus</code></td>
-<td>Focus on a specific tag (overrides persistent focus)</td>
-</tr>
-</tbody>
-</table>
-<p>Without an argument, all contexts are shown. Tasks from Shipped and Paused
-projects are excluded. Respects the active focus session.</p>
-<p><strong>Examples:</strong></p>
-<pre><code class="language-bash">forge contexts              # All contexts
-forge contexts email        # Only email context
-</code></pre>
-<hr />
-<h2>forge someday</h2>
-<p>View or add to the someday/maybe list.</p>
-<pre><code>forge someday [text...]
-</code></pre>
-<ul>
-<li><strong>No arguments:</strong> shows paused projects and pending someday items.</li>
-<li><strong>With text:</strong> adds a new item to <code>someday-maybe.md</code>.</li>
-</ul>
-<hr />
-<h2>forge rollup</h2>
-<p>Update area files with read-only project task summaries. Each area file gets
-a clearly-delimited <strong>Project Tasks</strong> section at the bottom, listing pending
-tasks from mapped projects with markdown links to their <code>TASKS.md</code> files.</p>
-<pre><code>forge rollup [--verbose]
-</code></pre>
-<table>
-<thead>
-<tr>
-<th>Option</th>
-<th>Short</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--verbose</code></td>
-<td><code>-v</code></td>
-<td>Show per-area breakdown</td>
-</tr>
-</tbody>
-</table>
-<p>The mapping between areas and projects is defined in <code>config.yaml</code> under
-<code>project_areas</code>:</p>
-<pre><code class="language-yaml">project_areas:
-  research:
-  - Lepto
-  - Deer-stress
-  - Apodemus-virome
-  admin:
-  - Collaborations
-  - Studentships
-</code></pre>
-<p><strong>Generated section format:</strong></p>
-<p>The rollup section is enclosed in HTML comment markers and regenerated on each
-run — manual edits within it are overwritten:</p>
-<pre><code class="language-markdown">&lt;!-- forge:rollup --&gt;
-
-## Project Tasks
-
-&gt; Auto-generated by `forge rollup` — edit tasks in each project's TASKS.md.
-
-### [Lepto](../Work/Projects/Lepto/TASKS.md) · Active — 2 pending
-
-- [ ] Review latest sequencing results — due 2026-03-15 — @lab
-- [ ] Sequencing results from core facility — ⏳John
-
-&lt;!-- /forge:rollup --&gt;
-</code></pre>
-<p>The project headings are markdown links to the project's <code>TASKS.md</code>, making
-them clickable in most editors and followable with <code>gf</code> in Neovim.</p>
-<p>Rollups are also regenerated automatically during <code>forge sync</code>.</p>
-<p><strong>Example:</strong></p>
-<pre><code class="language-bash">forge rollup                  # Update all area rollups
-forge rollup --verbose        # Show per-area breakdown
-</code></pre>
-<hr />
-<h2>forge focus</h2>
-<p>Enter, check, or clear a focus session. A focus session filters all
-task-listing commands (<code>next</code>, <code>contexts</code>, <code>waiting</code>) to only show areas
-whose frontmatter tags match the given tag.</p>
-<pre><code>forge focus [tag] [--clear]
-</code></pre>
-<table>
-<thead>
-<tr>
-<th>Argument / Option</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>tag</code></td>
-<td>Tag to focus on (e.g. <code>work</code>, <code>personal</code>). Omit to show current focus.</td>
-</tr>
-<tr>
-<td><code>--clear</code></td>
-<td>Clear the active focus session</td>
-</tr>
-</tbody>
-</table>
-<p>The focus is persistent — it's stored in a <code>.focus</code> file in the Forge
-directory and applies to all subsequent commands until cleared.</p>
-<p><strong>How area tags work:</strong></p>
-<p>Each area markdown file has YAML frontmatter with a <code>tags</code> field:</p>
-<pre><code class="language-yaml">---
-id: admin
-tags: [work]
-date_created: 2026-03-07
-date_modified: 2026-03-07
----
-</code></pre>
-<p>When you run <code>forge focus work</code>, only areas tagged <code>work</code> are shown. Workspace
-projects (directories in the workspace path) are included when the focus tag
-matches one of the <code>workspace_tags</code> in <code>config.yaml</code>.</p>
-<p><strong>Tag assignments:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Tag</th>
-<th>Areas</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>work</code></td>
-<td>admin, teaching, research, inbox</td>
-</tr>
-<tr>
-<td><code>personal</code></td>
-<td>home, finance, personal, horizons, inbox</td>
-</tr>
-<tr>
-<td><code>spiritual</code></td>
-<td>spiritual</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Examples:</strong></p>
-<pre><code class="language-bash">forge focus                  # Show current focus and available tags
-forge focus work             # Enter work focus — see only work areas + projects
-forge focus personal         # Enter personal focus — see only personal areas
-forge focus --clear          # Clear focus — show everything
-forge next --focus spiritual # One-off filter without setting persistent focus
-</code></pre>
-<hr />
-<h2>forge review</h2>
-<p>Guided weekly review with an 8-step checklist.</p>
-<pre><code>forge review
-</code></pre>
-<p><strong>Steps:</strong></p>
-<ol>
-<li><strong>Inbox</strong> — reports unprocessed item count</li>
-<li><strong>Overdue</strong> — lists all overdue tasks across projects and areas</li>
-<li><strong>Due this week</strong> — lists tasks due within the next 7 days</li>
-<li><strong>Waiting for</strong> — lists all delegated items</li>
-<li><strong>Stalled projects</strong> — flags active projects with no next actions</li>
-<li><strong>Becoming actionable</strong> — lists deferred tasks surfacing this week</li>
-<li><strong>Neglected areas</strong> — flags area files not modified in over 2 weeks
-   (uses <code>date_modified</code> from YAML frontmatter)</li>
-<li><strong>Someday/Maybe</strong> — counts someday items and paused projects</li>
-</ol>
-<p>Task lines for overdue, due this week, waiting-for, and becoming-actionable items include the task ID in brackets (same style as <code>forge due</code>).</p>
-<p>Concludes with a summary line of key counts.</p>
-<hr />
-<h2>Deferred tasks</h2>
-<p>A deferred task has a <code>@defer(YYYY-MM-DD)</code> tag — the "start date" or "defer
-until" date. The task exists in your system but is hidden from action lists
-until the defer date arrives. This is the GTD tickler concept, matching
-OmniFocus's "defer until" feature.</p>
-<h3>Behaviour</h3>
-<ul>
-<li><strong><code>forge next</code></strong> hides deferred tasks by default. Use <code>--deferred</code> to
-  include them, shown with a <code>deferred until YYYY-MM-DD</code> label.</li>
-<li><strong><code>forge contexts</code></strong> and <strong><code>forge waiting</code></strong> also hide deferred tasks.</li>
-<li>When a deferred task's date arrives, it automatically appears in your action
-  lists — no manual intervention needed.</li>
-<li>Tasks whose defer date is <em>today</em> show an <code>AVAILABLE TODAY</code> indicator.</li>
-<li><strong><code>forge review</code></strong> includes a "Becoming actionable this week" step that
-  lists deferred tasks surfacing in the next 7 days.</li>
-</ul>
-<h3>Sync with Reminders</h3>
-<p>The defer date maps to the Reminder's <strong>start date</strong> (<code>startDateComponents</code>
-in EventKit). Reminders imported from Reminders.app that have a start date
-will have that date preserved as <code>@defer</code>.</p>
-<h3>Combining with repeating tasks</h3>
-<p>When a repeating task has both <code>@defer</code> and <code>@due</code>, completing it preserves
-the gap between the two dates. For example, a task deferred 1 week before its
-due date will have the next instance deferred 1 week before the new due date.</p>
-<h3>Example</h3>
-<pre><code class="language-markdown">- [ ] Prepare conference talk @defer(2026-05-01) @due(2026-06-01) @ctx(deep-work) &lt;!-- id:df01ab --&gt;
-- [ ] Review insurance policy @defer(2026-09-01) @due(2026-10-01) @repeat(every y) &lt;!-- id:df02cd --&gt;
-</code></pre>
-<hr />
-<h2>Repeating tasks</h2>
-<p>Forge supports two types of repeating tasks using the <code>@repeat()</code> inline tag.</p>
-<h3>Syntax</h3>
-<table>
-<thead>
-<tr>
-<th>Tag</th>
-<th>Meaning</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>@repeat(2w)</code></td>
-<td>Repeat 2 weeks <strong>after completion</strong> (deferred)</td>
-</tr>
-<tr>
-<td><code>@repeat(every 2w)</code></td>
-<td>Repeat every 2 weeks from the <strong>due date</strong> (fixed schedule)</td>
-</tr>
-<tr>
-<td><code>@repeat(d)</code></td>
-<td>Daily from completion</td>
-</tr>
-<tr>
-<td><code>@repeat(every m)</code></td>
-<td>Monthly on a fixed schedule</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Units:</strong> <code>d</code> (days), <code>w</code> (weeks), <code>m</code> (months), <code>y</code> (years). The number
-defaults to 1 if omitted (e.g. <code>@repeat(w)</code> = weekly).</p>
-<h3>Behaviour on completion</h3>
-<p>When you run <code>forge done</code> on a repeating task:</p>
-<ol>
-<li>The current instance is marked done (checkbox ticked, <code>@done</code> date added)
-   and moved to the Completed section.</li>
-<li>A <strong>new instance</strong> is created in the Next Actions section with:
-   - A fresh task ID.
-   - The same text, context, energy, and repeat rule.
-   - A recalculated <code>@due</code> date.</li>
-</ol>
-<p><strong>Deferred mode</strong> (<code>@repeat(2w)</code>): the new due date is calculated from the
-completion date. E.g. if completed today, the next instance is due in 2 weeks.</p>
-<p><strong>Fixed mode</strong> (<code>@repeat(every 2w)</code>): the new due date is calculated from the
-previous due date, advancing forward until it falls after the completion date.
-This keeps tasks anchored to their original schedule.</p>
-<h3>Sync with Reminders</h3>
-<p>Repeat rules are mapped to native <code>EKRecurrenceRule</code> entries on Apple
-Reminders. Rules coming from Reminders into Forge default to fixed-schedule
-mode, since EventKit does not distinguish "defer again" from "fixed".</p>
-<h3>Example in markdown</h3>
-<pre><code class="language-markdown">## Next Actions
-- [ ] Submit fortnightly report @due(2026-03-14) @repeat(every 2w) @ctx(email) &lt;!-- id:rp01ab --&gt;
-- [ ] Change water filter @due(2026-06-01) @repeat(3m) &lt;!-- id:rp02cd --&gt;
-</code></pre>
-<hr />
-<h2>forge lint</h2>
-<p>Lint task markdown files for best practices and optionally apply fixes. <strong>Uses the
-same project set as the kanban:</strong> direct children of each <code>project_roots</code> entry,
-filtered by <code>project_tag</code> when set. So every TASKS.md in a project folder the board
-watches is included, plus area files in the task root (e.g. Forge/tasks). Without
-path arguments, all of those are linted; you can pass explicit paths to add or
-restrict to specific files or directories.</p>
-<pre><code>forge lint [paths ...] [--fix] [--severity error|warning]
-</code></pre>
-<table>
-<thead>
-<tr>
-<th>Option</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--fix</code></td>
-<td>Apply fixes: add missing task IDs, normalise <code>- [X]</code> to <code>- [x]</code>, enforce heading and list spacing, remove trailing spaces, and ensure a single trailing blank line at EOF</td>
-</tr>
-<tr>
-<td><code>--severity</code></td>
-<td>Report only this severity or higher: <code>error</code> or <code>warning</code></td>
-</tr>
-</tbody>
-</table>
-<p>If one or more <code>paths</code> are given (file or directory), only those are linted:
-directories are searched recursively for <code>TASKS.md</code>; <code>.md</code> files are linted
-directly. This ensures a given file is included even when config-based discovery
-misses it (e.g. <code>forge lint /path/to/Teaching/2025-2026/PGT/TASKS.md --fix</code>).</p>
-<p><strong>Rules checked:</strong></p>
-<ul>
-<li><strong>missing_id</strong> — Every task line should end with <code>&lt;!-- id:xxxxxx --&gt;</code> (6-character ID).</li>
-<li><strong>id_format</strong> — Task IDs should be exactly 6 characters.</li>
-<li><strong>duplicate_id</strong> — Same ID must not appear on more than one task in a file.</li>
-<li><strong>checkbox_casing</strong> — Use lowercase <code>- [x]</code> for completed tasks.</li>
-<li><strong>section_casing</strong> — Use canonical headers: <code>## Next Actions</code>, <code>## Waiting For</code>, <code>## Completed</code>, <code>## Notes</code>.</li>
-<li><strong>section_order</strong> — Sections should appear in that order.</li>
-<li><strong>unknown_section</strong> — Section headers should be one of the four standard task sections.</li>
-<li><strong>date_format</strong> — Date tags (<code>@due</code>, <code>@defer</code>, <code>@since</code>, <code>@done</code>) should use <code>YYYY-MM-DD</code>.</li>
-<li><strong>spacing_heading</strong> — Headings should have exactly one empty line before and after when surrounded by content.</li>
-<li><strong>spacing_list_items</strong> — Do not insert empty lines between list items within the same section.</li>
-<li><strong>trailing_whitespace</strong> — Lines should not end with trailing spaces or tabs.</li>
-<li><strong>trailing_blank_lines</strong> — Documents should end with exactly one empty line (a single trailing blank line terminated by a newline).</li>
-<li><strong>trailing_newline</strong> — File should end with a newline.</li>
-</ul>
-<p>With <code>--fix</code>, the linter rewrites files to add missing IDs (via the same logic as sync), normalise checkbox casing, preserve and canonicalise standard sections (including <code>## Notes</code>), reorder them when needed, tidy heading and list spacing, remove trailing whitespace, and normalise the end-of-file blank line.</p>
-<hr />
-<h2>forge init</h2>
-<p>Initialise Forge in a workspace directory.</p>
-<pre><code>forge init [--workspace &lt;path&gt;]
-</code></pre>
-<p>Creates the <code>Forge/</code> directory with <code>config.yaml</code>, <code>inbox.md</code>, and
-<code>someday-maybe.md</code>. If already initialised, runs tag cleanup (resolving any
-tag aliases).</p>
-<hr />
 <h2>Configuration: project roots</h2>
 <p>Set <strong><code>project_roots</code></strong> to a list of paths. Each path’s direct children are
 scanned as Forge projects (and filtered by <code>project_tag</code> if set). The first
@@ -1089,16 +342,7 @@ when not found via config location).</p>
 project_tag: &quot;🔥 Forge&quot;   # only folders with this tag are projects
 </code></pre>
 <p>Paths support <code>~</code> for the home directory. All commands that list projects
-(board, next, projects, due, done, sync, status, etc.) use the union of
-projects from every listed root.</p>
-<h2>Configuration: due conflict policy</h2>
-<p>When both markdown and Reminders have a due date/time for the same task, Forge
-resolves conflicts using <code>due_conflict_policy</code>:</p>
-<ul>
-<li><code>reminders</code>: prefer Reminders due date/time</li>
-<li><code>markdown</code>: prefer markdown <code>@due(...)</code></li>
-<li><code>newest</code>: prefer whichever side appears newer (Reminder <code>lastModifiedDate</code> vs task file modification time)</li>
-</ul>
+(board, status, etc.) use the union of projects from every listed root.</p>
 <p><strong>Legacy:</strong> Configs that only have <code>workspace: &lt;path&gt;</code> (no <code>project_roots</code>)
 are still read; Forge treats it as <code>project_roots: [&lt;path&gt;]</code>.</p>
       </article>

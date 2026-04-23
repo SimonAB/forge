@@ -83,8 +83,8 @@
     <main id="main" class="doc-page">
       <article class="doc-content">
 <h1>Forge.app</h1>
-<p>Forge.app is a macOS <strong>menu bar companion</strong> that runs in the background,
-providing quick capture, automatic sync, and at-a-glance status badges.</p>
+<p>Forge.app is a macOS <strong>menu bar companion</strong> that runs in the background and
+provides quick access to your board and project workflows.</p>
 <h2>Setup</h2>
 <h3>Option A — GitHub release (pre-built app)</h3>
 <p>Each <a href="https://github.com/SimonAB/forge/releases/latest">GitHub release</a> includes <strong><code>Forge-macos-arm64.app.zip</code></strong>. Unzip it and move <strong><code>Forge.app</code></strong> to <code>/Applications</code>. The zip is built with the same layout as <code>build.sh</code> (release configuration).</p>
@@ -133,11 +133,11 @@ indicates urgent items:</p>
 <tbody>
 <tr>
 <td>Red number</td>
-<td>Overdue tasks</td>
+<td>URGENT projects</td>
 </tr>
 <tr>
 <td>Orange number</td>
-<td>Tasks due today (no overdue)</td>
+<td>Non-urgent attention needed (if configured)</td>
 </tr>
 <tr>
 <td>No badge</td>
@@ -157,34 +157,14 @@ indicates urgent items:</p>
 </thead>
 <tbody>
 <tr>
-<td><em>X overdue</em></td>
+<td><strong>Board</strong></td>
+<td>Cmd+B</td>
+<td>Opens the native Kanban board window</td>
+</tr>
+<tr>
+<td><strong>Open Board in Terminal</strong></td>
 <td>—</td>
-<td>Shown in red; <strong>click</strong> opens <code>forge due</code> in the terminal</td>
-</tr>
-<tr>
-<td><em>X due today</em></td>
-<td>—</td>
-<td>Shown when tasks are due today; <strong>click</strong> opens <code>forge due</code></td>
-</tr>
-<tr>
-<td><em>X in inbox</em></td>
-<td>—</td>
-<td>Shown when inbox has pending items</td>
-</tr>
-<tr>
-<td><strong>Quick Capture...</strong></td>
-<td>Cmd+Shift+N</td>
-<td>Opens a floating text field to capture a task to the inbox</td>
-</tr>
-<tr>
-<td><strong>Sync Now</strong></td>
-<td>Cmd+S</td>
-<td>Triggers an immediate sync cycle</td>
-</tr>
-<tr>
-<td><em>Last sync: X ago</em></td>
-<td>—</td>
-<td>Informational — shows time since last sync</td>
+<td>Runs <code>forge board</code> in your terminal</td>
 </tr>
 <tr>
 <td><strong>Board</strong></td>
@@ -197,14 +177,9 @@ indicates urgent items:</p>
 <td>Runs <code>forge board</code> in your terminal</td>
 </tr>
 <tr>
-<td><strong>Weekly Review in Terminal</strong></td>
-<td>Cmd+R</td>
-<td>Runs <code>forge review</code> in your terminal</td>
-</tr>
-<tr>
 <td><strong>Quit Forge</strong></td>
 <td>Cmd+Q</td>
-<td>Stops the sync timer and exits</td>
+<td>Exits Forge.app</td>
 </tr>
 <tr>
 <td><strong>Check for Updates…</strong></td>
@@ -214,127 +189,22 @@ indicates urgent items:</p>
 </tbody>
 </table>
 <hr />
-<h2>Background sync</h2>
-<p>Forge.app runs a sync cycle automatically:</p>
-<ul>
-<li><strong>On launch</strong> — immediate sync.</li>
-<li><strong>Every 5 minutes</strong> — repeating timer.</li>
-<li><strong>On demand</strong> — via the "Sync Now" menu item.</li>
-</ul>
-<p>Each sync cycle performs <strong>two-way synchronisation</strong> between your markdown
-files and Apple's Reminders:</p>
-<table>
-<thead>
-<tr>
-<th>Direction</th>
-<th>What happens</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Forge → Reminders</td>
-<td>Tasks are created or updated in the configured Reminders list (or in a context list "Forge • &lt;context&gt;" when the task has an @ctx tag)</td>
-</tr>
-<tr>
-<td>Reminders → Forge</td>
-<td>New items added to the Reminders list are imported to <code>inbox.md</code></td>
-</tr>
-<tr>
-<td>Reminders → Forge</td>
-<td>Completing a Reminder marks the corresponding Forge task as done</td>
-</tr>
-<tr>
-<td>Reminders → Markdown</td>
-<td>If you change a reminder’s due date in Reminders.app, the next sync updates the task’s <code>@due(...)</code> in the markdown file</td>
-</tr>
-<tr>
-<td>Forge → Reminders</td>
-<td>Completing a Forge task marks the corresponding Reminder as complete</td>
-</tr>
-<tr>
-<td>Forge → Finder</td>
-<td>Area-level tags (e.g. <code>work</code>, <code>personal</code>) are applied as Finder tags on area <code>.md</code> files</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Area tasks are included in sync.</strong> Tasks from area files (admin.md,
-home.md, etc.) are synced to Reminders alongside project tasks.</p>
-<h3>Tag propagation</h3>
-<p>Area tags from YAML frontmatter are surfaced across all sync targets:</p>
-<table>
-<thead>
-<tr>
-<th>Surface</th>
-<th>How tags appear</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>Reminders</strong></td>
-<td>Stored in the reminder's notes field (<code>tags: work, personal</code>)</td>
-</tr>
-<tr>
-<td><strong>Finder</strong></td>
-<td>Applied as Finder tags on the area <code>.md</code> files (visible in Finder, searchable via Spotlight)</td>
-</tr>
-<tr>
-<td><strong>Forge files</strong></td>
-<td>Stored in YAML frontmatter (<code>tags: [work]</code>)</td>
-</tr>
-</tbody>
-</table>
-<p>Project tasks inherit the <code>workspace_tags</code> from <code>config.yaml</code> (default: <code>[work]</code>).</p>
-<h3>Badge counts</h3>
-<p>The overdue and due-today badge counts are calculated by scanning:</p>
-<ul>
-<li><strong>Project task files</strong> — all indexed <code>TASKS.md</code> files under the configured <code>project_roots</code>.</li>
-<li><strong>Area files</strong> — markdown files in <code>Forge/tasks</code> (excluding generated summaries such as <code>due.md</code>).</li>
-</ul>
-<p>This matches the task discovery behaviour of <code>forge due</code>.</p>
-<p>After each sync, the badge counts are refreshed. If new items were captured
-from Reminders, a macOS notification is displayed.</p>
-<h3>Calendar snapshot (CLI)</h3>
-<p>After a successful sync, if <strong>Calendars</strong> access is granted, Forge.app also refreshes <strong><code>Forge/.cache/calendar-snapshot.json</code></strong>: a read-only JSON export of upcoming events (default <strong>7</strong>-day horizon, same allowlist as <code>gtd.calendar_include</code> in <code>config.yaml</code>). That file lets the <strong><code>forge</code></strong> CLI show the <strong>Schedule</strong> section and <strong><code>forge calendar</code></strong> without granting Calendars to your terminal. Current writes use <strong>schema version 2</strong> (<code>schemaVersion</code>, <code>timeZoneIdentifier</code>, <strong><code>groupedByDay</code></strong>, and richer per-event fields such as notes and URLs); see <strong><code>PRIVACY.md</code></strong>.</p>
-<h3>Sync targets</h3>
-<p>Configured in <code>config.yaml</code>:</p>
-<pre><code class="language-yaml">gtd:
-  reminders_list: Forge       # Apple Reminders list name
-</code></pre>
-<p>Create this list in Reminders.app before your first sync. Forge
-will create additional Reminders lists per context as needed (e.g. "Forge • email", "Forge • office") when you sync tasks that have an <code>@ctx()</code> tag.</p>
-<hr />
 <h2>Quick capture</h2>
 <p><strong>Cmd+Shift+N</strong> opens a floating capture panel. Type a task and press Return.
-The task is appended to <code>inbox.md</code> with a generated ID, the inbox count is
-updated, and a confirmation notification is shown.</p>
-<p>You can also capture from the terminal:</p>
-<pre><code class="language-bash">forge inbox &quot;Buy reagents @ctx(errands)&quot;
-</code></pre>
-<p>Or from Neovim:</p>
-<pre><code>&lt;leader&gt;Fc
-</code></pre>
-<hr />
+Use this to quickly jot down a note to process later (for example a project
+nudge, a next step, or a reminder).</p>
 <h2>Permissions</h2>
 <p>On first launch, macOS will prompt for access to:</p>
 <ul>
-<li><strong>Reminders</strong> — required for two-way task sync.</li>
-<li><strong>Calendars</strong> — only if you use CLI commands that read Calendar (<code>forge calendar</code>, or <code>forge brief</code> without <code>--no-calendar</code>). Forge does not modify calendar data.</li>
+<li><strong>Calendars</strong> — only if you use CLI commands that read Calendar (<code>forge calendar</code>). Forge does not modify calendar data.</li>
 </ul>
 <p>Grant access for full functionality. This is declared in the app's
 <code>Info.plist</code>.</p>
 <h3>Privacy and data flow</h3>
 <ul>
 <li>Forge.app reads and writes only the Forge directory on your disk
-  (configuration, inbox and area files, and project <code>TASKS.md</code> files).</li>
-<li>Background sync uses macOS frameworks (EventKit and related APIs) to talk to
-  <strong>your</strong> Reminders account; no data is sent to any Forge
-  server.</li>
-<li>Optional <strong><code>forge calendar</code></strong> and the <strong><code>forge brief</code></strong> Schedule section read Calendar events locally for terminal output only (read-only). Use <strong><code>forge brief --no-calendar</code></strong> to skip Calendar.</li>
-<li>The task index at <code>Forge/.cache/tasks.db</code> stores file paths, timestamps, and
-  cached counts, not full task text.</li>
-<li>CLI commands such as <code>forge sync</code> and <code>forge due</code> use this index for discovery and expose
-  a <code>--rebuild-index</code> flag when you need to force a full rescan of the configured project
-  roots.</li>
+  (configuration and caches).</li>
+<li>Optional <strong><code>forge calendar</code></strong> reads Calendar events locally for terminal output only (read-only).</li>
 <li>You keep full control over where the Forge directory lives (for example on an
   encrypted volume, in a git repository, or in a local-only folder).</li>
 <li>If you use an <strong>LLM</strong> with Forge output, prefer <strong>Ollama with Pi</strong> for local

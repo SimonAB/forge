@@ -98,17 +98,16 @@
   <a href="https://github.com/SimonAB/forge#requirements"><img src="https://img.shields.io/badge/macOS-14%2B-000000?style=for-the-badge&amp;logo=apple&amp;logoColor=white" alt="macOS 14 or later" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-7CB342?style=for-the-badge" alt="Apache License 2.0" /></a>
   <a href="privacy.html"><img src="https://img.shields.io/badge/Privacy-local--first-57534e?style=for-the-badge&amp;logo=lockprivacy&amp;logoColor=white" alt="Local-first privacy" /></a>
-  <a href="#who-is-forge-for"><img src="https://img.shields.io/badge/Tasks-GTD%20%2B%20Kanban-d97706?style=for-the-badge" alt="GTD and kanban task workflows" /></a>
+  <a href="#who-is-forge-for"><img src="https://img.shields.io/badge/Kanban-Finder%20tags-d97706?style=for-the-badge" alt="Kanban with Finder tags" /></a>
 </p>
 
-<p align="center"><strong>Local, markdown-based project and task management for macOS.</strong><br />
-Kanban board · GTD workflows · plain-text files · optional Apple Reminders sync · no Forge-hosted servers.</p>
+<p align="center"><strong>Local, Finder-tagged kanban project management for macOS.</strong><br />
+Kanban board · Finder tags · ordinary folders · no Forge-hosted servers.</p>
 
 <hr />
-<p>Forge combines a <strong>kanban board</strong> for project tracking with a <strong>GTD task manager</strong>
-inspired by OmniFocus. Everything lives in plain-text markdown files, editable
-with any editor. Two-way synchronisation with Apple Reminders keeps your tasks
-visible across all your devices.</p>
+<p>Forge is a <strong>kanban board</strong> for project tracking built on ordinary folders and
+<strong>Finder tags</strong>. It is local-first: your projects live in your own directories,
+and Forge does not require any hosted service.</p>
 <h2>Who is Forge for?</h2>
 <p>Forge is for people who think in files and folders first, and who want a
 transparent system built on ordinary directories, Finder tags, and markdown
@@ -117,9 +116,8 @@ files.</p>
 <ul>
 <li>Prefer plain-text, markdown-based systems you can search, diff, and version-control with git.</li>
 <li>Want project state driven by Finder tags (including assignees as <code>#Person</code> tags).</li>
-<li>Like a kanban view for projects alongside a GTD-style flow (inbox, next actions, waiting-for, reviews).</li>
-<li>Want optional two-way sync to Apple Reminders without giving up file ownership.</li>
-<li>Care about local-first privacy: tasks live in your files; Forge uses no hosted servers.</li>
+<li>Want a kanban view for projects without a hosted backend.</li>
+<li>Care about local-first privacy: Forge uses no hosted servers.</li>
 </ul>
 <p>For a longer tour of concepts and workflows, see the user manual in
 <a href="manual.html"><code>docs/forge-manual.md</code></a>.</p>
@@ -134,11 +132,11 @@ files.</p>
 <tbody>
 <tr>
 <td><a href="cli.html"><code>forge</code> CLI</a></td>
-<td>Command-line interface for boards, tasks, inbox, sync, and review</td>
+<td>Command-line interface for board views and project moves/tags</td>
 </tr>
 <tr>
 <td><a href="app.html">Forge.app</a></td>
-<td>Menu bar companion — background sync, quick capture, overdue badges</td>
+<td>Menu bar companion and board window</td>
 </tr>
 <tr>
 <td><a href="neovim.html">Neovim plugin</a></td>
@@ -224,13 +222,10 @@ example via iCloud Drive or git). Your tasks and configuration remain plain-text
 files in the Forge directory, shared across machines however you choose to sync.</p>
 <h2>Privacy and data model</h2>
 <ul>
-<li>All projects, areas, and tasks live as plain-text markdown files in your
-  Forge directory (<code>config.yaml</code>, <code>tasks/*.md</code>, and project <code>TASKS.md</code> files).</li>
-<li>Forge keeps a small local cache in <code>.cache/tasks.db</code> for performance; this
-  stores only file paths, counts, and timestamps, not task text.</li>
-<li>There are <strong>no Forge servers</strong>: the CLI, board, and menu bar app read and
-  write only your local files and talk to macOS Reminders via system APIs on
-  your machine.</li>
+<li>All projects are ordinary directories under your configured workspace roots.
+  Kanban state is stored as <strong>Finder tags</strong> on those directories.</li>
+<li>Forge keeps small local caches for performance. It does not require any Forge-hosted
+  backend.</li>
 <li>You are free to keep the Forge directory under git, on an encrypted volume,
   or in a local-only folder if you prefer not to sync via any cloud service.</li>
 </ul>
@@ -243,17 +238,7 @@ more capability — Forge stays agnostic. See <strong>AI assistants and local la
 in <a href="privacy.html#ai-assistants"><code>PRIVACY.md</code></a> for setup and trade-offs.</p>
 <h2>Directory layout</h2>
 <pre><code>~/Documents/Forge/              Forge home (synced via iCloud Drive)
-├── config.yaml                 Configuration (board columns, contexts, sync targets)
-├── inbox.md                    GTD inbox — quick-captured tasks land here
-├── someday-maybe.md            Someday / maybe list
-├── admin.md                    Area: Admin
-├── teaching.md                 Area: Teaching
-├── research.md                 Area: Research
-├── finance.md                  Area: Finance
-├── home.md                     Area: Home
-├── personal.md                 Area: Personal
-├── spiritual.md                Area: Spiritual
-├── horizons.md                 Area: Horizons
+├── config.yaml                 Configuration (board columns, workspace roots, tags)
 ├── build.sh                  Per-Mac build &amp; install script
 ├── generate_icon.py            App icon generator (requires Pillow)
 ├── Sources/                    Swift source code
@@ -265,14 +250,11 @@ in <a href="privacy.html#ai-assistants"><code>PRIVACY.md</code></a> for setup an
 
 ~/Documents/Work/Projects/      Workspace (project directories)
 ├── ProjectA/
-│   └── TASKS.md
 ├── ProjectB/
-│   └── TASKS.md
 └── ...
 </code></pre>
-<p>Projects are ordinary directories. Their kanban column is stored as a
-<strong>Finder tag</strong> (visible in Finder and readable by Spotlight). Each project's
-tasks live in a <code>TASKS.md</code> file inside the project directory.</p>
+<p>Projects are ordinary directories. Their kanban column is stored as a <strong>Finder
+tag</strong> (visible in Finder and readable by Spotlight).</p>
 <h2>Configuration</h2>
 <p>Start from <a href="https://github.com/SimonAB/forge/blob/main/config.sample.yaml"><code>config.sample.yaml</code></a> and copy it to
 <code>config.yaml</code>, then adjust paths and names to match your setup. Key sections:</p>
@@ -280,111 +262,8 @@ tasks live in a <code>TASKS.md</code> file inside the project directory.</p>
 <li><strong><code>workspace</code></strong> — path to the directory containing project folders.</li>
 <li><strong><code>board.columns</code></strong> — ordered kanban columns, each mapped to a Finder tag.</li>
 <li><strong><code>board.meta_tags</code></strong> — supplementary tags (e.g. Collab, Student, URGENT), used for per-project flags and for the board's Radar view.</li>
-<li><strong><code>gtd.contexts</code></strong> — allowed <code>@ctx()</code> values for filtering next actions.</li>
-<li><strong><code>gtd.reminders_list</code></strong> — Apple Reminders integration target.
-  Tasks with an <code>@ctx()</code> tag are synced into a separate Reminders list named
-  "&lt;reminders_list&gt; • &lt;context&gt;" (e.g. "Forge • email"), so contexts
-  appear as lists in the Reminders sidebar.</li>
-<li><strong><code>gtd.calendar_include</code></strong> (optional) — when set, <code>forge calendar</code> and the
-  <code>forge brief</code> Schedule section only read events from calendars whose <strong>title</strong> matches
-  one of the listed strings (exact match). If omitted or empty, all event
-  calendars are included. This is read-only; Forge never writes to Calendar.
-  <strong>Forge.app</strong> writes <strong><code>Forge/.cache/calendar-snapshot.json</code></strong> after sync (schema v2 JSON for the CLI; see <strong><code>PRIVACY.md</code></strong>).</li>
-<li><strong><code>workspace_tags</code></strong> — focus tags that include workspace projects (default:
-  <code>[work]</code>). Project tasks inherit these tags during sync.</li>
-<li><strong><code>project_areas</code></strong> — maps area IDs to project directory names for the
-  rollup view (see below).</li>
 <li><strong><code>terminal</code></strong> — preferred terminal app (<code>auto</code>, <code>iTerm</code>, <code>Terminal.app</code>).</li>
 </ul>
-<h2>Area file frontmatter</h2>
-<p>Each area markdown file has YAML frontmatter (compatible with Obsidian):</p>
-<pre><code class="language-yaml">---
-id: admin
-tags: [work]
-date_created: 2026-03-07
-date_modified: 2026-03-07
----
-</code></pre>
-<ul>
-<li><strong><code>id</code></strong> — stable identifier for the area (survives renames).</li>
-<li><strong><code>tags</code></strong> — categorise areas for focus sessions (e.g. <code>work</code>, <code>personal</code>,
-  <code>spiritual</code>).</li>
-<li><strong><code>date_modified</code></strong> — auto-updated by Forge when tasks are added or
-  completed; used by <code>forge review</code> to flag neglected areas.</li>
-</ul>
-<h2>Project rollups</h2>
-<p>Area files (<code>research.md</code>, <code>admin.md</code>, etc.) can surface a read-only summary
-of tasks from mapped projects. The <strong>Project Tasks</strong> section at the bottom of
-each area file is auto-generated — each project heading is a markdown link to
-its <code>TASKS.md</code> for direct editing.</p>
-<pre><code class="language-bash">forge rollup            # Regenerate all area rollups
-</code></pre>
-<p>Rollups are also updated automatically during <code>forge sync</code>. Configure the
-mapping in <code>config.yaml</code>:</p>
-<pre><code class="language-yaml">project_areas:
-  research:
-  - Lepto
-  - Apodemus-virome
-  admin:
-  - Collaborations
-</code></pre>
-<h2>Focus sessions</h2>
-<p>Focus sessions filter all task-listing commands to show only areas matching
-a given tag — useful for dedicated work time, personal errands, etc.</p>
-<pre><code class="language-bash">forge focus work           # Enter work mode — only work areas + projects
-forge focus personal       # Enter personal mode — only personal areas
-forge focus --clear        # Back to everything
-</code></pre>
-<p>The focus persists until cleared. Individual commands also accept <code>--focus</code>
-for one-off filtering.</p>
-<h2>Task format</h2>
-<p>Tasks are standard markdown checkboxes with inline metadata:</p>
-<pre><code class="language-markdown">- [ ] Write introduction @due(2026-04-01) @ctx(deep-work) &lt;!-- id:a1b2c3 --&gt;
-- [ ] Email collaborators @ctx(email) @waiting(Jane) &lt;!-- id:d4e5f6 --&gt;
-- [x] Submit abstract @ctx(writing) @done(2026-03-05) &lt;!-- id:789abc --&gt;
-</code></pre>
-<p>Supported inline tags: <code>@defer(DATE)</code>, <code>@due(DATE)</code>, <code>@ctx(CONTEXT)</code>,
-<code>@waiting(PERSON)</code>, <code>@energy(LEVEL)</code>, <code>@repeat(RULE)</code>, <code>@done(DATE)</code>.</p>
-<h3>Deferred tasks</h3>
-<p>A deferred task has a <code>@defer(YYYY-MM-DD)</code> date — it is hidden from action
-lists until that date arrives. This is the GTD "tickler" / OmniFocus "defer
-until" concept: the task exists in your system but only surfaces when it
-becomes actionable.</p>
-<pre><code class="language-markdown">- [ ] Prepare conference talk @defer(2026-05-01) @due(2026-06-01) &lt;!-- id:df01ab --&gt;
-</code></pre>
-<ul>
-<li><code>forge next</code> hides deferred tasks by default; use <code>--deferred</code> to include them.</li>
-<li><code>forge review</code> shows deferred tasks becoming actionable in the coming week.</li>
-<li>For repeating tasks with both <code>@defer</code> and <code>@due</code>, the gap is preserved
-  when spawning the next instance.</li>
-<li>Defer dates sync to Apple Reminders as the "start date".</li>
-</ul>
-<h3>Repeating tasks</h3>
-<p>Two repeat modes keep recurring tasks alive:</p>
-<table>
-<thead>
-<tr>
-<th>Syntax</th>
-<th>Mode</th>
-<th>Next due date</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>@repeat(2w)</code></td>
-<td>Deferred</td>
-<td>Completion date + 2 weeks</td>
-</tr>
-<tr>
-<td><code>@repeat(every 2w)</code></td>
-<td>Fixed</td>
-<td>Previous due date + 2 weeks (skips past today)</td>
-</tr>
-</tbody>
-</table>
-<p>Units: <code>d</code> (days), <code>w</code> (weeks), <code>m</code> (months), <code>y</code> (years). Completing a
-repeating task automatically creates the next instance in the same file.
-Repeat rules sync to Apple Reminders as native recurrence rules.</p>
 <h2>Multi-Mac sync</h2>
 <p>Source code and markdown files sync automatically via <strong>iCloud Drive</strong>. The
 compiled <code>.build</code> directory is kept outside iCloud at <code>~/.forge-build</code> (symlinked
