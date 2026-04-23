@@ -5,35 +5,15 @@ import ForgeCore
 struct Forge: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "forge",
-        abstract: "Local kanban + GTD project manager with iCloud integration.",
+        abstract: "Local kanban project manager driven by Finder tags.",
         version: ForgeVersion.version,
         subcommands: [
             InitCommand.self,
             BoardCommand.self,
-            ProjectsCommand.self,
             MoveCommand.self,
             ProjectTagCommand.self,
             StatusCommand.self,
-            BriefCommand.self,
             CalendarCommand.self,
-            TriageCommand.self,
-            SetCommand.self,
-            AddCommand.self,
-            DoneCommand.self,
-            DueCommand.self,
-            NextCommand.self,
-            InboxCommand.self,
-            SyncCommand.self,
-            ProcessCommand.self,
-            WaitingCommand.self,
-            DelegatedCommand.self,
-            ContextsCommand.self,
-            ReviewCommand.self,
-            RollupCommand.self,
-            SomedayCommand.self,
-            FocusCommand.self,
-            EditTasksCommand.self,
-            LintCommand.self,
         ]
     )
 }

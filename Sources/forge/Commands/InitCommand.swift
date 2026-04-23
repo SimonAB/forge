@@ -35,35 +35,6 @@ struct InitCommand: AsyncParsableCommand {
         try config.save(to: configPath)
         print("✓ Created config.yaml")
 
-        let tasksDir = (forgeDir as NSString).appendingPathComponent("tasks")
-        if !fm.fileExists(atPath: tasksDir) {
-            try fm.createDirectory(atPath: tasksDir, withIntermediateDirectories: true)
-        }
-
-        let inboxPath = (tasksDir as NSString).appendingPathComponent("inbox.md")
-        if !fm.fileExists(atPath: inboxPath) {
-            let inboxContent = """
-            # Inbox
-
-            Capture tasks here. Process with `forge process`.
-
-            """
-            try inboxContent.write(toFile: inboxPath, atomically: true, encoding: .utf8)
-            print("✓ Created tasks/inbox.md")
-        }
-
-        let somedayPath = (tasksDir as NSString).appendingPathComponent("someday-maybe.md")
-        if !fm.fileExists(atPath: somedayPath) {
-            let somedayContent = """
-            # Someday / Maybe
-
-            Projects and ideas to revisit later.
-
-            """
-            try somedayContent.write(toFile: somedayPath, atomically: true, encoding: .utf8)
-            print("✓ Created tasks/someday-maybe.md")
-        }
-
         print()
         try await runCleanup(config: config)
 
