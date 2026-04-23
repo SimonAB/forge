@@ -1,11 +1,11 @@
 import AppKit
-import ApplicationServices
 import ForgeCore
 
 /// Preferences window with tabbed panels: General, Board, Workspace.
 final class PreferencesWindowController: NSWindowController {
 
     static let windowTitle = "Preferences"
+    private static let userDefaultsConfigPathKey = "forge.config.path"
     private static let configCandidates: [String] = {
         let home = NSHomeDirectory()
         return [
@@ -75,6 +75,13 @@ final class PreferencesWindowController: NSWindowController {
     }
 
     private func loadConfig() {
+        if let preferred = UserDefaults.standard.string(forKey: Self.userDefaultsConfigPathKey),
+           FileManager.default.fileExists(atPath: preferred),
+           let cfg = try? ForgeConfig.load(from: preferred) {
+            configPath = preferred
+            config = cfg
+            return
+        }
         for path in Self.configCandidates {
             if FileManager.default.fileExists(atPath: path),
                let cfg = try? ForgeConfig.load(from: path) {
@@ -93,6 +100,9 @@ final class PreferencesWindowController: NSWindowController {
             projectRoots: newRoots,
             board: current.board,
             calendar: current.calendar,
+            gtd: current.gtd,
+            workspaceTags: current.workspaceTags,
+            projectAreas: current.projectAreas,
             terminal: current.terminal,
             projectTag: current.projectTag,
             dueConflictPolicy: current.dueConflictPolicy
@@ -113,6 +123,9 @@ final class PreferencesWindowController: NSWindowController {
             projectRoots: current.projectRoots,
             board: current.board,
             calendar: current.calendar,
+            gtd: current.gtd,
+            workspaceTags: current.workspaceTags,
+            projectAreas: current.projectAreas,
             terminal: terminal,
             projectTag: current.projectTag,
             dueConflictPolicy: current.dueConflictPolicy
@@ -124,6 +137,26 @@ final class PreferencesWindowController: NSWindowController {
         } catch {
             return false
         }
+    }
+
+    fileprivate func chooseConfigPath() -> Bool {
+        let panel = NSOpenPanel()
+        panel.title = "Select Forge config.yaml"
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = false
+        panel.allowedContentTypes = [] // Allow selecting YAML by name even without UTI.
+        panel.prompt = "Select"
+        panel.nameFieldStringValue = "config.yaml"
+        let response = panel.runModal()
+        guard response == .OK, let url = panel.url else { return false }
+        let path = url.path
+        guard FileManager.default.fileExists(atPath: path),
+              let cfg = try? ForgeConfig.load(from: path) else { return false }
+        UserDefaults.standard.set(path, forKey: Self.userDefaultsConfigPathKey)
+        configPath = path
+        config = cfg
+        return true
     }
 
     @available(*, unavailable)
@@ -158,7 +191,7 @@ private final class PreferencesGeneralView: NSView {
         label.font = .systemFont(ofSize: 13, weight: .semibold)
         label.translatesAutoresizingMaskIntoConstraints = false
         addSubview(label)
-        let sub = NSTextField(labelWithString: "More options will appear here.")
+        let sub = NSTextField(labelWithString: "Configuration and UI preferences.")
         sub.font = .systemFont(ofSize: 12, weight: .regular)
         sub.textColor = .secondaryLabelColor
         sub.translatesAutoresizingMaskIntoConstraints = false
@@ -178,6 +211,15 @@ private final class PreferencesGeneralView: NSView {
         NSLayoutConstraint.activate([
             openConfigButton.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
             openConfigButton.topAnchor.constraint(equalTo: sub.bottomAnchor, constant: 16),
+        ])
+
+        let chooseConfigButton = NSButton(title: "Choose config…", target: self, action: #selector(chooseConfigTapped(_:)))
+        chooseConfigButton.bezelStyle = .rounded
+        chooseConfigButton.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(chooseConfigButton)
+        NSLayoutConstraint.activate([
+            chooseConfigButton.leadingAnchor.constraint(equalTo: openConfigButton.trailingAnchor, constant: 12),
+            chooseConfigButton.centerYAnchor.constraint(equalTo: openConfigButton.centerYAnchor),
         ])
 
         let editorLabel = NSTextField(labelWithString: "Default text editor (for Open config, etc.):")
@@ -244,6 +286,15 @@ private final class PreferencesGeneralView: NSView {
         let url = URL(fileURLWithPath: path)
         let editor = EditorPreferences.loadPreferredEditor()
         openFile(url: url, withEditor: editor)
+    }
+
+    @objc private func chooseConfigTapped(_ sender: NSButton) {
+        guard let controller = window?.windowController as? PreferencesWindowController else { return }
+        if controller.chooseConfigPath() {
+            // Close and reopen to rehydrate tabs with the new config.
+            controller.close()
+            controller.showWindow()
+        }
     }
 
     /// Opens a file with the chosen default editor (system app, named app, or vim in terminal).
@@ -505,7 +556,7 @@ private final class PreferencesShortcutsView: NSView {
         label.translatesAutoresizingMaskIntoConstraints = false
         addSubview(label)
 
-        let sub = NSTextField(labelWithString: "Click \"Change…\" then press the keys you want. Requires Accessibility permission for Capture Selection when another app is frontmost.")
+        let sub = NSTextField(labelWithString: "Click \"Change…\" then press the keys you want.")
         sub.font = .systemFont(ofSize: 11, weight: .regular)
         sub.textColor = .secondaryLabelColor
         sub.maximumNumberOfLines = 2
@@ -542,22 +593,6 @@ private final class PreferencesShortcutsView: NSView {
             rowViews[id] = row
         }
 
-        let accessibilityLabel = NSTextField(labelWithString: "Capture Selection when another app (e.g. Finder, Mail) is active requires Accessibility permission.")
-        accessibilityLabel.font = .systemFont(ofSize: 11, weight: .regular)
-        accessibilityLabel.textColor = .secondaryLabelColor
-        accessibilityLabel.maximumNumberOfLines = 4
-        accessibilityLabel.lineBreakMode = .byWordWrapping
-        accessibilityLabel.cell?.truncatesLastVisibleLine = false
-        accessibilityLabel.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(accessibilityLabel)
-        self.accessibilityLabel = accessibilityLabel
-
-        let openAccessibilityButton = NSButton(title: "Open System Settings (Accessibility)", target: self, action: #selector(openAccessibilitySettings(_:)))
-        openAccessibilityButton.bezelStyle = .rounded
-        openAccessibilityButton.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(openAccessibilityButton)
-        self.openAccessibilityButton = openAccessibilityButton
-
         NSLayoutConstraint.activate([
             label.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
             label.topAnchor.constraint(equalTo: topAnchor, constant: 20),
@@ -571,32 +606,11 @@ private final class PreferencesShortcutsView: NSView {
             stackView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
             stackView.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -20),
             stackView.topAnchor.constraint(equalTo: headerAction.bottomAnchor, constant: 6),
-            accessibilityLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
-            accessibilityLabel.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -20),
-            accessibilityLabel.topAnchor.constraint(equalTo: stackView.bottomAnchor, constant: 20),
-            openAccessibilityButton.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
-            openAccessibilityButton.topAnchor.constraint(equalTo: accessibilityLabel.bottomAnchor, constant: 8),
         ])
-        updateAccessibilityStatus()
     }
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
-        if window != nil {
-            updateAccessibilityStatus()
-        }
-    }
-
-    private func updateAccessibilityStatus() {
-        let trusted = AXIsProcessTrusted()
-        let name = ProcessInfo.processInfo.processName
-        if trusted {
-            accessibilityLabel?.stringValue = "Capture Selection in other apps: Accessibility is allowed. The shortcut should work when Finder or Mail is frontmost."
-            accessibilityLabel?.textColor = .secondaryLabelColor
-        } else {
-            accessibilityLabel?.stringValue = "Capture Selection in other apps: not allowed for this run. The running app (\"\(name)\") must be in the list and enabled. If Forge.app is already ON, turn it OFF then ON again to re-grant for the current build."
-            accessibilityLabel?.textColor = .systemOrange
-        }
     }
 
     private func startRecording(for id: ShortcutPreferences.Identifier) {
@@ -642,14 +656,6 @@ private final class PreferencesShortcutsView: NSView {
         rowViews[id]?.setShortcutDisplay(ShortcutPreferences.displayString(for: ShortcutPreferences.spec(for: id)))
     }
 
-    @objc private func openAccessibilitySettings(_ sender: Any?) {
-        let optionPrompt = "AXTrustedCheckOptionPrompt" as CFString
-        let options = [optionPrompt: true] as CFDictionary
-        AXIsProcessTrustedWithOptions(options)
-        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
-            NSWorkspace.shared.open(url)
-        }
-    }
 }
 
 private final class ShortcutRowView: NSView {

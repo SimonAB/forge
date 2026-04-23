@@ -9,11 +9,7 @@ enum ShortcutPreferences {
     static let didChangeNotification = Notification.Name("ShortcutPreferencesDidChange")
 
     enum Identifier: String, CaseIterable {
-        case quickCapture = "quickCapture"
-        case captureSelection = "captureSelection"
-        case syncNow = "syncNow"
         case openBoard = "openBoard"
-        case weeklyReview = "weeklyReview"
     }
 
     /// Stored key + modifiers for one shortcut. Used for menu items and global monitor matching.
@@ -28,21 +24,13 @@ enum ShortcutPreferences {
     private static var defaults: UserDefaults { .standard }
 
     private static let defaultSpecs: [Identifier: Spec] = [
-        .quickCapture: Spec(keyEquivalent: "n", keyCode: 45, modifierFlags: [.command, .shift]),
-        .captureSelection: Spec(keyEquivalent: ".", keyCode: 47, modifierFlags: [.control, .option, .command]),
-        .syncNow: Spec(keyEquivalent: "s", keyCode: 1, modifierFlags: .command),
         .openBoard: Spec(keyEquivalent: "b", keyCode: 11, modifierFlags: .command),
-        .weeklyReview: Spec(keyEquivalent: "r", keyCode: 15, modifierFlags: .command),
     ]
 
     /// Human-readable label for each shortcut (for Preferences UI).
     static func label(for id: Identifier) -> String {
         switch id {
-        case .quickCapture: return "Quick Capture…"
-        case .captureSelection: return "Capture Selection to Inbox"
-        case .syncNow: return "Sync Now"
         case .openBoard: return "Board"
-        case .weeklyReview: return "Weekly Review in Terminal"
         }
     }
 

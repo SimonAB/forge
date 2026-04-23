@@ -62,6 +62,13 @@ final class StatusBarController: NSObject, NSMenuDelegate {
 
     private func loadConfig() {
         let home = NSHomeDirectory()
+        if let preferred = UserDefaults.standard.string(forKey: "forge.config.path"),
+           FileManager.default.fileExists(atPath: preferred),
+           let cfg = try? ForgeConfig.load(from: preferred) {
+            config = cfg
+            forgeDir = (preferred as NSString).deletingLastPathComponent
+            return
+        }
         let candidates = [
             (home as NSString).appendingPathComponent("Documents/Forge/config.yaml"),
             (home as NSString).appendingPathComponent("Documents/Work/Projects/Forge/config.yaml"),
