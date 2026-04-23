@@ -83,8 +83,7 @@
     <main id="main" class="doc-page">
       <article class="doc-content">
 <h1>Forge — Neovim integration</h1>
-<p>The <code>forge-nvim</code> plugin provides keymaps, commands, and dashboard shortcuts
-for managing Forge directly from Neovim.</p>
+<p>Forge no longer includes a GTD task system. If you use a Neovim plugin to integrate with Forge, keep it focused on <strong>kanban + Finder-tag project management</strong> commands.</p>
 <p><strong>File:</strong> <code>~/.config/nvim/lua/plugins/forge-nvim.lua</code></p>
 <h2>Dependencies</h2>
 <table>
@@ -97,11 +96,11 @@ for managing Forge directly from Neovim.</p>
 <tbody>
 <tr>
 <td><a href="https://github.com/akinsho/toggleterm.nvim">toggleterm.nvim</a></td>
-<td>Terminal panes for CLI output and interactive commands</td>
+<td>Terminal panes for CLI output</td>
 </tr>
 <tr>
 <td><a href="https://github.com/nvim-telescope/telescope.nvim">telescope.nvim</a></td>
-<td>Fuzzy file browsing and grep within the Forge directory</td>
+<td>Fuzzy file browsing and grep within your project roots</td>
 </tr>
 <tr>
 <td><a href="https://github.com/folke/which-key.nvim">which-key.nvim</a></td>
@@ -113,24 +112,11 @@ for managing Forge directly from Neovim.</p>
 </tr>
 </tbody>
 </table>
-<p>All dependencies are loaded via <code>pcall</code> — the plugin degrades gracefully if
-any are missing.</p>
-<hr />
-<h2>Auto-detection and setup</h2>
-<p>On load, the plugin checks whether the <code>forge</code> CLI is on <code>$PATH</code>:</p>
-<ul>
-<li><strong>Available</strong> — all keymaps are registered.</li>
-<li><strong>Missing</strong> — keymaps are skipped and a notification suggests running
-  <code>:ForgeSetup</code>.</li>
-</ul>
-<p><code>:ForgeSetup</code> is always registered regardless, so you can bootstrap Forge on a
-fresh Mac without leaving Neovim.</p>
-<hr />
-<h2>Keymaps</h2>
-<p>All keymaps use the <code>&lt;leader&gt;F</code> prefix (normal mode). Press <code>&lt;leader&gt;F</code> to see
-the full list via which-key.</p>
+<p>All dependencies should be optional (<code>pcall</code>) so the plugin degrades gracefully.</p>
+<h2>Suggested keymaps</h2>
+<p>All keymaps use the <code>&lt;leader&gt;F</code> prefix (normal mode).</p>
 <h3>View commands</h3>
-<p>Read-only output in a horizontal terminal pane. Press <code>q</code> to close.</p>
+<p>Read-only output in a terminal pane. Press <code>q</code> to close.</p>
 <table>
 <thead>
 <tr>
@@ -141,19 +127,9 @@ the full list via which-key.</p>
 </thead>
 <tbody>
 <tr>
-<td><code>&lt;leader&gt;Fn</code></td>
-<td><code>forge next</code></td>
-<td>Next actions across all projects</td>
-</tr>
-<tr>
 <td><code>&lt;leader&gt;Fb</code></td>
 <td><code>forge board --list</code></td>
 <td>Kanban board (list view)</td>
-</tr>
-<tr>
-<td><code>&lt;leader&gt;Fp</code></td>
-<td><code>forge projects</code></td>
-<td>Tasks per project</td>
 </tr>
 <tr>
 <td><code>&lt;leader&gt;Ft</code></td>
@@ -161,286 +137,70 @@ the full list via which-key.</p>
 <td>Project summary dashboard</td>
 </tr>
 <tr>
-<td><code>&lt;leader&gt;Fw</code></td>
-<td><code>forge waiting</code></td>
-<td>All waiting-for items</td>
+<td><code>&lt;leader&gt;Fc</code></td>
+<td><code>forge calendar</code></td>
+<td>Upcoming Calendar events</td>
 </tr>
+</tbody>
+</table>
+<h3>Project maintenance</h3>
+<table>
+<thead>
 <tr>
-<td><code>&lt;leader&gt;Fx</code></td>
-<td><code>forge contexts</code></td>
-<td>Tasks grouped by context</td>
+<th>Key</th>
+<th>Command</th>
+<th>Description</th>
 </tr>
+</thead>
+<tbody>
 <tr>
 <td><code>&lt;leader&gt;Fm</code></td>
-<td><code>forge someday</code></td>
-<td>Someday / maybe list</td>
+<td><code>forge move</code></td>
+<td>Move a project to a column (interactive args in terminal)</td>
 </tr>
 <tr>
-<td><code>&lt;leader&gt;FD</code></td>
-<td><code>forge due</code></td>
-<td>Overdue &amp; due tasks</td>
+<td><code>&lt;leader&gt;Ftg</code></td>
+<td><code>forge project-tag</code></td>
+<td>Add/remove/list Finder tags on a project folder</td>
 </tr>
 </tbody>
 </table>
-<h3>Interactive commands</h3>
-<p>Vertical terminal pane with insert mode for user input.</p>
-<table>
-<thead>
-<tr>
-<th>Key</th>
-<th>Command</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>&lt;leader&gt;Fr</code></td>
-<td><code>forge review</code></td>
-<td>Guided weekly review</td>
-</tr>
-<tr>
-<td><code>&lt;leader&gt;FI</code></td>
-<td><code>forge process</code></td>
-<td>Triage inbox items into projects</td>
-</tr>
-</tbody>
-</table>
-<h3>Sync</h3>
-<table>
-<thead>
-<tr>
-<th>Key</th>
-<th>Command</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>&lt;leader&gt;Fs</code></td>
-<td><code>forge sync --verbose</code></td>
-<td>Sync with Reminders</td>
-</tr>
-</tbody>
-</table>
-<h3>Capture and complete</h3>
-<table>
-<thead>
-<tr>
-<th>Key</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>&lt;leader&gt;Fc</code></td>
-<td><strong>Quick capture</strong> — prompts for text, runs <code>forge inbox "&lt;text&gt;"</code></td>
-</tr>
-<tr>
-<td><code>&lt;leader&gt;Fd</code></td>
-<td><strong>Complete task</strong> — reads the task ID from the cursor line (<code>&lt;!-- id:XXXXXX --&gt;</code>), or prompts if none found. Reloads the buffer afterwards.</td>
-</tr>
-</tbody>
-</table>
-<h3>Focus sessions</h3>
-<table>
-<thead>
-<tr>
-<th>Key</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>&lt;leader&gt;Ff</code></td>
-<td><strong>Set focus session</strong> — pick from work / personal / spiritual / clear</td>
-</tr>
-<tr>
-<td><code>&lt;leader&gt;Fo</code></td>
-<td>Show current focus and available tags</td>
-</tr>
-</tbody>
-</table>
-<h3>File access and search</h3>
-<table>
-<thead>
-<tr>
-<th>Key</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>&lt;leader&gt;Fi</code></td>
-<td>Open <code>inbox.md</code></td>
-</tr>
-<tr>
-<td><code>&lt;leader&gt;Fa</code></td>
-<td>Telescope file picker scoped to <code>~/Documents/Forge</code></td>
-</tr>
-<tr>
-<td><code>&lt;leader&gt;Fg</code></td>
-<td>Telescope live grep scoped to <code>~/Documents/Forge</code></td>
-</tr>
-</tbody>
-</table>
-<hr />
 <h2>Commands</h2>
-<p>Available via the command line (<code>:ForgeXxx</code>) or from other plugins and scripts.</p>
+<p>If you expose Neovim commands, these cover the kanban-only surface area:</p>
 <table>
 <thead>
 <tr>
 <th>Command</th>
-<th>Arguments</th>
 <th>Description</th>
 </tr>
 </thead>
 <tbody>
-<tr>
-<td><code>:ForgeNext</code></td>
-<td>—</td>
-<td>Show next actions</td>
-</tr>
 <tr>
 <td><code>:ForgeBoard</code></td>
-<td>—</td>
 <td>Show kanban board</td>
 </tr>
 <tr>
-<td><code>:ForgeProjects [name]</code></td>
-<td>Optional project name</td>
-<td>Tasks per project; filters by name if given</td>
+<td><code>:ForgeStatus</code></td>
+<td>Show project status dashboard</td>
 </tr>
 <tr>
-<td><code>:ForgeSync</code></td>
-<td>—</td>
-<td>Sync with Reminders</td>
+<td><code>:ForgeCalendar</code></td>
+<td>Show upcoming events</td>
 </tr>
 <tr>
-<td><code>:ForgeReview</code></td>
-<td>—</td>
-<td>Guided weekly review (interactive)</td>
+<td><code>:ForgeMove</code></td>
+<td>Move a project between columns</td>
 </tr>
 <tr>
-<td><code>:ForgeCapture [text]</code></td>
-<td>Optional task text</td>
-<td>Capture to inbox; prompts if no text given</td>
-</tr>
-<tr>
-<td><code>:ForgeDone [id]</code></td>
-<td>Optional 6-char hex ID</td>
-<td>Complete a task; auto-detects ID from cursor line</td>
-</tr>
-<tr>
-<td><code>:ForgeDue [days]</code></td>
-<td>Optional lookahead in days</td>
-<td>Show overdue and due tasks (default: 7 days)</td>
-</tr>
-<tr>
-<td><code>:ForgeFocus [tag]</code></td>
-<td>Optional tag or <code>clear</code></td>
-<td>Set, show, or clear a focus session</td>
+<td><code>:ForgeProjectTag</code></td>
+<td>Add/remove/list project tags</td>
 </tr>
 <tr>
 <td><code>:ForgeSetup</code></td>
-<td>—</td>
 <td>Build and install Forge on this Mac (runs <code>build.sh</code>)</td>
 </tr>
 </tbody>
 </table>
-<hr />
-<h2>Dashboard</h2>
-<p>The <a href="https://github.com/echasnovski/mini.starter">mini.starter</a> dashboard
-includes a <strong>Forge</strong> section with four shortcuts:</p>
-<table>
-<thead>
-<tr>
-<th>Key</th>
-<th>Label</th>
-<th>Action</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>I</code></td>
-<td>Inbox</td>
-<td>Opens <code>~/Documents/Forge/inbox.md</code></td>
-</tr>
-<tr>
-<td><code>N</code></td>
-<td>Next actions</td>
-<td>Runs <code>:ForgeNext</code></td>
-</tr>
-<tr>
-<td><code>B</code></td>
-<td>Board</td>
-<td>Runs <code>:ForgeBoard</code></td>
-</tr>
-<tr>
-<td><code>R</code></td>
-<td>Review</td>
-<td>Runs <code>:ForgeReview</code></td>
-</tr>
-</tbody>
-</table>
-<p>When the <code>forge</code> CLI is not installed but <code>build.sh</code> exists, the section shows
-a single <strong>"Set up Forge"</strong> item bound to <code>I</code>.</p>
-<hr />
-<h2>Completing tasks from a markdown buffer</h2>
-<p>When editing a Forge markdown file, place your cursor on a task line and press
-<code>&lt;leader&gt;Fd</code>. The plugin extracts the task ID from the <code>&lt;!-- id:XXXXXX --&gt;</code>
-comment, runs <code>forge done XXXXXX</code>, and reloads the buffer so the checkbox
-updates to <code>[x]</code>.</p>
-<p><strong>Recommended:</strong> run <code>forge done</code> with the current file path so the task is
-found even if the project has no Finder tag or isn’t in the scanned list:</p>
-<pre><code class="language-bash">forge done XXXXXX --file /path/to/current/TASKS.md
-</code></pre>
-<p>In Lua you can pass the buffer path with <code>vim.fn.expand('%:p')</code>. That avoids
-reliance on config, project roots, and <code>project_tag</code>.</p>
-<p>If no ID is found on the current line, you are prompted to enter one manually.</p>
-<hr />
-<h2>Typical workflow</h2>
-<ol>
-<li>Open Neovim — the dashboard shows Forge shortcuts.</li>
-<li>Press <code>I</code> to open your inbox and review captured items.</li>
-<li>Press <code>&lt;leader&gt;Fp</code> to process inbox items into projects.</li>
-<li>Press <code>&lt;leader&gt;Fn</code> to see your next actions.</li>
-<li>Work on a task, then <code>&lt;leader&gt;Fd</code> on its line to mark it done.</li>
-<li>Press <code>&lt;leader&gt;Fc</code> to capture a new thought without leaving your editor.</li>
-<li>Press <code>&lt;leader&gt;Fs</code> to sync changes with Reminders.</li>
-<li>Press <code>&lt;leader&gt;Fr</code> at the end of the week for a guided review.</li>
-</ol>
-<hr />
-<h2>Troubleshooting <code>&lt;leader&gt;Fd</code> (complete task)</h2>
-<p>If the task doesn’t complete or the buffer reverts after <code>&lt;leader&gt;Fd</code>:</p>
-<ol>
-<li>
-<p><strong>Use the right <code>forge</code> binary</strong>
-   Neovim runs whatever <code>forge</code> is first on <code>$PATH</code>. If you build from source, install that binary so it’s the one used (e.g. copy <code>.build/debug/forge</code> to <code>~/bin</code> or run <code>./build.sh</code> if you have one). Check with:
-   <code>bash
-   which forge
-   forge version</code>
-   Then run <code>forge done &lt;task-id&gt;</code> manually from a terminal in the <strong>same directory as the TASKS.md file</strong> (or a parent containing <code>Forge/config.yaml</code>). If that works, the CLI is fine and the issue is how/when the plugin runs it.</p>
-</li>
-<li>
-<p><strong>Working directory</strong>
-   <code>forge done</code> looks for config by walking up from the current working directory. The plugin should run the command with the <strong>buffer’s directory</strong> as cwd (e.g. the directory of the open TASKS.md). If your plugin runs <code>forge done</code> from a fixed directory (e.g. <code>~/Documents/Forge</code>), it may find config but then search for the task only in project roots; the task might live in a different path. In that case, update the plugin so it runs the command with <code>vim.fn.expand('%:p:h')</code> (or equivalent) as the working directory.</p>
-</li>
-<li>
-<p><strong>Save before completing</strong>
-   The plugin runs <code>forge done</code>, which <strong>reads the file from disk</strong>, updates it, and writes it back. If you have unsaved changes, either save first (<code>:w</code>) or ensure the plugin writes the buffer to disk before calling <code>forge done</code>. After that, reloading the buffer will show the completed state.</p>
-</li>
-<li>
-<p><strong>Task ID on the line</strong>
-   The plugin must pass the 6-character ID from <code>&lt;!-- id:XXXXXX --&gt;</code> on the current line. If the line has no ID, you’ll be prompted; if the ID is wrong or from another file, <code>forge done</code> won’t find the task. Put the cursor on the task line (the one with the checkbox and the <code>&lt;!-- id:... --&gt;</code> comment) when pressing <code>&lt;leader&gt;Fd</code>.</p>
-</li>
-<li>
-<p><strong>Use <code>--file</code> so the project list doesn’t matter</strong>
-   If your config has <code>project_tag</code> set (e.g. <code>"🔥 Forge"</code>), only directories with that Finder tag are scanned. If the TASKS.md you’re editing is in an untagged project (or nested), <code>forge done 4f469e</code> won’t look in that file. Fix: have the plugin pass the buffer path so the CLI doesn’t rely on the scan:
-   <code>bash
-   forge done 4f469e --file /path/to/your/project/TASKS.md</code>
-   Then rebuild Forge and update the plugin to run that form (e.g. <code>forge done %s --file %s</code> with the ID and <code>vim.fn.expand('%:p')</code>).</p>
-</li>
-</ol>
       </article>
     </main>
     <footer class="site-footer">
