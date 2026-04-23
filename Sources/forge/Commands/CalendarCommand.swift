@@ -28,7 +28,7 @@ struct CalendarCommand: AsyncParsableCommand {
         }
         let config = try ConfigLoader.load()
         let forgeDir = ConfigLoader.forgeDirectory(for: config)
-        let allowlist = config.gtd.calendarInclude
+        let allowlist = config.calendar.include
 
         let gregorian = Calendar.current
         let customStart: Date?

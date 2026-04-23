@@ -33,50 +33,16 @@ board:
 
   tag_aliases: {}
 
-gtd:
-  contexts:
-    - office
-    - home
-    - errands
-    - writing
-    - review
-    - analysis
-    - planning
-    - deep-work
-    - low-energy
-    - email
-    - calls
-    - computer
-    - reading
-    - anywhere
-  reminders_list: Forge
-  # Optional: limit `forge calendar` / `forge brief` Schedule to these Calendar titles (exact match).
+calendar:
+  # Optional: limit `forge calendar` to these Calendar titles (exact match).
   # Omit or leave empty to include all event calendars.
-  # calendar_include:
+  # include:
   #   - Work
   #   - Teaching
 
-workspace_tags:
-  - work
-
-project_areas:
-  admin:
-    - Admin
-    - Finances
-    - Teaching-admin
-  research:
-    - Project Alpha
-    - Project Beta
-    - Project Gamma
-  teaching: []
+# Legacy task-system configuration (kept for backwards compatibility).
+gtd:
+  reminders_list: Forge
 
 terminal: auto
 project_tag: "🔥 Forge"
-
-# How to resolve conflicts when both markdown and Reminders change a task’s due date/time.
-# Options:
-# - reminders: prefer Reminders due date/time
-# - markdown: prefer markdown @due(...)
-# - newest: prefer whichever side appears newer (Reminder lastModifiedDate vs task file mtime)
-due_conflict_policy: newest
-

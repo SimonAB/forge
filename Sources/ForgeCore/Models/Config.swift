@@ -142,13 +142,29 @@ public enum TerminalPreferences {
     }
 }
 
-// MARK: - GTD
+// MARK: - Calendar
 
-/// GTD-specific configuration.
+/// Optional Calendar integration configuration (read-only).
+public struct CalendarConfig: Codable, Sendable {
+    /// When non-empty, `forge calendar` only reads these Calendar **titles** (exact match). Empty = all event calendars.
+    public let include: [String]
+
+    enum CodingKeys: String, CodingKey {
+        case include
+    }
+
+    public init(include: [String] = []) {
+        self.include = include
+    }
+}
+
+// MARK: - Legacy GTD (kept for compatibility)
+
+/// Legacy task-system configuration, retained to keep older configs and internal modules building.
+/// The kanban-only CLI and UI do not rely on these fields.
 public struct GTDConfig: Codable, Sendable {
     public let contexts: [String]
     public let remindersList: String
-    /// When non-empty, `forge calendar` and the `forge brief` Schedule section only read these Calendar **titles** (case-sensitive). Empty = all event calendars.
     public let calendarInclude: [String]
 
     enum CodingKeys: String, CodingKey {
@@ -157,7 +173,7 @@ public struct GTDConfig: Codable, Sendable {
         case calendarInclude = "calendar_include"
     }
 
-    public init(contexts: [String], remindersList: String, calendarInclude: [String] = []) {
+    public init(contexts: [String] = [], remindersList: String = "Forge", calendarInclude: [String] = []) {
         self.contexts = contexts
         self.remindersList = remindersList
         self.calendarInclude = calendarInclude
@@ -166,33 +182,20 @@ public struct GTDConfig: Codable, Sendable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         contexts = try container.decodeIfPresent([String].self, forKey: .contexts) ?? []
-        remindersList = try container.decode(String.self, forKey: .remindersList)
+        remindersList = try container.decodeIfPresent(String.self, forKey: .remindersList) ?? "Forge"
         calendarInclude = try container.decodeIfPresent([String].self, forKey: .calendarInclude) ?? []
     }
 }
 
 /// Top-level forge configuration, loaded from config.yaml.
 public struct ForgeConfig: Codable, Sendable {
-    public enum DueConflictPolicy: String, Codable, Sendable, CaseIterable {
-        /// Prefer due date/time from Reminders when both sides changed.
-        case reminders
-        /// Prefer due date/time from markdown when both sides changed.
-        case markdown
-        /// Prefer whichever side appears newer (Reminder lastModifiedDate vs task file mtime).
-        case newest
-    }
-
     /// Paths whose direct children are Forge projects. At least one is expected.
     /// Decodes from `project_roots`; if absent, falls back to legacy `workspace` (single path).
     public let projectRoots: [String]
     public let board: BoardConfig
+    public let calendar: CalendarConfig
     public let gtd: GTDConfig
-    /// Focus tags that include workspace projects (e.g. `["work"]`).
-    /// When a focus session matches one of these tags, project tasks are shown.
     public let workspaceTags: [String]
-    /// Maps area IDs to lists of project directory names for the rollup view.
-    /// E.g. `{ "research": ["Lepto", "Deer-stress"] }`.
-    /// Absent from config means no rollups are generated.
     public var projectAreas: [String: [String]]
     /// Preferred terminal application name (e.g. "Ghostty", "kitty", "iTerm", "Warp", "cmux", "Terminal").
     /// If nil or "auto", Forge detects the first available modern terminal.
@@ -201,12 +204,17 @@ public struct ForgeConfig: Codable, Sendable {
     /// If set, only directories that have this Finder tag are treated as Forge projects.
     public let projectTag: String?
 
-    /// How to resolve conflicts when both markdown and Reminders have a due date/time.
+    public enum DueConflictPolicy: String, Codable, Sendable, CaseIterable {
+        case reminders
+        case markdown
+        case newest
+    }
     public let dueConflictPolicy: DueConflictPolicy
 
     enum CodingKeys: String, CodingKey {
         case workspace
-        case board, gtd
+        case board, calendar
+        case gtd
         case projectRoots = "project_roots"
         case workspaceTags = "workspace_tags"
         case projectAreas = "project_areas"
@@ -219,6 +227,7 @@ public struct ForgeConfig: Codable, Sendable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(projectRoots, forKey: .projectRoots)
         try container.encode(board, forKey: .board)
+        try container.encode(calendar, forKey: .calendar)
         try container.encode(gtd, forKey: .gtd)
         try container.encode(workspaceTags, forKey: .workspaceTags)
         try container.encode(projectAreas, forKey: .projectAreas)
@@ -230,7 +239,8 @@ public struct ForgeConfig: Codable, Sendable {
     public init(
         projectRoots: [String],
         board: BoardConfig,
-        gtd: GTDConfig,
+        calendar: CalendarConfig = CalendarConfig(),
+        gtd: GTDConfig = GTDConfig(),
         workspaceTags: [String] = ["work"],
         projectAreas: [String: [String]] = [:],
         terminal: String? = nil,
@@ -239,6 +249,7 @@ public struct ForgeConfig: Codable, Sendable {
     ) {
         self.projectRoots = projectRoots
         self.board = board
+        self.calendar = calendar
         self.gtd = gtd
         self.workspaceTags = workspaceTags
         self.projectAreas = projectAreas
@@ -277,7 +288,8 @@ extension ForgeConfig {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         board = try container.decode(BoardConfig.self, forKey: .board)
-        gtd = try container.decode(GTDConfig.self, forKey: .gtd)
+        var decodedCalendar = (try? container.decode(CalendarConfig.self, forKey: .calendar)) ?? CalendarConfig()
+        gtd = (try? container.decode(GTDConfig.self, forKey: .gtd)) ?? GTDConfig()
         let roots = try container.decodeIfPresent([String].self, forKey: .projectRoots)
         let legacyWorkspace = try container.decodeIfPresent(String.self, forKey: .workspace)
         if let r = roots, !r.isEmpty {
@@ -287,11 +299,18 @@ extension ForgeConfig {
         } else {
             projectRoots = []
         }
-        workspaceTags = try container.decodeIfPresent([String].self, forKey: .workspaceTags) ?? ["work"]
-        projectAreas = try container.decodeIfPresent([String: [String]].self, forKey: .projectAreas) ?? [:]
         terminal = try container.decodeIfPresent(String.self, forKey: .terminal)
         projectTag = try container.decodeIfPresent(String.self, forKey: .projectTag)
+        workspaceTags = try container.decodeIfPresent([String].self, forKey: .workspaceTags) ?? ["work"]
+        projectAreas = try container.decodeIfPresent([String: [String]].self, forKey: .projectAreas) ?? [:]
         dueConflictPolicy = try container.decodeIfPresent(DueConflictPolicy.self, forKey: .dueConflictPolicy) ?? .newest
+
+        // Backwards compatibility: allow reading Calendar allowlist from legacy `gtd.calendar_include`.
+        if decodedCalendar.include.isEmpty, !gtd.calendarInclude.isEmpty {
+            decodedCalendar = CalendarConfig(include: gtd.calendarInclude)
+        }
+
+        calendar = decodedCalendar
     }
 
     /// Load configuration from a YAML file at the given path.
@@ -338,17 +357,7 @@ extension ForgeConfig {
                     "4. Write ✒️": "Write ✒️",
                 ]
             ),
-            gtd: GTDConfig(
-                contexts: [
-                    "office", "lab", "campus", "home", "errands",
-                    "writing", "review", "analysis", "planning", "deep-work",
-                    "low-energy", "email", "slack", "calls", "computer",
-                    "reading", "watching", "anywhere", "agenda",
-                ],
-                remindersList: "Forge",
-                calendarInclude: []
-            ),
-            workspaceTags: ["work"],
+            calendar: CalendarConfig(include: []),
             terminal: "auto",
             projectTag: "🔥 Forge",
             dueConflictPolicy: .newest
