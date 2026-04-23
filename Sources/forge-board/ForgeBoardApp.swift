@@ -43,11 +43,7 @@ struct ForgeBoardApp: App {
         #if canImport(AppKit)
         .commands {
             CommandGroup(after: .windowArrangement) {
-                Button("Edit task files…") {
-                    openTaskFilesFolder()
-                }
-                .keyboardShortcut("e", modifiers: [.command, .shift])
-                .disabled(forgeDir == nil)
+                EmptyView()
             }
 
             // Cmd+F is also used by macOS for system "Find…". We replace the `.textEditing`
@@ -61,21 +57,6 @@ struct ForgeBoardApp: App {
         }
         #endif
     }
-
-    #if canImport(AppKit)
-    private func openTaskFilesFolder() {
-        guard let forgeDir = forgeDir, let config = config else { return }
-        let paths = ForgePaths(forgeDir: forgeDir)
-        let folderURL = URL(fileURLWithPath: paths.taskFilesRoot)
-        let editor = EditorPreferences.loadPreferredEditor()
-        EditorLauncher.openFolder(
-            folderURL: folderURL,
-            preferredEditor: editor,
-            config: config,
-            openURL: { NSWorkspace.shared.open($0) }
-        )
-    }
-    #endif
 
     private static func loadConfig() async -> (config: ForgeConfig, forgeDir: String)? {
         return await Task.detached(priority: .userInitiated) {
@@ -115,57 +96,13 @@ private struct BoardRootView: View {
             launcher.run(command, workingDirectory: workingDir)
         }
         #if canImport(AppKit)
-        let openWithEditor: @Sendable (URL) -> Void = { url in
-            Task { @MainActor in
-                Self.openFileWithEditor(url: url, config: config)
-            }
-        }
-        var openTaskFiles: (@Sendable () -> Void)?
-        if let fd = forgeDir {
-            let c = config
-            openTaskFiles = { Self.openTaskFilesFolder(forgeDir: fd, config: c) }
-        }
+        // No editor/task-file integration in the kanban-only build.
         #endif
         return BoardView(viewModel: viewModel)
             .environment(\.projectContextMenuActions, contextMenuActions(for: viewModel))
             .environment(\.projectRevealAction, revealAction)
             .environment(\.runForgeInTerminal, runForge)
-            #if canImport(AppKit)
-            .environment(\.openFileWithDefaultEditor, openWithEditor)
-            .environment(\.openTaskFilesFolder, openTaskFiles)
-            #endif
     }
-
-    #if canImport(AppKit)
-    private nonisolated static func openTaskFilesFolder(forgeDir: String, config: ForgeConfig) {
-        let paths = ForgePaths(forgeDir: forgeDir)
-        try? paths.ensureTaskFilesDirectoryExists()
-        let taskFilesRoot = (paths.taskFilesRoot as NSString).standardizingPath
-        let folderURL = URL(fileURLWithPath: taskFilesRoot).standardizedFileURL
-        let editor = EditorPreferences.loadPreferredEditor()
-        EditorLauncher.openFolder(
-            folderURL: folderURL,
-            preferredEditor: editor,
-            config: config,
-            openURL: { NSWorkspace.shared.open($0) }
-        )
-    }
-
-    private static func openFileWithEditor(url: URL, config: ForgeConfig) {
-        let path = url.path
-        // Create TASKS.md from template if missing (same structure as MarkdownIO.createEmptyTasksFile).
-        if url.lastPathComponent == "TASKS.md", !FileManager.default.fileExists(atPath: path) {
-            try? MarkdownIO().createEmptyTasksFile(at: path)
-        }
-        let editor = EditorPreferences.loadPreferredEditor()
-        EditorLauncher.openFile(
-            fileURL: url,
-            preferredEditor: editor,
-            config: config,
-            openURL: { NSWorkspace.shared.open($0) }
-        )
-    }
-    #endif
 
     private static func makeViewModel(_ config: ForgeConfig, forgeDir: String?) -> BoardViewModel {
         let scanner = WorkspaceScanner(config: config)
@@ -177,23 +114,7 @@ private struct BoardRootView: View {
             }
             try tagStore.addTag(column.tag, at: project.path)
         }
-        let performSync: (@Sendable () async throws -> Void)? = forgeDir.map { forgeDir in
-            let c = config
-            return {
-                let paths = ForgePaths(forgeDir: forgeDir)
-                let db = try TaskFileDatabase(forgeDir: forgeDir)
-                let index = DatabaseTaskIndex(database: db)
-                let engine = SyncEngine(
-                    config: c,
-                    forgeDir: forgeDir,
-                    taskFilesRoot: paths.taskFilesRoot,
-                    options: .background,
-                    taskIndex: index,
-                    taskDatabase: db
-                )
-                _ = try await engine.sync()
-            }
-        }
+        let performSync: (@Sendable () async throws -> Void)? = nil
         return BoardViewModel(
             config: config,
             fetchProjects: fetch,

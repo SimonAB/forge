@@ -43,45 +43,17 @@ public extension EnvironmentValues {
     }
 }
 
-// MARK: - Run forge command in terminal (GTD toolbar)
+// MARK: - Run forge command in terminal
 
 private enum RunForgeInTerminalKey: EnvironmentKey {
     static let defaultValue: (@Sendable (String, String?) -> Void)? = nil
 }
 
 public extension EnvironmentValues {
-    /// When set, board toolbar GTD buttons (Inbox, Review, etc.) run the given forge command in the user's terminal.
+    /// When set, board toolbar buttons can run the given forge command in the user's terminal.
     /// Closure receives (command, workingDirectory). Working directory is typically the forge workspace path.
     var runForgeInTerminal: (@Sendable (String, String?) -> Void)? {
         get { self[RunForgeInTerminalKey.self] }
         set { self[RunForgeInTerminalKey.self] = newValue }
-    }
-}
-
-// MARK: - Open file with default editor (e.g. TASKS.md on card)
-
-private enum OpenFileWithDefaultEditorKey: EnvironmentKey {
-    static let defaultValue: (@Sendable (URL) -> Void)? = nil
-}
-
-public extension EnvironmentValues {
-    /// When set (e.g. on macOS), project cards show a button to open TASKS.md with the user's default editor.
-    var openFileWithDefaultEditor: (@Sendable (URL) -> Void)? {
-        get { self[OpenFileWithDefaultEditorKey.self] }
-        set { self[OpenFileWithDefaultEditorKey.self] = newValue }
-    }
-}
-
-// MARK: - Open task files folder (inbox, area files, someday)
-
-private enum OpenTaskFilesFolderKey: EnvironmentKey {
-    static let defaultValue: (@Sendable () -> Void)? = nil
-}
-
-public extension EnvironmentValues {
-    /// When set, the board toolbar can offer "Edit task files…" to open Forge/tasks in the default editor.
-    var openTaskFilesFolder: (@Sendable () -> Void)? {
-        get { self[OpenTaskFilesFolderKey.self] }
-        set { self[OpenTaskFilesFolderKey.self] = newValue }
     }
 }

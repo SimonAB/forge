@@ -10,7 +10,6 @@ import AppKit
 public struct BoardView: View {
     @Bindable var viewModel: BoardViewModel
     @Environment(\.runForgeInTerminal) private var runForgeInTerminal
-    @Environment(\.openTaskFilesFolder) private var openTaskFilesFolder
     #if canImport(AppKit)
     @State private var appKitSearchFieldShouldFocus = false
     #else
@@ -179,51 +178,10 @@ public struct BoardView: View {
 
             // MARK: - Actions (trailing)
             ToolbarItemGroup(placement: .primaryAction) {
-                if runForgeInTerminal != nil || openTaskFilesFolder != nil {
-                    Menu {
-                        Section("Workflow") {
-                            if let openTaskFilesFolder = openTaskFilesFolder {
-                                Button("Edit task files…") {
-                                    openTaskFilesFolder()
-                                }
-                            }
-                            if runForgeInTerminal != nil {
-                                Button("Inbox (process)") {
-                                    runForgeInTerminal?("forge process", viewModel.config.resolvedWorkspacePath)
-                                }
-                                Button("Weekly review") {
-                                    runForgeInTerminal?("forge review", viewModel.config.resolvedWorkspacePath)
-                                }
-                                Button("Due today") {
-                                    runForgeInTerminal?("forge due", viewModel.config.resolvedWorkspacePath)
-                                }
-                                Button("Next actions") {
-                                    runForgeInTerminal?("forge next", viewModel.config.resolvedWorkspacePath)
-                                }
-                            }
-                        }
-                        if runForgeInTerminal != nil {
-                            Section("Terminal") {
-                                Button("Sync") {
-                                    runForgeInTerminal?("forge sync", viewModel.config.resolvedWorkspacePath)
-                                }
-                                Button("Board") {
-                                    runForgeInTerminal?("forge board", viewModel.config.resolvedWorkspacePath)
-                                }
-                            }
-                        }
-                    } label: {
-                        Label("GTD", systemImage: "checklist")
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 4)
-                            .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(.quaternary, lineWidth: 0.5))
-                    }
-                }
-
                 Button {
                     viewModel.syncAndRefresh()
                 } label: {
-                    Label("Sync", systemImage: "arrow.clockwise")
+                    Label("Refresh", systemImage: "arrow.clockwise")
                 }
                 .disabled(viewModel.isLoading)
                 .keyboardShortcut("s", modifiers: .command)

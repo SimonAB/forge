@@ -31,23 +31,7 @@ final class BoardWindowController: NSObject, NSWindowDelegate {
             try tagStore.addTag(column.tag, at: project.path)
         }
 
-        let performSync: (@Sendable () async throws -> Void)? = forgeDir.map { forgeDir in
-            let c = config
-            return {
-                let paths = ForgePaths(forgeDir: forgeDir)
-                let db = try TaskFileDatabase(forgeDir: forgeDir)
-                let index = DatabaseTaskIndex(database: db)
-                let engine = SyncEngine(
-                    config: c,
-                    forgeDir: forgeDir,
-                    taskFilesRoot: paths.taskFilesRoot,
-                    options: .background,
-                    taskIndex: index,
-                    taskDatabase: db
-                )
-                _ = try await engine.sync()
-            }
-        }
+        let performSync: (@Sendable () async throws -> Void)? = nil
 
         self.viewModel = BoardViewModel(
             config: config,
@@ -85,17 +69,7 @@ final class BoardWindowController: NSObject, NSWindowDelegate {
             launcher.run(command, workingDirectory: workingDir)
         }
 
-        let openFileWithDefaultEditor: @Sendable (URL) -> Void = { url in
-            Task { @MainActor in
-                Self.openFileWithEditor(url: url, config: config)
-            }
-        }
-
-        var openTaskFilesFolder: (@Sendable () -> Void)?
-        if let fd = forgeDir {
-            let c = config
-            openTaskFilesFolder = { Self.openTaskFilesFolder(forgeDir: fd, config: c) }
-        }
+        // No task-file integration in the kanban-only build.
 
         let rootView = BoardView(viewModel: viewModel)
             .environment(\.projectContextMenuActions, contextMenuActions)
@@ -103,8 +77,6 @@ final class BoardWindowController: NSObject, NSWindowDelegate {
                 NSWorkspace.shared.selectFile(project.path, inFileViewerRootedAtPath: "")
             }
             .environment(\.runForgeInTerminal, runForgeInTerminal)
-            .environment(\.openFileWithDefaultEditor, openFileWithDefaultEditor)
-            .environment(\.openTaskFilesFolder, openTaskFilesFolder)
 
         let hosting = NSHostingController(rootView: rootView)
         let window = NSWindow(contentViewController: hosting)
@@ -125,7 +97,7 @@ final class BoardWindowController: NSObject, NSWindowDelegate {
         }
 
         self.window = window
-        window.makeKeyAndOrderFront(nil)
+        window.makeKeyAndOrderFront(nil as Any?)
         NSApp.activate(ignoringOtherApps: true)
     }
 
@@ -154,35 +126,11 @@ final class BoardWindowController: NSObject, NSWindowDelegate {
         saveWindowFrame()
     }
 
-    /// Opens a file with the user's default editor preference (EditorPreferences). Used for TASKS.md on cards.
+    /// Opens a file with the user's default editor preference (EditorPreferences). Used for project files on cards.
     private static func openFileWithEditor(url: URL, config: ForgeConfig?) {
-        let path = url.path
-        // Create TASKS.md from template if missing (same structure as MarkdownIO.createEmptyTasksFile).
-        if url.lastPathComponent == "TASKS.md", !FileManager.default.fileExists(atPath: path) {
-            try? MarkdownIO().createEmptyTasksFile(at: path)
-        }
         let editor = EditorPreferences.loadPreferredEditor()
         EditorLauncher.openFile(
             fileURL: url,
-            preferredEditor: editor,
-            config: config,
-            openURL: { NSWorkspace.shared.open($0) }
-        )
-    }
-
-    /// Opens the task files folder (Forge/tasks) with the user's default editor or Finder.
-    nonisolated private static func openTaskFilesFolder(forgeDir: String, config: ForgeConfig) {
-        let paths = ForgePaths(forgeDir: forgeDir)
-        try? paths.ensureTaskFilesDirectoryExists()
-        let taskFilesRoot = (paths.taskFilesRoot as NSString).standardizingPath
-        let folderURL = URL(fileURLWithPath: taskFilesRoot).standardizedFileURL
-        let editor = EditorPreferences.loadPreferredEditor()
-        if editor == nil || editor == "default" || editor?.isEmpty == true {
-            NSWorkspace.shared.open(folderURL)
-            return
-        }
-        EditorLauncher.openFolder(
-            folderURL: folderURL,
             preferredEditor: editor,
             config: config,
             openURL: { NSWorkspace.shared.open($0) }
