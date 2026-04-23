@@ -24,6 +24,7 @@ DerivedData/
 __pycache__/
 *.pyc
 .pycache/
+.venv*/
 
 # Editors / IDE
 .cursor/*
