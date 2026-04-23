@@ -4,12 +4,11 @@ title: Forge user manual
 
 ## Overview
 
-Forge is a local-first project and task manager that combines:
+Forge is a local-first project manager that combines:
 
-- Plain-text markdown files for projects and areas.
 - A kanban-style board for visualising work-in-progress.
-- Two-way synchronisation with Reminders on macOS.
-- A small menubar app that keeps everything in sync in the background.
+- Finder tags on project folders as the canonical “state”.
+- A small menu bar companion and a board window for day-to-day use.
 
 This document explains how Forge fits together and how to use it day-to-day.
 
@@ -19,18 +18,16 @@ Forge is for people who want a transparent, files-first system:
 
 - Projects are normal folders.
 - Project state (columns, flags, assignees) lives in Finder tags.
-- Tasks live in markdown (`TASKS.md` per project, plus inbox and area files).
 
 Forge is a good fit if you:
 
 - Prefer plain-text workflows you can search, diff, and version-control with git.
-- Want a kanban view for project flow alongside a GTD-style task system (inbox, next actions, waiting-for, reviews).
-- Want optional two-way sync to Apple Reminders while keeping markdown as the canonical source.
+- Want a kanban view for project flow without a hosted backend.
 - Care about local-first privacy and want to avoid hosted task servers.
 
 ## Optional: AI assistants and privacy
 
-Some people paste `forge brief` or task output into a coding assistant. For
+Some people paste `forge board --json` output or project paths into a coding assistant. For
 **privacy**, this project recommends **Ollama** with the **Pi** coding agent
 (install Ollama, pull a local model, install `@mariozechner/pi-coding-agent`, then
 `ollama launch pi` — see **`PRIVACY.md`**, section **AI assistants and local
@@ -40,115 +37,28 @@ language models**, for step-by-step notes and links).
 
 - **Forge directory**: A folder (often `~/Documents/Forge`) containing:
   - `config.yaml` – Forge configuration.
-  - `tasks/` – inbox and area markdown files, plus generated artefacts like `due.md`.
 - **Project roots**:
-  - One or more directories (configured in `config.yaml`) under which Forge looks for `TASKS.md` files.
-  - Each `TASKS.md` file represents a project.
-- **Areas and inbox**:
-  - Area files live in `Forge/tasks/*.md` (excluding special files like `inbox.md`, `someday-maybe.md`, `due.md`).
-  - `inbox.md` is the capture point for quick notes and imported Reminders.
-- **Sync engine**:
-  - `SyncEngine.sync()` is responsible for keeping markdown and Reminders in agreement.
+  - One or more directories (configured in `config.yaml`) under which Forge looks for project folders.
+  - Each direct child folder is a project; its Finder tags carry the workflow column and any meta/assignee tags.
 - **Privacy**:
-  - All project and area content is stored as plain-text markdown under your Forge directory.
-  - Forge maintains a small local SQLite cache at `Forge/.cache/tasks.db` for file metadata and counts only; task text remains in markdown.
-  - There are no Forge-hosted services: all synchronisation happens locally between your files and macOS Reminders on your machine.
+  - There are no Forge-hosted services: your project data stays on disk as ordinary folders and Finder tags.
 
 ## Components
 
 - **CLI (`forge` command)**:
-  - `forge sync` – run a full two-way sync between markdown and Reminders.
-  - `forge due` – list overdue and upcoming tasks from markdown (optionally writing `tasks/due.md`).
-  - `forge brief` – compact daily summary for review; includes a read-only **Schedule** section from Apple Calendar by default (`--no-calendar` to omit).
-  - `forge calendar` / `forge events` – list upcoming Calendar events for the next **7 days** by default (read-only; same command). With **Forge.app**, the CLI can read **`Forge/.cache/calendar-snapshot.json`** (schema v2: grouped days and richer event metadata; see **`docs/cli.md`** / **`PRIVACY.md`**).
-  - `forge board --json` — structured kanban + Radar metrics for scripts and assistants (see **`docs/cli.md`**).
-  - `forge project-tag` — add/remove/list meta and assignee Finder tags on a project folder (see **`docs/cli.md`**).
-  - Other commands (`forge board`, `forge process`, etc.) provide various GTD and board views.
+  - `forge board` / `forge board --json` — kanban board (and machine-readable output for scripts).
+  - `forge move` — move a project between columns.
+  - `forge project-tag` — add/remove/list meta and assignee Finder tags on a project folder.
 
 - **Menubar app (Forge.app)**:
-  - Shows a small status icon with badge counts.
-  - Runs background sync every 5 minutes (and once on startup).
-  - Provides quick access to capture, processing, board, and review workflows.
+  - Shows a small status icon and quick access to board workflows.
 
 - **Board app (`forge-board`)**:
-  - A windowed kanban board backed by the same markdown task files.
-  - The toolbar refresh runs the same background sync as the menubar app, then reloads projects so Finder tag changes and due-date edits propagate quickly.
-
-## How synchronisation works
-
-### What `forge sync` does
-
-When you run:
-
-```bash
-forge sync
-```
-
-Forge:
-
-- Loads `config.yaml` and resolves the Forge directory and project roots.
-- Opens `Forge/.cache/tasks.db` (a small SQLite database that remembers which task files exist and their basic metadata).
-- Uses a task index backed by that database to enumerate project `TASKS.md` files under the configured roots.
-- Parses project and area markdown into `ForgeTask` objects.
-- Fetches Reminders from the configured list (and any context lists it creates).
-- Reconciles in both directions:
-  - Markdown → Reminders:
-    - Creates reminders for new tasks.
-    - Moves reminders to the correct context lists.
-    - Marks reminders complete when their corresponding tasks complete in markdown.
-  - Reminders → Markdown:
-    - Marks tasks complete when reminders complete.
-    - Imports new reminders into `inbox.md` when they do not yet exist in markdown.
-  - Updates markdown due dates when reminder due dates change.
-- Optionally regenerates `tasks/due.md` and rollup pages, then commits changes to Reminders.
-
-### What the menubar app does
-
-When Forge.app (the menubar app) is running:
-
-- On startup:
-  - Loads `config.yaml` and finds your Forge directory.
-  - Shows the status item and an initial view of counts based on local markdown.
-  - Immediately runs `SyncEngine.sync()` once in a background task (with “background” options).
-- Every 5 minutes:
-  - Runs `SyncEngine.sync()` again with background options.
-  - Updates the badge counts by re-reading markdown task files.
-
-Practically, this means that if Forge.app is running:
-
-- Reminders will be kept in sync with your markdown tasks without needing to run `forge sync` manually.
-- The CLI `forge sync` is still available when you want to force an immediate sync or measure timings from the terminal.
+  - A windowed kanban board for projects, driven by Finder tags.
 
 ## Typical workflows
 
-### 1. Daily capture and processing
-
-- Use the menubar’s “Quick Capture…” to add ideas into `inbox.md`.
-- Capture selections from Mail or Finder into inbox tasks.
-- Periodically run:
-
-```bash
-forge process
-```
-
-from the terminal or via the menubar menu, to empty your inbox and assign tasks to projects or areas.
-
-### 2. Staying on top of deadlines
-
-- Run:
-
-```bash
-forge due --markdown
-```
-
-to see overdue and upcoming tasks across all projects, and to update `tasks/due.md` for quick reference.
-
-- The menubar badge and menu give a quick summary of:
-  - Overdue tasks.
-  - Tasks due today.
-  - Open inbox items.
-
-### 2.1 Delegated work and assignees
+### Delegated work and assignees
 
 - Use **Finder tags starting with `#`** on project folders (for example `#PeggySue`) to mark who a project is delegated to.
 - In the **board app**:
@@ -156,45 +66,26 @@ to see overdue and upcoming tasks across all projects, and to update `tasks/due.
   - Each project card shows both meta tags and assignee names (as `@Name`).
 - In the **CLI**:
   - `forge board --assignee PeggySue` shows only projects tagged with `#PeggySue`.
-  - `forge next --assignee PeggySue` shows next actions assigned to PeggySue (including waiting-for items with `@waiting(PeggySue)`).
-  - `forge due --assignee PeggySue` lists due and upcoming items for that person.
-  - `forge waiting --assignee PeggySue` narrows the waiting-for list to a single person.
-
-For individual tasks you can also add an explicit assignee in markdown:
-
-```markdown
-- [ ] Follow up with Dawn #PeggySue <!-- id:abc123 -->
-```
-
-This keeps the task’s assignee aligned with the same `#Person` convention used for projects.
 
 ### 3. Working from the board
 
 - Use `forge board` in the terminal or the Forge board app to see your work laid out in columns.
-- Moving tasks between columns updates the underlying markdown and will propagate to Reminders on the next sync.
+- Moving projects between columns updates Finder tags on the project folders.
 
 ### 3.1 Radar view for projects
 
 - The board toolbar includes a **Radar** picker that slices projects into three buckets:
   - **Calm** – recently-touched, non-urgent projects.
-  - **Watch** – projects whose `TASKS.md` has not changed for roughly a week.
-  - **Heat** – explicitly urgent projects (tagged with an `URGENT…` meta tag such as `URGENT ⚠️`), or projects whose `TASKS.md` has been neglected for several weeks.
+  - **Watch** – projects with no recent activity for roughly a week.
+  - **Heat** – explicitly urgent projects (tagged with an `URGENT…` meta tag such as `URGENT ⚠️`), or projects that have been neglected for several weeks.
 - Radar combines these signals so you can quickly surface projects that are both **time-sensitive** and **at risk of being forgotten**, without changing any underlying tags or files.
 
 ## Where to look when something seems off
 
-- **Tasks missing from reminders**:
-  - Run `forge sync` from the terminal and inspect its output.
-  - Check `config.yaml` to ensure project roots and lists/calendars are configured as expected.
-  - Verify that the relevant `TASKS.md` or area file lives under a configured project root or `Forge/tasks`.
-  - If a new project `TASKS.md` file under an existing project root is not being picked up, run `forge sync --rebuild-index` once to force a full rescan of project roots.
-
-- **Menubar badge counts look wrong**:
-  - Ensure Forge.app is allowed to access Reminders in System Settings.
-  - Wait for at least one background sync cycle (or use “Sync Now” from the menubar menu).
-  - Compare output from `forge due` with the badge counts.
-  - If CLI due output seems to be missing projects entirely, run `forge due --rebuild-index` to rebuild the cached index of `TASKS.md` files.
+- **Projects missing from the board**:
+  - Check `config.yaml` to ensure your `project_roots` point at the correct workspace directories.
+  - If `project_tag` is set, ensure the project folder carries that Finder tag.
 
 - **Performance issues**:
   - Follow the benchmark checklist in this document.
-  - Attach `time forge sync` / `time forge due --markdown` output and any Time Profiler screenshots or call tree summaries.
+  - Attach `time forge board` output and any Time Profiler screenshots or call tree summaries.

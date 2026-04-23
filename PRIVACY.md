@@ -1,28 +1,18 @@
 ## Forge privacy overview
 
-Forge is designed as a **local-first, privacy-respecting** project and task manager.
+Forge is designed as a **local-first, privacy-respecting** project manager.
 This document summarises what data Forge uses, where it lives, and how it moves.
 
 ### What Forge stores
 
-- **Tasks and projects**
-  - Stored as plain-text markdown files under your Forge directory (typically
-    `~/Documents/Forge`), including:
-    - `config.yaml`
-    - `tasks/*.md` (inbox and area files, plus generated artefacts like `due.md`)
-    - project `TASKS.md` files under your configured `project_roots`
-  - You can open and edit all of these files with any editor.
+- **Projects**
+  - Stored as ordinary directories under your configured `project_roots`.
+  - Kanban state is stored as **Finder tags** on those directories (workflow column,
+    meta tags, and optional assignees such as `#Person`).
 
 - **Cache and index**
-  - Forge maintains a small local SQLite database at `Forge/.cache/tasks.db`.
-  - This stores file paths, modification times, sizes, and cached per-file
-    counts (overdue, due-today, inbox counts).
-  - It does **not** store full task text; that remains in markdown.
-  - When **Forge.app** runs background sync, it may also write
-    `Forge/.cache/calendar-snapshot.json` (a short-lived read-only copy of upcoming
-    Calendar events: titles, times, calendar names, locations, optional notes and URLs,
-    stable event and calendar identifiers, and a per-day grouping) so the `forge` CLI
-    can display your schedule without requiring Calendars permission for your terminal app.
+  - Forge may maintain small local caches for performance (paths and timestamps).
+  - These caches are local-only and exist to avoid repeated filesystem scans.
 
 - **Preferences and focus**
   - The menubar app stores UI preferences (shortcuts, editor choice, filters)
@@ -31,41 +21,25 @@ This document summarises what data Forge uses, where it lives, and how it moves.
 
 ### What Forge talks to
 
-- **Apple Reminders (optional)**
-  - When you enable sync (via `forge sync` or Forge.app), Forge uses macOS
-    EventKit APIs to:
-    - Create/update/delete Reminders for tasks with `@due` or context tags.
-    - Import new items from the configured Reminders list into `inbox.md`.
-    - Keep completion state and due dates aligned between Reminders and markdown.
-  - All of this happens **locally on your Mac**, against the Reminders account
-    already configured in System Settings.
-  - Forge does not talk to any third-party servers.
-
 - **Apple Calendar (optional, read-only)**
-  - When you run `forge calendar` or `forge brief` (unless you pass `--no-calendar`), Forge uses macOS
-    EventKit to **read** events from your calendars for display in the terminal.
+  - When you run `forge calendar`, Forge uses macOS EventKit to **read** events
+    from your calendars for display in the terminal.
   - Nothing is written back to Calendar, and nothing is sent to Forge servers.
-  - Optional `gtd.calendar_include` in `config.yaml` limits which calendar
+  - Optional `gtd.calendar_include` in `config.yaml` (if present) limits which calendar
     **titles** are queried (exact match); if omitted or empty, all event
     calendars are included.
 
 - **No telemetry or remote services**
   - Forge sends **no usage analytics, telemetry, or task content** to any
     external service.
-  - Network traffic, if any, is solely whatever your macOS Reminders account
-    already performs via the system.
+  - Network traffic, if any, is solely whatever macOS and your configured
+    accounts already perform via the system.
 
 ### Running Forge in more private modes
 
-- **Markdown-only (no sync)**
-  - You can use Forge purely as a markdown-based task and project system:
-    - Do not grant Reminders permission when prompted, or
-    - Avoid calling `forge sync`.
-  - All CLI commands and the board app still work against the markdown files.
-
 - **No Calendar access**
-  - Use `forge brief --no-calendar` for a task-only brief, avoid `forge calendar`, and/or deny Calendars
-    permission when prompted. Other commands are unaffected.
+  - Avoid `forge calendar`, and/or deny Calendars permission when prompted.
+    Other commands are unaffected.
 
 - **Local-only storage**
   - Place your Forge directory on:
@@ -77,11 +51,11 @@ This document summarises what data Forge uses, where it lives, and how it moves.
 ### Sharing logs and traces
 
 - **CLI logs**
-  - `forge sync --verbose` and similar commands may include:
+  - Verbose commands may include:
     - File paths in your home directory
-    - Task text and inline tags
+    - Project names and tag strings
   - Before pasting logs into an issue, **redact names, emails, and sensitive
-    task descriptions**.
+    project details**.
 
 - **Profiling samples and traces**
   - Commands like:

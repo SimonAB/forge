@@ -4,9 +4,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Forge</title>
-    <meta
+      <meta
       name="description"
-      content="Local, markdown-based project and task management for macOS — kanban board, GTD workflows, Apple Reminders sync, and flexible assistant workflows (local or cloud LLMs)."
+      content="Local project management for macOS — kanban board backed by Finder tags, with flexible assistant workflows (local or cloud LLMs)."
     />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -98,8 +98,7 @@
           >
         </h1>
         <p class="hero__tagline">
-          Kanban board, GTD-style workflows, and plain-text markdown — with optional
-          two-way sync to Apple Reminders. No servers; your files stay on your Mac.
+          Kanban board backed by Finder tags. No servers; your project folders stay on your Mac.
           Use any assistant you like: <strong>privacy-first local models</strong> (for example
           <a href="privacy.html#ai-assistants">Ollama with Pi</a>) or more capable
           <strong>cloud</strong> tools — the choice is yours.
@@ -138,26 +137,25 @@
         <div class="features__grid">
           <article class="feature-card">
             <div class="feature-card__icon" aria-hidden="true">📋</div>
-            <h3 class="feature-card__title">Kanban &amp; GTD</h3>
+            <h3 class="feature-card__title">Kanban</h3>
             <p class="feature-card__text">
-              Project columns driven by Finder tags, plus inbox, next actions,
-              contexts, waiting-for, and weekly review — all in markdown.
+              Project columns driven by Finder tags, with quick filtering and a
+              Radar view to surface stale or urgent work.
             </p>
           </article>
           <article class="feature-card">
             <div class="feature-card__icon" aria-hidden="true">📄</div>
-            <h3 class="feature-card__title">Plain-text first</h3>
+            <h3 class="feature-card__title">Folders first</h3>
             <p class="feature-card__text">
-              Tasks and areas live in normal <code class="inline-code">.md</code> files.
-              Edit in Neovim, VS Code, or any editor; use git like any other project.
+              Projects are normal folders. State is visible in Finder, searchable via Spotlight,
+              and version-controllable if you keep your workspace under git.
             </p>
           </article>
           <article class="feature-card">
             <div class="feature-card__icon" aria-hidden="true">🔄</div>
-            <h3 class="feature-card__title">Apple Reminders</h3>
+            <h3 class="feature-card__title">Finder tags</h3>
             <p class="feature-card__text">
-              Optional sync surfaces contexts as Reminders lists on iPhone and iPad,
-              while your canonical task text remains in markdown on the Mac.
+              Column state and project metadata live in Finder tags, not a hosted database.
             </p>
           </article>
           <article class="feature-card">
@@ -201,17 +199,16 @@
       <section class="section" id="cli-examples" aria-labelledby="cli-examples-title">
         <h2 id="cli-examples-title" class="section__title">CLI at a glance</h2>
         <p class="section__lead">
-          Common commands for boards, tasks, and sync. Full reference in the CLI
+          Common commands for boards and project tagging. Full reference in the CLI
           documentation.
         </p>
         <div class="code-block">
           <span class="code-block__label">bash</span>
           <pre><code>forge board                 # Kanban overview
-forge next                  # Next actions
-forge inbox                 # GTD inbox
-forge sync                  # Two-way Reminders sync
-forge review                # Weekly review checklist
-forge due                   # Overdue and upcoming</code></pre>
+forge board --json          # Machine-readable board
+forge move                  # Move project between columns
+forge project-tag list      # Inspect Finder tags
+forge project-tag add       # Add meta/assignee tags</code></pre>
         </div>
       </section>
 
@@ -220,15 +217,7 @@ forge due                   # Overdue and upcoming</code></pre>
         <h3>Essential</h3>
         <ul>
           <li><strong>macOS</strong> 14 or later</li>
-          <li>
-            <strong>Xcode</strong> or Xcode Command Line Tools — required to <em>build</em> from
-            source; not required on <strong>Apple Silicon</strong> if you only use the
-            <a
-            href="https://github.com/SimonAB/forge/releases/latest/download/forge-macos-arm64.zip"
-            >pre-built CLI zip</a
-          >
-            (Intel Macs: build from source).
-          </li>
+          <li><strong>Xcode</strong> or Xcode Command Line Tools — required to <em>build</em> from source.</li>
         </ul>
         <h3>Optional</h3>
         <ul>
@@ -297,7 +286,7 @@ zsh ~/Documents/Forge/build.sh</code></pre>
                   >source</a
                 >
               </td>
-              <td>Boards, tasks, inbox, sync, review, and lint from the terminal.</td>
+              <td>Boards and project tagging from the terminal.</td>
             </tr>
             <tr>
               <td>
@@ -310,7 +299,7 @@ zsh ~/Documents/Forge/build.sh</code></pre>
                   >source</a
                 >
               </td>
-              <td>Menu bar companion — background sync, quick capture, overdue badges.</td>
+              <td>Menu bar companion and board window.</td>
             </tr>
             <tr>
               <td>
@@ -341,8 +330,7 @@ zsh ~/Documents/Forge/build.sh</code></pre>
             on-disk format.
           </li>
           <li>
-            <strong>GTD + kanban</strong> — visual project flow alongside next actions,
-            contexts, and reviews.
+            <strong>Finder-tagged kanban</strong> — visual project flow driven by Finder tags.
           </li>
           <li>
             <strong>Transparency</strong> — clear configuration, documented privacy model,
@@ -366,7 +354,7 @@ zsh ~/Documents/Forge/build.sh</code></pre>
               target="_blank"
               rel="noopener noreferrer"
               >source</a
-            >) — overview, layout, configuration, task format
+            >) — overview, layout, configuration
           </li>
           <li>
             <a href="cli.html">CLI reference</a>
@@ -402,7 +390,7 @@ zsh ~/Documents/Forge/build.sh</code></pre>
               target="_blank"
               rel="noopener noreferrer"
               >source</a
-            >) — data model, sync, and assistant / LLM options
+            >) — data model and assistant / LLM options
           </li>
           <li>
             <a href="manual.html">Forge manual</a>
