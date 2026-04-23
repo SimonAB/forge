@@ -152,7 +152,7 @@ public enum CalendarSnapshotStore {
         guard let payload = try read(forgeDir: forgeDir) else { return nil }
         if Date().timeIntervalSince(payload.generatedAt) > maxAge { return nil }
         if payload.horizonDays < requestedDays { return nil }
-        let configSet = Set(config.gtd.calendarInclude.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty })
+        let configSet = Set(config.calendar.include.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty })
         let payloadSet = Set(payload.calendarInclude.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty })
         if configSet != payloadSet { return nil }
         guard calendar.isDate(payload.generatedAt, inSameDayAs: Date()) else { return nil }
@@ -220,7 +220,7 @@ public enum CalendarEventsResolution {
 
         let reader = CalendarScheduleReader()
         try await reader.requestAccess()
-        let events = reader.fetchEvents(from: windowStart, to: windowEnd, calendarTitleAllowlist: config.gtd.calendarInclude)
+        let events = reader.fetchEvents(from: windowStart, to: windowEnd, calendarTitleAllowlist: config.calendar.include)
         return Result(events: events, windowStart: windowStart, windowEnd: windowEnd, source: .liveEventKit)
     }
 }

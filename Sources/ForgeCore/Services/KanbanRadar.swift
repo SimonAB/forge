@@ -15,11 +15,6 @@ public enum KanbanRadar {
         modificationDate: Date,
         source: String
     ) {
-        let tasksPath = (project.path as NSString).appendingPathComponent("TASKS.md")
-        if let attrs = try? fileManager.attributesOfItem(atPath: tasksPath),
-           let mtime = attrs[.modificationDate] as? Date {
-            return (mtime, "TASKS.md")
-        }
         if let attrs = try? fileManager.attributesOfItem(atPath: project.path),
            let mtime = attrs[.modificationDate] as? Date {
             return (mtime, "project_directory")
@@ -27,7 +22,7 @@ public enum KanbanRadar {
         return (.distantPast, "missing")
     }
 
-    /// Modification time used for activity: `TASKS.md` if present, otherwise the project directory, else distant past.
+    /// Modification time used for activity: project directory, else distant past.
     public static func activityModificationDate(for project: Project, fileManager: FileManager = .default) -> Date {
         activityResolution(for: project, fileManager: fileManager).modificationDate
     }
@@ -38,7 +33,7 @@ public enum KanbanRadar {
         return now.timeIntervalSince(modificationDate) / (60 * 60 * 24)
     }
 
-    /// Combines URGENT-prefixed meta tags with TASKS.md / folder age (same thresholds as the board Radar filter).
+    /// Combines URGENT-prefixed meta tags with folder age (same thresholds as the board Radar filter).
     public static func bucket(for project: Project, now: Date, fileManager: FileManager = .default) -> KanbanRadarBucket {
         let hasUrgentTag = project.metaTags.contains { tag in
             tag.uppercased().hasPrefix("URGENT")

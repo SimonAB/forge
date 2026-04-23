@@ -183,7 +183,7 @@ struct ProjectTagListCommand: AsyncParsableCommand {
     private func tagKind(name: String, config: ForgeConfig) -> String {
         if config.column(forTag: name) != nil { return "column" }
         if config.board.metaTags.contains(name) { return "meta" }
-        if ForgeTask.normalisedAssigneeIdentifier(fromRawTag: name) != nil { return "assignee" }
+        if AssigneeTag.normalisedIdentifier(fromRawTag: name) != nil { return "assignee" }
         if let pt = config.projectTag, pt == name { return "project_scope" }
         return "other"
     }

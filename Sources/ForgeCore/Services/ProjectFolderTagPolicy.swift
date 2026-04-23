@@ -21,7 +21,7 @@ public enum ProjectFolderTagPolicy {
         if config.board.metaTags.contains(tag) {
             return .allowed
         }
-        if ForgeTask.normalisedAssigneeIdentifier(fromRawTag: tag) != nil {
+        if AssigneeTag.normalisedIdentifier(fromRawTag: tag) != nil {
             return .allowed
         }
         return .unrecognized

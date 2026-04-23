@@ -81,7 +81,7 @@ public struct WorkspaceScanner: Sendable {
         let metaTagSet = Set(config.board.metaTags)
 
         for tag in tags {
-            if let person = ForgeTask.normalisedAssigneeIdentifier(fromRawTag: tag) {
+            if let person = AssigneeTag.normalisedIdentifier(fromRawTag: tag) {
                 assignees.append(person)
                 continue
             }
