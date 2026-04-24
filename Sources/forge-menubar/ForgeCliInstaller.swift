@@ -192,7 +192,7 @@ enum ForgeCliInstaller {
 // MARK: - Internals (SPI for tests)
 
 @_spi(Testing)
-enum ForgeCliInstallerInternals {
+public enum ForgeCliInstallerInternals {
     static func pointsToEmbeddedCli(destination dest: URL, embedded: URL) -> Bool {
         let fm = FileManager.default
         guard let resolved = try? fm.destinationOfSymbolicLink(atPath: dest.path) else { return false }
@@ -229,4 +229,3 @@ enum ForgeCliInstallerInternals {
         return "\"\(escaped)\""
     }
 }
-

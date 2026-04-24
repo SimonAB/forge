@@ -450,7 +450,8 @@ private final class PreferencesGeneralView: NSView {
             }
         } catch {
             if isInstall,
-               case ForgeCliInstaller.InstallerError.destinationExistsButIsNotForge(let path) = (error as? ForgeCliInstaller.InstallerError) {
+               let installerError = error as? ForgeCliInstaller.InstallerError,
+               case .destinationExistsButIsNotForge(let path) = installerError {
                 let overwrite = NSAlert()
                 overwrite.messageText = "A different 'forge' already exists"
                 overwrite.informativeText = "\(path) already exists and does not appear to be Forge’s embedded CLI. Overwrite it?"
