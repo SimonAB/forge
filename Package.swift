@@ -61,5 +61,13 @@ let package = Package(
             ],
             path: "Tests/ForgeCoreTests"
         ),
+        .testTarget(
+            name: "ForgeMenubarTests",
+            dependencies: [
+                .target(name: "forge-menubar"),
+                .product(name: "Testing", package: "swift-testing"),
+            ],
+            path: "Tests/ForgeMenubarTests"
+        ),
     ]
 )

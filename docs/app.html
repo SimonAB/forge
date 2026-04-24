@@ -88,7 +88,7 @@ provides quick access to your board and project workflows.</p>
 <h2>Setup</h2>
 <h3>Option A — GitHub release (pre-built app)</h3>
 <p>Each <a href="https://github.com/SimonAB/forge/releases/latest">GitHub release</a> includes <strong><code>Forge-macos-arm64.app.zip</code></strong>. Unzip it and move <strong><code>Forge.app</code></strong> to <code>/Applications</code>. The zip is built with the same layout as <code>build.sh</code> (release configuration).</p>
-<p><strong>In-app updates (<a href="https://sparkle-project.org/">Sparkle</a>):</strong> once Forge is running from a proper <strong><code>Forge.app</code></strong> bundle (release install or <code>build.sh</code>), <strong>Forge → Check for Updates…</strong> and <strong>automatic checks</strong> (about once per day) use the appcast at <a href="https://raw.githubusercontent.com/SimonAB/forge/main/docs/appcast.xml"><code>docs/appcast.xml</code></a> on <code>main</code>. Sparkle downloads a signed <strong><code>Forge-macos-arm64.app.zip</code></strong> from <a href="https://github.com/SimonAB/forge/releases">GitHub Releases</a> and installs it using the standard Sparkle flow (including <strong>Install on quit</strong> when offered). Maintainer signing setup: <strong><code>packaging/SPARKLE_SIGNING.md</code></strong>. The <strong>CLI <code>forge</code> binary is not updated</strong> by Sparkle; use <a href="https://github.com/SimonAB/forge/releases/latest/download/forge-macos-arm64.zip"><code>forge-macos-arm64.zip</code></a> or <code>build.sh</code> for that.</p>
+<p><strong>In-app updates (<a href="https://sparkle-project.org/">Sparkle</a>):</strong> once Forge is running from a proper <strong><code>Forge.app</code></strong> bundle (release install or <code>build.sh</code>), <strong>Forge → Check for Updates…</strong> and <strong>automatic checks</strong> (about once per day) use the appcast at <a href="https://raw.githubusercontent.com/SimonAB/forge/main/docs/appcast.xml"><code>docs/appcast.xml</code></a> on <code>main</code>. Sparkle downloads a signed <strong><code>Forge-macos-arm64.app.zip</code></strong> from <a href="https://github.com/SimonAB/forge/releases">GitHub Releases</a> and installs it using the standard Sparkle flow (including <strong>Install on quit</strong> when offered). Maintainer signing setup: <strong><code>packaging/SPARKLE_SIGNING.md</code></strong>.</p>
 <h3>Option B — <code>build.sh</code> (from source)</h3>
 <p>Run the setup script on each Mac:</p>
 <pre><code class="language-bash">zsh ~/Documents/Forge/build.sh
@@ -100,14 +100,15 @@ provides quick access to your board and project workflows.</p>
    sync.</li>
 <li><strong>Swift build</strong> — compiles the CLI (<code>forge</code>) and menu bar app
    (<code>forge-menubar</code>).</li>
-<li><strong>CLI symlink</strong> — links <code>forge</code> into <code>/opt/homebrew/bin</code> (or
-   <code>/usr/local/bin</code> / <code>~/.local/bin</code>).</li>
 <li><strong>App bundle</strong> — assembles <code>/Applications/Forge.app</code> with the compiled
    binary, an <code>Info.plist</code>, and an optional generated icon.</li>
 <li><strong>Launch Agent</strong> — installs
    <code>~/Library/LaunchAgents/com.forge.menubar.plist</code> so Forge.app starts
    automatically at login.</li>
-<li><strong>Verification</strong> — runs <code>forge --version</code> to confirm the install.</li>
+<li><strong>CLI install (optional)</strong> — Forge.app bundles <code>forge</code> at <code>Contents/Resources/bin/forge</code>.
+   To put it on your <code>$PATH</code>, open <strong>Forge → Preferences… → Install CLI…</strong> and choose:
+   - <code>~/bin/forge</code> (recommended; no admin)
+   - <code>/usr/local/bin/forge</code> (admin)</li>
 </ol>
 <h3>Icon generation</h3>
 <p>The setup script calls <code>generate_icon.py</code> to create a themed app icon. This
@@ -167,16 +168,6 @@ indicates urgent items:</p>
 <td>Runs <code>forge board</code> in your terminal</td>
 </tr>
 <tr>
-<td><strong>Board</strong></td>
-<td>Cmd+B</td>
-<td>Opens the native Kanban board window</td>
-</tr>
-<tr>
-<td><strong>Open Board in Terminal</strong></td>
-<td>—</td>
-<td>Runs <code>forge board</code> in your terminal</td>
-</tr>
-<tr>
 <td><strong>Quit Forge</strong></td>
 <td>Cmd+Q</td>
 <td>Exits Forge.app</td>
@@ -190,9 +181,7 @@ indicates urgent items:</p>
 </table>
 <hr />
 <h2>Quick capture</h2>
-<p><strong>Cmd+Shift+N</strong> opens a floating capture panel. Type a task and press Return.
-Use this to quickly jot down a note to process later (for example a project
-nudge, a next step, or a reminder).</p>
+<p>Forge no longer includes a GTD task system, so there is no quick-capture panel.</p>
 <h2>Permissions</h2>
 <p>On first launch, macOS will prompt for access to:</p>
 <ul>
@@ -214,6 +203,7 @@ nudge, a next step, or a reminder).</p>
 <h2>Configuration resolution</h2>
 <p>Forge.app searches for <code>config.yaml</code> in this order:</p>
 <ol>
+<li>The most recently selected path via <strong>Forge → Preferences… → Choose config…</strong>.</li>
 <li><code>~/Documents/Forge/config.yaml</code></li>
 <li><code>~/Documents/Work/Projects/Forge/config.yaml</code></li>
 </ol>

@@ -171,6 +171,29 @@ enum ForgeCliInstaller {
     // MARK: - Identification
 
     private static func pointsToEmbeddedCli(destination dest: URL, embedded: URL) -> Bool {
+        ForgeCliInstallerInternals.pointsToEmbeddedCli(destination: dest, embedded: embedded)
+    }
+
+    private static func isIdenticalFile(destination dest: URL, embedded: URL) -> Bool {
+        ForgeCliInstallerInternals.isIdenticalFile(destination: dest, embedded: embedded)
+    }
+
+    // MARK: - Escaping
+
+    private static func shellEscape(_ s: String) -> String {
+        ForgeCliInstallerInternals.shellEscape(s)
+    }
+
+    private static func appleScriptStringLiteral(_ s: String) -> String {
+        ForgeCliInstallerInternals.appleScriptStringLiteral(s)
+    }
+}
+
+// MARK: - Internals (SPI for tests)
+
+@_spi(Testing)
+enum ForgeCliInstallerInternals {
+    static func pointsToEmbeddedCli(destination dest: URL, embedded: URL) -> Bool {
         let fm = FileManager.default
         guard let resolved = try? fm.destinationOfSymbolicLink(atPath: dest.path) else { return false }
         // `destinationOfSymbolicLink` may be relative.
@@ -184,7 +207,7 @@ enum ForgeCliInstaller {
         return absolute == (embedded.path as NSString).standardizingPath
     }
 
-    private static func isIdenticalFile(destination dest: URL, embedded: URL) -> Bool {
+    static func isIdenticalFile(destination dest: URL, embedded: URL) -> Bool {
         let fm = FileManager.default
         guard let a = try? fm.attributesOfItem(atPath: dest.path),
               let b = try? fm.attributesOfItem(atPath: embedded.path),
@@ -193,14 +216,12 @@ enum ForgeCliInstaller {
         return asz.intValue == bsz.intValue
     }
 
-    // MARK: - Escaping
-
-    private static func shellEscape(_ s: String) -> String {
+    static func shellEscape(_ s: String) -> String {
         // Conservative single-quote escaping.
         return "'" + s.replacingOccurrences(of: "'", with: "'\\''") + "'"
     }
 
-    private static func appleScriptStringLiteral(_ s: String) -> String {
+    static func appleScriptStringLiteral(_ s: String) -> String {
         // AppleScript string uses double quotes; escape backslashes and quotes.
         let escaped = s
             .replacingOccurrences(of: "\\", with: "\\\\")

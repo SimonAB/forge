@@ -96,11 +96,12 @@ source with `build.sh`. Developers syncing source via iCloud typically still use
 zsh ~/Documents/Forge/build.sh
 ```
 
-This builds the Swift project, installs the `forge` binary, creates
-`/Applications/Forge.app`, and registers a Launch Agent so the menu bar app
-starts at login. The script only touches the Forge source directory,
-`~/.forge-build`, and your local application and binary folders; it never sends
-any data off your Mac. See [setup details](docs/app.md#setup).
+This builds the Swift project, creates `/Applications/Forge.app`, and registers
+a Launch Agent so the menu bar app starts at login. To put `forge` on your
+terminal `$PATH`, use **Forge → Preferences… → Install CLI…**. The script only
+touches the Forge source directory, `~/.forge-build`, and your local
+application folders; it never sends any data off your Mac. See
+[setup details](docs/app.md#setup).
 
 ### Requirements
 

@@ -86,6 +86,17 @@
 <p>The <code>forge</code> command-line tool manages your kanban board from the terminal,
 operating directly on your project folders and their <strong>Finder tags</strong>. There are
 no remote services; commands read and write only local state.</p>
+<h2>Installing the CLI</h2>
+<p>Forge bundles the <code>forge</code> binary inside <strong>Forge.app</strong> at <code>Contents/Resources/bin/forge</code>.</p>
+<p>To put <code>forge</code> on your <code>$PATH</code>:</p>
+<ol>
+<li>Open <strong>Forge → Preferences…</strong></li>
+<li>Under <strong>Command-line tool (forge)</strong>, click <strong>Install CLI…</strong></li>
+<li>Choose:
+   - <code>~/bin</code> (no admin), or
+   - <code>/usr/local/bin</code> (admin)</li>
+</ol>
+<p>To remove it later, use <strong>Uninstall CLI…</strong> in the same Preferences section.</p>
 <pre><code>forge &lt;command&gt; [options]
 </code></pre>
 <h2>Commands at a glance</h2>
@@ -203,7 +214,7 @@ for <strong><code>forge calendar</code></strong> — use whichever you prefer.</
 <hr />
 <h2>forge calendar / forge events</h2>
 <p>List upcoming events from <strong>Apple Calendar</strong> (read-only). <strong><code>forge events</code></strong> is an alias for <strong><code>forge calendar</code></strong> — use whichever you prefer. By default the window is the <strong>next 7 days</strong> from the start of today (local timezone).</p>
-<p>Uses EventKit on your Mac; nothing is written to Calendar. Optional <code>gtd.calendar_include</code> in
+<p>Uses EventKit on your Mac; nothing is written to Calendar. Optional <code>calendar.include</code> in
 <code>config.yaml</code> restricts which calendar <strong>titles</strong> are read (exact match); if
 empty or omitted, all event calendars are used.</p>
 <pre><code>forge calendar [--days &lt;n&gt;] [--start YYYY-MM-DD] [--json]

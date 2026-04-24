@@ -9,7 +9,7 @@ provides quick access to your board and project workflows.
 
 Each [GitHub release](https://github.com/SimonAB/forge/releases/latest) includes **`Forge-macos-arm64.app.zip`**. Unzip it and move **`Forge.app`** to `/Applications`. The zip is built with the same layout as `build.sh` (release configuration).
 
-**In-app updates ([Sparkle](https://sparkle-project.org/)):** once Forge is running from a proper **`Forge.app`** bundle (release install or `build.sh`), **Forge → Check for Updates…** and **automatic checks** (about once per day) use the appcast at [`docs/appcast.xml`](https://raw.githubusercontent.com/SimonAB/forge/main/docs/appcast.xml) on `main`. Sparkle downloads a signed **`Forge-macos-arm64.app.zip`** from [GitHub Releases](https://github.com/SimonAB/forge/releases) and installs it using the standard Sparkle flow (including **Install on quit** when offered). Maintainer signing setup: **`packaging/SPARKLE_SIGNING.md`**. The **CLI `forge` binary is not updated** by Sparkle; use [`forge-macos-arm64.zip`](https://github.com/SimonAB/forge/releases/latest/download/forge-macos-arm64.zip) or `build.sh` for that.
+**In-app updates ([Sparkle](https://sparkle-project.org/)):** once Forge is running from a proper **`Forge.app`** bundle (release install or `build.sh`), **Forge → Check for Updates…** and **automatic checks** (about once per day) use the appcast at [`docs/appcast.xml`](https://raw.githubusercontent.com/SimonAB/forge/main/docs/appcast.xml) on `main`. Sparkle downloads a signed **`Forge-macos-arm64.app.zip`** from [GitHub Releases](https://github.com/SimonAB/forge/releases) and installs it using the standard Sparkle flow (including **Install on quit** when offered). Maintainer signing setup: **`packaging/SPARKLE_SIGNING.md`**.
 
 ### Option B — `build.sh` (from source)
 
@@ -26,14 +26,15 @@ This performs the following steps:
    sync.
 2. **Swift build** — compiles the CLI (`forge`) and menu bar app
    (`forge-menubar`).
-3. **CLI symlink** — links `forge` into `/opt/homebrew/bin` (or
-   `/usr/local/bin` / `~/.local/bin`).
-4. **App bundle** — assembles `/Applications/Forge.app` with the compiled
+3. **App bundle** — assembles `/Applications/Forge.app` with the compiled
    binary, an `Info.plist`, and an optional generated icon.
-5. **Launch Agent** — installs
+4. **Launch Agent** — installs
    `~/Library/LaunchAgents/com.forge.menubar.plist` so Forge.app starts
    automatically at login.
-6. **Verification** — runs `forge --version` to confirm the install.
+5. **CLI install (optional)** — Forge.app bundles `forge` at `Contents/Resources/bin/forge`.
+   To put it on your `$PATH`, open **Forge → Preferences… → Install CLI…** and choose:
+   - `~/bin/forge` (recommended; no admin)
+   - `/usr/local/bin/forge` (admin)
 
 ### Icon generation
 
@@ -73,8 +74,6 @@ indicates urgent items:
 |------|----------|-------------|
 | **Board** | Cmd+B | Opens the native Kanban board window |
 | **Open Board in Terminal** | — | Runs `forge board` in your terminal |
-| **Board** | Cmd+B | Opens the native Kanban board window |
-| **Open Board in Terminal** | — | Runs `forge board` in your terminal |
 | **Quit Forge** | Cmd+Q | Exits Forge.app |
 | **Check for Updates…** | — | Sparkle: compares with **`docs/appcast.xml`** and offers signed **`Forge-macos-arm64.app.zip`** |
 
@@ -82,9 +81,7 @@ indicates urgent items:
 
 ## Quick capture
 
-**Cmd+Shift+N** opens a floating capture panel. Type a task and press Return.
-Use this to quickly jot down a note to process later (for example a project
-nudge, a next step, or a reminder).
+Forge no longer includes a GTD task system, so there is no quick-capture panel.
 
 ## Permissions
 
@@ -111,8 +108,9 @@ Grant access for full functionality. This is declared in the app's
 
 Forge.app searches for `config.yaml` in this order:
 
-1. `~/Documents/Forge/config.yaml`
-2. `~/Documents/Work/Projects/Forge/config.yaml`
+1. The most recently selected path via **Forge → Preferences… → Choose config…**.
+2. `~/Documents/Forge/config.yaml`
+3. `~/Documents/Work/Projects/Forge/config.yaml`
 
 The first match is used, and its parent directory becomes the Forge home
 directory.
