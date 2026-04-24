@@ -1,4 +1,5 @@
 import AppKit
+import CryptoKit
 import Foundation
 
 /// Installs the embedded `forge` CLI from inside Forge.app onto the user's PATH.
@@ -162,8 +163,12 @@ enum ForgeCliInstaller {
         var error: NSDictionary?
         let result = NSAppleScript(source: script)?.executeAndReturnError(&error)
         if let error {
-            let msg = (error[NSAppleScript.errorMessage] as? String) ?? "Authorisation failed."
-            throw InstallerError.operationFailed(msg)
+            let message = (error[NSAppleScript.errorMessage] as? String)
+                ?? "Authorisation failed."
+            if let number = error[NSAppleScript.errorNumber] as? Int {
+                throw InstallerError.operationFailed("\(message) (AppleScript error \(number))")
+            }
+            throw InstallerError.operationFailed(message)
         }
         _ = result
     }
@@ -211,9 +216,31 @@ public enum ForgeCliInstallerInternals {
         let fm = FileManager.default
         guard let a = try? fm.attributesOfItem(atPath: dest.path),
               let b = try? fm.attributesOfItem(atPath: embedded.path),
+              let atype = a[.type] as? FileAttributeType,
+              let btype = b[.type] as? FileAttributeType,
+              atype == .typeRegular,
+              btype == .typeRegular,
               let asz = a[.size] as? NSNumber,
-              let bsz = b[.size] as? NSNumber else { return false }
-        return asz.intValue == bsz.intValue
+              let bsz = b[.size] as? NSNumber,
+              asz.intValue == bsz.intValue else { return false }
+
+        guard let ah = sha256(url: dest),
+              let bh = sha256(url: embedded) else { return false }
+        return ah == bh
+    }
+
+    static func sha256(url: URL) -> Data? {
+        guard let fh = try? FileHandle(forReadingFrom: url) else { return nil }
+        defer { try? fh.close() }
+
+        var hasher = SHA256()
+        while true {
+            let chunk: Data? = (try? fh.read(upToCount: 1024 * 1024)) ?? nil
+            guard let chunk, !chunk.isEmpty else { break }
+            hasher.update(data: chunk)
+        }
+        let digest = hasher.finalize()
+        return Data(digest)
     }
 
     static func shellEscape(_ s: String) -> String {
