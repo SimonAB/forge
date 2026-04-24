@@ -179,6 +179,7 @@ private final class PreferencesGeneralView: NSView {
     private let configPath: String?
     private let config: ForgeConfig?
     private let onSaveTerminal: (String?) -> Bool
+    private weak var cliStatusLabel: NSTextField?
 
     override var isFlipped: Bool { true }
 
@@ -279,6 +280,70 @@ private final class PreferencesGeneralView: NSView {
             terminalPopUp.topAnchor.constraint(equalTo: terminalLabel.bottomAnchor, constant: 6),
             terminalPopUp.widthAnchor.constraint(greaterThanOrEqualToConstant: 200),
         ])
+
+        // CLI tools
+        let cliHeader = NSTextField(labelWithString: "Command-line tool (forge)")
+        cliHeader.font = .systemFont(ofSize: 13, weight: .semibold)
+        cliHeader.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(cliHeader)
+
+        let cliPathLabel = NSTextField(labelWithString: "Embedded CLI:")
+        cliPathLabel.font = .systemFont(ofSize: 11, weight: .regular)
+        cliPathLabel.textColor = .secondaryLabelColor
+        cliPathLabel.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(cliPathLabel)
+
+        let cliPathValue = NSTextField(labelWithString: ForgeCliInstaller.embeddedCliPathString())
+        cliPathValue.font = .monospacedSystemFont(ofSize: 11, weight: .regular)
+        cliPathValue.textColor = .secondaryLabelColor
+        cliPathValue.lineBreakMode = .byTruncatingMiddle
+        cliPathValue.maximumNumberOfLines = 1
+        cliPathValue.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(cliPathValue)
+
+        let installButton = NSButton(title: "Install CLI…", target: self, action: #selector(installCliTapped(_:)))
+        installButton.bezelStyle = .rounded
+        installButton.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(installButton)
+
+        let uninstallButton = NSButton(title: "Uninstall CLI…", target: self, action: #selector(uninstallCliTapped(_:)))
+        uninstallButton.bezelStyle = .rounded
+        uninstallButton.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(uninstallButton)
+
+        let revealButton = NSButton(title: "Reveal embedded CLI", target: self, action: #selector(revealEmbeddedCliTapped(_:)))
+        revealButton.bezelStyle = .rounded
+        revealButton.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(revealButton)
+
+        let cliStatus = NSTextField(labelWithString: "")
+        cliStatus.font = .systemFont(ofSize: 11, weight: .regular)
+        cliStatus.textColor = .secondaryLabelColor
+        cliStatus.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(cliStatus)
+        cliStatusLabel = cliStatus
+
+        NSLayoutConstraint.activate([
+            cliHeader.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            cliHeader.topAnchor.constraint(equalTo: terminalPopUp.bottomAnchor, constant: 22),
+
+            cliPathLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            cliPathLabel.topAnchor.constraint(equalTo: cliHeader.bottomAnchor, constant: 8),
+            cliPathValue.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            cliPathValue.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
+            cliPathValue.topAnchor.constraint(equalTo: cliPathLabel.bottomAnchor, constant: 4),
+
+            installButton.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            installButton.topAnchor.constraint(equalTo: cliPathValue.bottomAnchor, constant: 10),
+            uninstallButton.leadingAnchor.constraint(equalTo: installButton.trailingAnchor, constant: 12),
+            uninstallButton.centerYAnchor.constraint(equalTo: installButton.centerYAnchor),
+            revealButton.leadingAnchor.constraint(equalTo: uninstallButton.trailingAnchor, constant: 12),
+            revealButton.centerYAnchor.constraint(equalTo: installButton.centerYAnchor),
+
+            cliStatus.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            cliStatus.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
+            cliStatus.topAnchor.constraint(equalTo: installButton.bottomAnchor, constant: 8),
+        ])
     }
 
     @objc private func openConfigTapped(_ sender: NSButton) {
@@ -344,7 +409,87 @@ private final class PreferencesGeneralView: NSView {
         _ = onSaveTerminal(configValue)
     }
 
+    @objc private func revealEmbeddedCliTapped(_ sender: Any?) {
+        guard let url = ForgeCliInstaller.embeddedCliURL() else { return }
+        NSWorkspace.shared.activateFileViewerSelecting([url])
+    }
+
+    @objc private func installCliTapped(_ sender: Any?) {
+        runCliInstallFlow(isInstall: true)
+    }
+
+    @objc private func uninstallCliTapped(_ sender: Any?) {
+        runCliInstallFlow(isInstall: false)
+    }
+
+    private func runCliInstallFlow(isInstall: Bool) {
+        let alert = NSAlert()
+        alert.messageText = isInstall ? "Install forge CLI" : "Uninstall forge CLI"
+        alert.informativeText = "Choose where to \(isInstall ? "install" : "remove") the 'forge' command."
+        for t in ForgeCliInstaller.InstallTarget.allCases {
+            alert.addButton(withTitle: t.displayTitle)
+        }
+        alert.addButton(withTitle: "Cancel")
+        let resp = alert.runModal()
+
+        let target: ForgeCliInstaller.InstallTarget?
+        switch resp {
+        case .alertFirstButtonReturn: target = ForgeCliInstaller.InstallTarget.allCases[safe: 0]
+        case .alertSecondButtonReturn: target = ForgeCliInstaller.InstallTarget.allCases[safe: 1]
+        default: target = nil
+        }
+        guard let target else { return }
+
+        do {
+            if isInstall {
+                try ForgeCliInstaller.install(to: target, allowOverwrite: false)
+                showCliStatus("Installed to \(ForgeCliInstaller.destinationURL(for: target).path)", isError: false)
+            } else {
+                try ForgeCliInstaller.uninstall(from: target)
+                showCliStatus("Removed from \(ForgeCliInstaller.destinationURL(for: target).path)", isError: false)
+            }
+        } catch {
+            if isInstall,
+               let installerError = error as? ForgeCliInstaller.InstallerError,
+               case .destinationExistsButIsNotForge(let path) = installerError {
+                let overwrite = NSAlert()
+                overwrite.messageText = "A different 'forge' already exists"
+                overwrite.informativeText = "\(path) already exists and does not appear to be Forge’s embedded CLI. Overwrite it?"
+                overwrite.addButton(withTitle: "Overwrite")
+                overwrite.addButton(withTitle: "Cancel")
+                if overwrite.runModal() == .alertFirstButtonReturn {
+                    do {
+                        try ForgeCliInstaller.install(to: target, allowOverwrite: true)
+                        showCliStatus("Installed to \(ForgeCliInstaller.destinationURL(for: target).path)", isError: false)
+                    } catch {
+                        let msg = (error as? ForgeCliInstaller.InstallerError)?.description ?? error.localizedDescription
+                        showCliStatus(msg, isError: true)
+                    }
+                }
+                return
+            }
+            let msg = (error as? ForgeCliInstaller.InstallerError)?.description ?? error.localizedDescription
+            showCliStatus(msg, isError: true)
+        }
+    }
+
+    private func showCliStatus(_ message: String, isError: Bool) {
+        cliStatusLabel?.stringValue = message
+        cliStatusLabel?.textColor = isError ? .systemRed : .secondaryLabelColor
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4) { [weak self] in
+            self?.cliStatusLabel?.stringValue = ""
+            self?.cliStatusLabel?.textColor = .secondaryLabelColor
+        }
+    }
+
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+}
+
+private extension Array {
+    subscript(safe index: Int) -> Element? {
+        guard indices.contains(index) else { return nil }
+        return self[index]
+    }
 }
 
 // MARK: - Board panel

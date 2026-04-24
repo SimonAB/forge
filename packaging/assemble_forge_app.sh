@@ -27,6 +27,12 @@ if [[ ! -f "$MENUBAR_BIN" ]]; then
   exit 1
 fi
 
+FORGE_CLI_BIN="$BIN_DIR/forge"
+if [[ ! -f "$FORGE_CLI_BIN" ]]; then
+  echo "error: forge CLI not found at $FORGE_CLI_BIN" >&2
+  exit 1
+fi
+
 VERSION_FILE="$FORGE_DIR/Sources/ForgeCore/Version.swift"
 if [[ ! -f "$VERSION_FILE" ]]; then
   echo "error: Version.swift not found at $VERSION_FILE" >&2
@@ -54,12 +60,16 @@ fi
 CONTENTS="$OUTPUT_APP/Contents"
 MACOS_DIR="$CONTENTS/MacOS"
 RESOURCES="$CONTENTS/Resources"
+TOOLS_DIR="$RESOURCES/bin"
 
 rm -rf "$OUTPUT_APP"
-mkdir -p "$MACOS_DIR" "$RESOURCES"
+mkdir -p "$MACOS_DIR" "$RESOURCES" "$TOOLS_DIR"
 
 cp "$MENUBAR_BIN" "$MACOS_DIR/Forge"
 chmod +x "$MACOS_DIR/Forge"
+
+cp "$FORGE_CLI_BIN" "$TOOLS_DIR/forge"
+chmod +x "$TOOLS_DIR/forge"
 
 cp -R "$SPARKLE_SRC" "$MACOS_DIR/"
 
@@ -86,8 +96,6 @@ cat > "$CONTENTS/Info.plist" << PLIST
     <string>APPL</string>
     <key>LSMinimumSystemVersion</key>
     <string>14.0</string>
-    <key>NSRemindersUsageDescription</key>
-    <string>Forge syncs tasks with Reminders.</string>
     <key>NSCalendarsUsageDescription</key>
     <string>Forge can read your Calendar to show upcoming events in the CLI.</string>
     <key>NSAppleEventsUsageDescription</key>

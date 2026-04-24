@@ -4,6 +4,20 @@ The `forge` command-line tool manages your kanban board from the terminal,
 operating directly on your project folders and their **Finder tags**. There are
 no remote services; commands read and write only local state.
 
+## Installing the CLI
+
+Forge bundles the `forge` binary inside **Forge.app** at `Contents/Resources/bin/forge`.
+
+To put `forge` on your `$PATH`:
+
+1. Open **Forge → Preferences…**
+2. Under **Command-line tool (forge)**, click **Install CLI…**
+3. Choose:
+   - `~/bin` (no admin), or
+   - `/usr/local/bin` (admin)
+
+To remove it later, use **Uninstall CLI…** in the same Preferences section.
+
 ```
 forge <command> [options]
 ```
@@ -92,7 +106,7 @@ for **`forge calendar`** — use whichever you prefer.
 
 List upcoming events from **Apple Calendar** (read-only). **`forge events`** is an alias for **`forge calendar`** — use whichever you prefer. By default the window is the **next 7 days** from the start of today (local timezone).
 
-Uses EventKit on your Mac; nothing is written to Calendar. Optional `gtd.calendar_include` in
+Uses EventKit on your Mac; nothing is written to Calendar. Optional `calendar.include` in
 `config.yaml` restricts which calendar **titles** are read (exact match); if
 empty or omitted, all event calendars are used.
 

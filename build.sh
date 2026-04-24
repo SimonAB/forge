@@ -58,29 +58,7 @@ fi
 echo ""
 echo "✓ Build complete"
 
-# 3. Symlink binaries to PATH
-if [ -d /opt/homebrew/bin ]; then
-    BIN_DIR=/opt/homebrew/bin
-elif [ -d /usr/local/bin ]; then
-    BIN_DIR=/usr/local/bin
-else
-    BIN_DIR="$HOME/.local/bin"
-    mkdir -p "$BIN_DIR"
-fi
-
-ln -sf "$BIN_PATH/forge" "$BIN_DIR/forge"
-echo "✓ Symlinked forge → $BIN_DIR/forge"
-
-case ":$PATH:" in
-    *":$BIN_DIR:"*)
-        ;;
-    *)
-        echo "Note: $BIN_DIR is not currently in your PATH."
-        echo "Add it to your shell configuration so 'forge' is available from any terminal."
-        ;;
-esac
-
-# 4. Create Forge.app bundle in /Applications
+# 3. Create Forge.app bundle in /Applications (includes embedded forge CLI)
 APP_DIR="/Applications/Forge.app"
 "$FORGE_DIR/packaging/assemble_forge_app.sh" "$FORGE_DIR" "$BIN_PATH" "$APP_DIR"
 
@@ -94,7 +72,7 @@ fi
 
 echo "✓ Installed Forge.app → /Applications/Forge.app"
 
-# 5. Install Launch Agent for auto-start at login
+# 4. Optional: install Launch Agent for auto-start at login
 cat > "$LAUNCH_AGENT" << 'LAEOF'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -122,15 +100,11 @@ launchctl unload "$LAUNCH_AGENT" 2>/dev/null || true
 launchctl load "$LAUNCH_AGENT"
 echo "✓ Installed Launch Agent (Forge.app starts at login)"
 
-# 6. Verify
+# 5. Verify
 echo ""
 echo "Verifying..."
-forge --version
+echo "Tip: to install the 'forge' CLI on your PATH, open Forge → Preferences → Install CLI…"
 echo ""
 echo "Done. Forge is ready on this Mac."
 echo ""
-echo "  forge board       — kanban board"
-echo "  forge next        — next actions"
-echo "  forge sync        — sync with Reminders + Calendar"
-echo "  forge review      — weekly review"
-echo "  forge --help      — all commands"
+echo "  Forge.app → Preferences → Install CLI…"

@@ -205,11 +205,12 @@ source with <code>build.sh</code>. Developers syncing source via iCloud typicall
 <pre><code class="language-bash"># On a fresh Mac where Forge source has synced via iCloud Drive:
 zsh ~/Documents/Forge/build.sh
 </code></pre>
-<p>This builds the Swift project, installs the <code>forge</code> binary, creates
-<code>/Applications/Forge.app</code>, and registers a Launch Agent so the menu bar app
-starts at login. The script only touches the Forge source directory,
-<code>~/.forge-build</code>, and your local application and binary folders; it never sends
-any data off your Mac. See <a href="app.html#setup">setup details</a>.</p>
+<p>This builds the Swift project, creates <code>/Applications/Forge.app</code>, and registers
+a Launch Agent so the menu bar app starts at login. To put <code>forge</code> on your
+terminal <code>$PATH</code>, use <strong>Forge → Preferences… → Install CLI…</strong>. The script only
+touches the Forge source directory, <code>~/.forge-build</code>, and your local
+application folders; it never sends any data off your Mac. See
+<a href="app.html#setup">setup details</a>.</p>
 <h3>Requirements</h3>
 <ul>
 <li>macOS 14 or later.</li>
