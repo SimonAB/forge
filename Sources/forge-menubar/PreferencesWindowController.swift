@@ -49,6 +49,11 @@ final class PreferencesWindowController: NSWindowController {
         boardItem.view = PreferencesBoardView(metaTags: config?.board.metaTags ?? [])
         tabView.addTabViewItem(boardItem)
 
+        let briefItem = NSTabViewItem(identifier: "brief")
+        briefItem.label = "Brief"
+        briefItem.view = PreferencesBriefView(configPath: configPath, config: config)
+        tabView.addTabViewItem(briefItem)
+
         let workspaceItem = NSTabViewItem(identifier: "workspace")
         workspaceItem.label = "Workspace"
         workspaceItem.view = PreferencesWorkspaceView(
