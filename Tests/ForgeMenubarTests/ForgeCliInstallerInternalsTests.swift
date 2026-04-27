@@ -24,5 +24,55 @@ struct ForgeCliInstallerInternalsTests {
         #expect(lit.contains("\\\""))
         #expect(lit.contains("\\\\"))
     }
+
+    @Test("isIdenticalFile accepts identical regular files")
+    func identicalFilesMatch() throws {
+        let dir = try makeTemporaryDirectory()
+        let a = dir.appendingPathComponent("a")
+        let b = dir.appendingPathComponent("b")
+        try Data("same content".utf8).write(to: a)
+        try Data("same content".utf8).write(to: b)
+
+        #expect(ForgeCliInstallerInternals.isIdenticalFile(destination: a, embedded: b))
+    }
+
+    @Test("isIdenticalFile rejects same-size different files")
+    func sameSizeDifferentFilesDoNotMatch() throws {
+        let dir = try makeTemporaryDirectory()
+        let a = dir.appendingPathComponent("a")
+        let b = dir.appendingPathComponent("b")
+        try Data("abc123".utf8).write(to: a)
+        try Data("xyz789".utf8).write(to: b)
+
+        #expect(!ForgeCliInstallerInternals.isIdenticalFile(destination: a, embedded: b))
+    }
+
+    @Test("isIdenticalFile rejects non-regular files")
+    func nonRegularFilesDoNotMatch() throws {
+        let dir = try makeTemporaryDirectory()
+        let file = dir.appendingPathComponent("forge")
+        let subdir = dir.appendingPathComponent("folder")
+        try Data("content".utf8).write(to: file)
+        try FileManager.default.createDirectory(at: subdir, withIntermediateDirectories: true)
+
+        #expect(!ForgeCliInstallerInternals.isIdenticalFile(destination: subdir, embedded: file))
+    }
+
+    @Test("sha256 hashes identical file content consistently")
+    func sha256HashesContent() throws {
+        let dir = try makeTemporaryDirectory()
+        let a = dir.appendingPathComponent("a")
+        let b = dir.appendingPathComponent("b")
+        try Data("hash me".utf8).write(to: a)
+        try Data("hash me".utf8).write(to: b)
+
+        #expect(ForgeCliInstallerInternals.sha256(url: a) == ForgeCliInstallerInternals.sha256(url: b))
+    }
+
+    private func makeTemporaryDirectory() throws -> URL {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        return url
+    }
 }
 

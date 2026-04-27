@@ -431,18 +431,15 @@ private final class PreferencesGeneralView: NSView {
         let alert = NSAlert()
         alert.messageText = isInstall ? "Install forge CLI" : "Uninstall forge CLI"
         alert.informativeText = "Choose where to \(isInstall ? "install" : "remove") the 'forge' command."
-        for t in ForgeCliInstaller.InstallTarget.allCases {
-            alert.addButton(withTitle: t.displayTitle)
+        let targets = Array(ForgeCliInstaller.InstallTarget.allCases)
+        for target in targets {
+            alert.addButton(withTitle: target.title(isInstall: isInstall))
         }
         alert.addButton(withTitle: "Cancel")
         let resp = alert.runModal()
 
-        let target: ForgeCliInstaller.InstallTarget?
-        switch resp {
-        case .alertFirstButtonReturn: target = ForgeCliInstaller.InstallTarget.allCases[safe: 0]
-        case .alertSecondButtonReturn: target = ForgeCliInstaller.InstallTarget.allCases[safe: 1]
-        default: target = nil
-        }
+        let selectedIndex = resp.rawValue - NSApplication.ModalResponse.alertFirstButtonReturn.rawValue
+        let target = targets[safe: selectedIndex]
         guard let target else { return }
 
         do {

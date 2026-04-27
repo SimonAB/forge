@@ -103,6 +103,12 @@ echo "✓ Installed Launch Agent (Forge.app starts at login)"
 # 5. Verify
 echo ""
 echo "Verifying..."
+EMBEDDED_CLI="$APP_DIR/Contents/Resources/bin/forge"
+if [ ! -x "$EMBEDDED_CLI" ]; then
+    echo "Error: embedded forge CLI is missing or not executable at $EMBEDDED_CLI" >&2
+    exit 1
+fi
+"$EMBEDDED_CLI" --version
 echo "Tip: to install the 'forge' CLI on your PATH, open Forge → Preferences → Install CLI…"
 echo ""
 echo "Done. Forge is ready on this Mac."
