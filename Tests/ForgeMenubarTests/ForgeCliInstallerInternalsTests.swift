@@ -66,7 +66,15 @@ struct ForgeCliInstallerInternalsTests {
         try Data("hash me".utf8).write(to: a)
         try Data("hash me".utf8).write(to: b)
 
-        #expect(ForgeCliInstallerInternals.sha256(url: a) == ForgeCliInstallerInternals.sha256(url: b))
+        let hashA = ForgeCliInstallerInternals.sha256(url: a)
+        let hashB = ForgeCliInstallerInternals.sha256(url: b)
+
+        guard let hashA, let hashB else {
+            Issue.record("Expected sha256(url:) to return a hash for both files")
+            return
+        }
+
+        #expect(hashA == hashB)
     }
 
     private func makeTemporaryDirectory() throws -> URL {
@@ -75,4 +83,3 @@ struct ForgeCliInstallerInternalsTests {
         return url
     }
 }
-
