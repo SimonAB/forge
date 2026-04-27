@@ -11,7 +11,7 @@
 #
 # Environment:
 #   SIGN_IDENTITY            (required) Developer ID Application identity name
-#   TEAM_ID                  (optional) Used by notarytool if not configured in keychain profile
+#   TEAM_ID                  (optional) Passed to notarytool as --team-id
 #   NOTARY_PROFILE           (optional) notarytool keychain profile name (recommended)
 #   NOTARISE                 (optional) set to 1 to notarise + staple
 #
@@ -66,7 +66,13 @@ echo "Signing Forge.app..."
 codesign --force --options runtime --timestamp --deep --sign "$SIGN_IDENTITY" "$APP_DIR"
 codesign --verify --deep --strict "$APP_DIR"
 
-ZIP_PATH="$OUT_DIR/Forge-macos-arm64.app.zip"
+HOST_ARCH="$(uname -m)"
+case "$HOST_ARCH" in
+  arm64) ZIP_ARCH="arm64" ;;
+  x86_64) ZIP_ARCH="x86_64" ;;
+  *) ZIP_ARCH="$HOST_ARCH" ;;
+esac
+ZIP_PATH="$OUT_DIR/Forge-macos-$ZIP_ARCH.app.zip"
 echo "Creating zip: $ZIP_PATH"
 rm -f "$ZIP_PATH"
 cd "$OUT_DIR"
@@ -74,10 +80,14 @@ zip -r -y "$ZIP_PATH" "Forge.app"
 
 if [[ "${NOTARISE:-0}" == "1" ]]; then
   echo "Notarising (this may take a while)..."
+  TEAM_ARGS=()
+  if [[ -n "${TEAM_ID:-}" ]]; then
+    TEAM_ARGS=(--team-id "$TEAM_ID")
+  fi
   if [[ -n "${NOTARY_PROFILE:-}" ]]; then
-    xcrun notarytool submit "$ZIP_PATH" --keychain-profile "$NOTARY_PROFILE" --wait
+    xcrun notarytool submit "$ZIP_PATH" --keychain-profile "$NOTARY_PROFILE" "${TEAM_ARGS[@]}" --wait
   else
-    xcrun notarytool submit "$ZIP_PATH" --wait
+    xcrun notarytool submit "$ZIP_PATH" "${TEAM_ARGS[@]}" --wait
   fi
   echo "Stapling notarisation ticket..."
   xcrun stapler staple "$APP_DIR"

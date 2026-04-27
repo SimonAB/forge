@@ -13,9 +13,15 @@ enum ForgeCliInstaller {
         case usrLocalBin
 
         var displayTitle: String {
+            title(isInstall: true)
+        }
+
+        func title(isInstall: Bool) -> String {
             switch self {
-            case .userBin: return "Install to ~/bin (recommended)"
-            case .usrLocalBin: return "Install to /usr/local/bin (admin)"
+            case .userBin:
+                return isInstall ? "Install to ~/bin (recommended)" : "Remove from ~/bin"
+            case .usrLocalBin:
+                return isInstall ? "Install to /usr/local/bin (admin)" : "Remove from /usr/local/bin"
             }
         }
     }
@@ -101,18 +107,24 @@ enum ForgeCliInstaller {
             guard allowOverwrite || pointsToEmbeddedCli(destination: dest, embedded: embedded) || isIdenticalFile(destination: dest, embedded: embedded) else {
                 throw InstallerError.destinationExistsButIsNotForge(dest.path)
             }
-            try? fm.removeItem(at: dest)
+            do {
+                try fm.removeItem(at: dest)
+            } catch {
+                throw InstallerError.operationFailed("Could not remove existing \(dest.path): \(error.localizedDescription)")
+            }
         }
 
         do {
             try fm.createSymbolicLink(at: dest, withDestinationURL: embedded)
-        } catch {
+        } catch let symlinkError {
             // Fall back to copy.
             do {
                 try fm.copyItem(at: embedded, to: dest)
                 try fm.setAttributes([.posixPermissions: 0o755], ofItemAtPath: dest.path)
-            } catch {
-                throw InstallerError.operationFailed("Could not install forge to \(dest.path).")
+            } catch let copyError {
+                throw InstallerError.operationFailed(
+                    "Could not install forge to \(dest.path): symlink failed (\(symlinkError.localizedDescription)); copy failed (\(copyError.localizedDescription))."
+                )
             }
         }
     }
@@ -161,7 +173,10 @@ enum ForgeCliInstaller {
         do shell script \(appleScriptStringLiteral(command)) with administrator privileges with prompt \(appleScriptStringLiteral(prompt))
         """
         var error: NSDictionary?
-        let result = NSAppleScript(source: script)?.executeAndReturnError(&error)
+        guard let appleScript = NSAppleScript(source: script) else {
+            throw InstallerError.operationFailed("Could not compile privileged installer script.")
+        }
+        _ = appleScript.executeAndReturnError(&error)
         if let error {
             let message = (error[NSAppleScript.errorMessage] as? String)
                 ?? "Authorisation failed."
@@ -170,7 +185,6 @@ enum ForgeCliInstaller {
             }
             throw InstallerError.operationFailed(message)
         }
-        _ = result
     }
 
     // MARK: - Identification
