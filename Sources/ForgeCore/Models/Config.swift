@@ -189,7 +189,7 @@ public struct GTDConfig: Codable, Sendable {
 
 /// Top-level forge configuration, loaded from config.yaml.
 public struct ForgeConfig: Codable, Sendable {
-    /// Paths whose direct children are Forge projects. At least one is expected.
+    /// Paths under which Forge searches for project folders. At least one is expected.
     /// Decodes from `project_roots`; if absent, falls back to legacy `workspace` (single path).
     public let projectRoots: [String]
     public let board: BoardConfig
@@ -203,6 +203,10 @@ public struct ForgeConfig: Codable, Sendable {
 
     /// If set, only directories that have this Finder tag are treated as Forge projects.
     public let projectTag: String?
+
+    /// How many directory levels under each `project_root` to search for projects.
+    /// `1` = direct children only (default). `2` = also search inside untagged grouping folders.
+    public let projectScanDepth: Int
 
     public enum DueConflictPolicy: String, Codable, Sendable, CaseIterable {
         case reminders
@@ -220,6 +224,7 @@ public struct ForgeConfig: Codable, Sendable {
         case projectAreas = "project_areas"
         case terminal
         case projectTag = "project_tag"
+        case projectScanDepth = "project_scan_depth"
         case dueConflictPolicy = "due_conflict_policy"
     }
 
@@ -233,6 +238,7 @@ public struct ForgeConfig: Codable, Sendable {
         try container.encode(projectAreas, forKey: .projectAreas)
         try container.encodeIfPresent(terminal, forKey: .terminal)
         try container.encodeIfPresent(projectTag, forKey: .projectTag)
+        try container.encode(projectScanDepth, forKey: .projectScanDepth)
         try container.encode(dueConflictPolicy, forKey: .dueConflictPolicy)
     }
 
@@ -245,6 +251,7 @@ public struct ForgeConfig: Codable, Sendable {
         projectAreas: [String: [String]] = [:],
         terminal: String? = nil,
         projectTag: String? = nil,
+        projectScanDepth: Int = 1,
         dueConflictPolicy: DueConflictPolicy = .newest
     ) {
         self.projectRoots = projectRoots
@@ -255,6 +262,7 @@ public struct ForgeConfig: Codable, Sendable {
         self.projectAreas = projectAreas
         self.terminal = terminal
         self.projectTag = projectTag
+        self.projectScanDepth = max(1, projectScanDepth)
         self.dueConflictPolicy = dueConflictPolicy
     }
 
@@ -263,9 +271,14 @@ public struct ForgeConfig: Codable, Sendable {
         resolvedProjectRoots.first ?? ""
     }
 
-    /// Paths to scan for projects (direct children = projects). Expands `~`.
+    /// Paths to scan for projects. Expands `~`. Depth is controlled by `projectScanDepth`.
     public var resolvedProjectRoots: [String] {
         projectRoots.map { ($0 as NSString).expandingTildeInPath }
+    }
+
+    /// Effective scan depth (at least 1).
+    public var resolvedProjectScanDepth: Int {
+        max(1, projectScanDepth)
     }
 
     /// Look up the column for a given Finder tag, resolving aliases first.
@@ -301,6 +314,7 @@ extension ForgeConfig {
         }
         terminal = try container.decodeIfPresent(String.self, forKey: .terminal)
         projectTag = try container.decodeIfPresent(String.self, forKey: .projectTag)
+        projectScanDepth = max(1, try container.decodeIfPresent(Int.self, forKey: .projectScanDepth) ?? 1)
         workspaceTags = try container.decodeIfPresent([String].self, forKey: .workspaceTags) ?? ["work"]
         projectAreas = try container.decodeIfPresent([String: [String]].self, forKey: .projectAreas) ?? [:]
         dueConflictPolicy = try container.decodeIfPresent(DueConflictPolicy.self, forKey: .dueConflictPolicy) ?? .newest
@@ -336,8 +350,8 @@ extension ForgeConfig {
 
                 columns: [
                     ColumnConfig(name: "Plan", tag: "Plan 📐", colour: 4),    // Blue
-                    ColumnConfig(name: "Active", tag: "Active 🚧", colour: 2),  // Green
-                    ColumnConfig(name: "Analyse", tag: "Analyse 🔍", colour: 5), // Yellow
+                    ColumnConfig(name: "Watch", tag: "Watch 👁️", colour: 2),  // Green
+                    ColumnConfig(name: "Coding", tag: "Coding 🤖", colour: 5), // Yellow
                     ColumnConfig(name: "Write", tag: "Write ✒️", colour: 6),   // Orange
                     ColumnConfig(name: "Review", tag: "Review 🖍️", colour: 7),  // Red
                     ColumnConfig(name: "Shipped", tag: "Shipped 🚀", colour: 3), // Purple
@@ -345,7 +359,9 @@ extension ForgeConfig {
                 ],
                 metaTags: ["URGENT ⚠️", "Collab 🤝", "Student 🎓"],
                 tagAliases: [
-                    "active 🚧": "Active 🚧",
+                    "Active": "Watch 👁️",
+                    "active 🚧": "Watch 👁️",
+                    "watch 👁️": "Watch 👁️",
                     "Plan ☼": "Plan 📐",
                     "Plan 💡": "Plan 📐",
                     "Review 📝": "Review 🖍️",
@@ -353,7 +369,8 @@ extension ForgeConfig {
                     "paused ⏸️": "Paused ⏸️",
                     "Paused ⏸": "Paused ⏸️",
                     "Paused ⏸︎": "Paused ⏸️",  // text-style variation (U+FE0E)
-                    "3. Analyse 🔍": "Analyse 🔍",
+                    "Analyse 🔍": "Coding 🤖",
+                    "3. Analyse 🔍": "Coding 🤖",
                     "4. Write ✒️": "Write ✒️",
                 ]
             ),

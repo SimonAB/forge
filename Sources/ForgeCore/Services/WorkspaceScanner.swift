@@ -12,31 +12,22 @@ public struct WorkspaceScanner: Sendable {
     }
 
     /// Scan the workspace and return all project directories as Project values.
-    /// Scans direct children of each project root only. When project_tag is set, only those children with that tag are included.
+    /// Respects `project_scan_depth` on the config (default: direct children only).
+    /// When `project_tag` is set, only directories with that tag qualify; untagged folders
+    /// at intermediate levels are treated as grouping containers and their children are scanned.
     /// Skips hidden directories (starting with '.') and build artefacts.
     public func scanProjects() throws -> [Project] {
         let fm = FileManager.default
         var projects: [Project] = []
 
         for workspacePath in config.resolvedProjectRoots {
-            guard let contents = try? fm.contentsOfDirectory(atPath: workspacePath) else { continue }
-
-            for item in contents.sorted() {
-                guard !item.hasPrefix(".") else { continue }
-
-                let fullPath = (workspacePath as NSString).appendingPathComponent(item)
-                var isDir: ObjCBool = false
-                guard fm.fileExists(atPath: fullPath, isDirectory: &isDir), isDir.boolValue else {
-                    continue
-                }
-
-                let tags = tagStore.readTagsIfAvailable(at: fullPath) ?? []
-                if let requiredTag = config.projectTag, !tags.contains(requiredTag) {
-                    continue
-                }
-                let project = classify(name: item, path: fullPath, tags: tags)
-                projects.append(project)
-            }
+            try collectProjects(
+                at: workspacePath,
+                remainingDepth: config.resolvedProjectScanDepth,
+                fileManager: fm,
+                tagReader: { path in tagStore.readTagsIfAvailable(at: path) ?? [] },
+                into: &projects
+            )
         }
 
         return projects
@@ -48,27 +39,91 @@ public struct WorkspaceScanner: Sendable {
         var projects: [Project] = []
 
         for workspacePath in config.resolvedProjectRoots {
-            guard let contents = try? fm.contentsOfDirectory(atPath: workspacePath) else { continue }
-
-            for item in contents.sorted() {
-                guard !item.hasPrefix(".") else { continue }
-
-                let fullPath = (workspacePath as NSString).appendingPathComponent(item)
-                var isDir: ObjCBool = false
-                guard fm.fileExists(atPath: fullPath, isDirectory: &isDir), isDir.boolValue else {
-                    continue
-                }
-
-                let tags = await tagStore.readTagsIfAvailable(at: fullPath) ?? []
-                if let requiredTag = config.projectTag, !tags.contains(requiredTag) {
-                    continue
-                }
-                let project = classify(name: item, path: fullPath, tags: tags)
-                projects.append(project)
-            }
+            try await collectProjects(
+                at: workspacePath,
+                remainingDepth: config.resolvedProjectScanDepth,
+                fileManager: fm,
+                tagReader: { path in await tagStore.readTagsIfAvailable(at: path) ?? [] },
+                into: &projects
+            )
         }
 
         return projects
+    }
+
+    private func collectProjects(
+        at directoryPath: String,
+        remainingDepth: Int,
+        fileManager: FileManager,
+        tagReader: (String) -> [String],
+        into projects: inout [Project]
+    ) throws {
+        guard remainingDepth > 0 else { return }
+        guard let contents = try? fileManager.contentsOfDirectory(atPath: directoryPath) else { return }
+
+        for item in contents.sorted() {
+            guard !item.hasPrefix(".") else { continue }
+
+            let fullPath = (directoryPath as NSString).appendingPathComponent(item)
+            var isDir: ObjCBool = false
+            guard fileManager.fileExists(atPath: fullPath, isDirectory: &isDir), isDir.boolValue else {
+                continue
+            }
+
+            let tags = tagReader(fullPath)
+            if qualifiesAsProject(tags: tags) {
+                let project = classify(name: item, path: fullPath, tags: tags)
+                projects.append(project)
+            } else if remainingDepth > 1 {
+                try collectProjects(
+                    at: fullPath,
+                    remainingDepth: remainingDepth - 1,
+                    fileManager: fileManager,
+                    tagReader: tagReader,
+                    into: &projects
+                )
+            }
+        }
+    }
+
+    private func collectProjects(
+        at directoryPath: String,
+        remainingDepth: Int,
+        fileManager: FileManager,
+        tagReader: (String) async -> [String],
+        into projects: inout [Project]
+    ) async throws {
+        guard remainingDepth > 0 else { return }
+        guard let contents = try? fileManager.contentsOfDirectory(atPath: directoryPath) else { return }
+
+        for item in contents.sorted() {
+            guard !item.hasPrefix(".") else { continue }
+
+            let fullPath = (directoryPath as NSString).appendingPathComponent(item)
+            var isDir: ObjCBool = false
+            guard fileManager.fileExists(atPath: fullPath, isDirectory: &isDir), isDir.boolValue else {
+                continue
+            }
+
+            let tags = await tagReader(fullPath)
+            if qualifiesAsProject(tags: tags) {
+                let project = classify(name: item, path: fullPath, tags: tags)
+                projects.append(project)
+            } else if remainingDepth > 1 {
+                try await collectProjects(
+                    at: fullPath,
+                    remainingDepth: remainingDepth - 1,
+                    fileManager: fileManager,
+                    tagReader: tagReader,
+                    into: &projects
+                )
+            }
+        }
+    }
+
+    private func qualifiesAsProject(tags: [String]) -> Bool {
+        guard let requiredTag = config.projectTag else { return true }
+        return tags.contains(requiredTag)
     }
 
     /// Classify a directory's tags into workflow column and meta tags.

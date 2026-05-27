@@ -21,7 +21,7 @@ struct ProjectFolderTagPolicyTests {
 
     @Test("Workflow column tag is workflowColumn")
     func columnNotManaged() {
-        #expect(ProjectFolderTagPolicy.validationResult(tag: "Active 🚧", config: config) == .workflowColumn)
+        #expect(ProjectFolderTagPolicy.validationResult(tag: "Watch 👁️", config: config) == .workflowColumn)
     }
 
     @Test("Random tag is unrecognized")

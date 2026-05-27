@@ -110,6 +110,7 @@ final class PreferencesWindowController: NSWindowController {
             projectAreas: current.projectAreas,
             terminal: current.terminal,
             projectTag: current.projectTag,
+            projectScanDepth: current.projectScanDepth,
             dueConflictPolicy: current.dueConflictPolicy
         )
         do {
@@ -133,6 +134,7 @@ final class PreferencesWindowController: NSWindowController {
             projectAreas: current.projectAreas,
             terminal: terminal,
             projectTag: current.projectTag,
+            projectScanDepth: current.projectScanDepth,
             dueConflictPolicy: current.dueConflictPolicy
         )
         do {

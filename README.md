@@ -160,7 +160,8 @@ tag** (visible in Finder and readable by Spotlight).
 Start from [`config.sample.yaml`](config.sample.yaml) and copy it to
 `config.yaml`, then adjust paths and names to match your setup. Key sections:
 
-- **`workspace`** — path to the directory containing project folders.
+- **`project_roots`** — one or more directories whose subfolders are Forge projects (legacy `workspace` still supported).
+- **`project_scan_depth`** — how many levels to scan under each root (`1` = direct children only; `2` = also inside untagged grouping folders).
 - **`board.columns`** — ordered kanban columns, each mapped to a Finder tag.
 - **`board.meta_tags`** — supplementary tags (e.g. Collab, Student, URGENT), used for per-project flags and for the board's Radar view.
 - **`terminal`** — preferred terminal app (`auto`, `iTerm`, `Terminal.app`).

@@ -11,7 +11,7 @@ struct MoveCommand: AsyncParsableCommand {
     @Argument(help: "Project directory name (or a unique substring).")
     var project: String
 
-    @Argument(help: "Target column name (e.g. Active, Analyse, Write, Review, Shipped, Paused, Plan).")
+    @Argument(help: "Target column name (e.g. Watch, Coding, Write, Review, Shipped, Paused, Plan).")
     var targetColumn: String
 
     mutating func run() async throws {

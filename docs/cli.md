@@ -143,7 +143,7 @@ forge move <project> <column>
 | Argument | Description |
 |----------|-------------|
 | `project` | Project directory name or unique substring |
-| `column` | Target column name: Plan, Active, Analyse, Write, Review, Shipped, Paused |
+| `column` | Target column name: Plan, Watch, Coding, Write, Review, Shipped, Paused |
 
 Both arguments support prefix matching (e.g. `act` matches `Active`).
 
@@ -200,12 +200,17 @@ forge status
 
 ## Configuration: project roots
 
-Set **`project_roots`** to a list of paths. Each path’s direct children are
-scanned as Forge projects (and filtered by `project_tag` if set). The first
-path is used as the primary workspace (e.g. for resolving the Forge directory
-when not found via config location).
+Set **`project_roots`** to a list of paths. Forge scans each root for project
+folders up to **`project_scan_depth`** levels (default `1` = direct children only).
+The first path is used as the primary workspace (e.g. for resolving the Forge
+directory when not found via config location).
 
-When **`project_tag`** is set (e.g. `"🔥 Forge"`), only direct children of each root that have that tag are included. Add multiple roots (e.g. `~/Documents/Sanctum`) to include more top-level project folders.
+When **`project_tag`** is set (e.g. `"🔥 Forge"`), only directories with that
+tag qualify as projects. With **`project_scan_depth: 2`**, untagged folders under
+a root act as grouping containers: Forge scans inside them for tagged subfolders
+(e.g. `Projects/Viruses-ViralHostPredictor/VHP2_manuscript`). A tagged folder is
+not scanned further (it is treated as the project). Add multiple roots (e.g.
+`~/Documents/Sanctum`) to include more top-level project folders.
 
 **Example:**
 
@@ -214,6 +219,7 @@ project_roots:
   - ~/Documents/Work/Projects
   - ~/Documents/Sanctum
   - ~/Documents/Home
+project_scan_depth: 1     # use 2 for one level of grouping folders
 project_tag: "🔥 Forge"   # only folders with this tag are projects
 ```
 

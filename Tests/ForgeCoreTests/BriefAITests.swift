@@ -63,13 +63,13 @@ struct BriefAITests {
         let cfg = ForgeConfig.defaultConfig(projectRoots: [root.path])
         let applier = BriefProposalApplier(config: cfg)
 
-        let move = BriefProposal(kind: .move, projectPath: project.path, columnName: "Active", tag: nil, why: "Test")
+        let move = BriefProposal(kind: .move, projectPath: project.path, columnName: "Watch", tag: nil, why: "Test")
         let addUrgent = BriefProposal(kind: .tagAdd, projectPath: project.path, columnName: nil, tag: "URGENT ⚠️", why: "Test")
         _ = try applier.apply([move, addUrgent])
 
         let tagStore = FinderTagStore()
         let tags = try tagStore.readTags(at: project.path)
-        #expect(tags.contains("Active 🚧"))
+        #expect(tags.contains("Watch 👁️"))
         #expect(tags.contains("URGENT ⚠️"))
     }
 }

@@ -116,7 +116,8 @@ language models</strong>, for step-by-step notes and links).</p>
 <li><code>config.yaml</code> – Forge configuration.</li>
 <li><strong>Project roots</strong>:</li>
 <li>One or more directories (configured in <code>config.yaml</code>) under which Forge looks for project folders.</li>
-<li>Each direct child folder is a project; its Finder tags carry the workflow column and any meta/assignee tags.</li>
+<li>By default (<code>project_scan_depth: 1</code>), each direct child folder is a project. With <code>project_scan_depth: 2</code>, Forge also scans inside untagged grouping folders for tagged subfolders.</li>
+<li>Finder tags on each project folder carry the workflow column and any meta/assignee tags.</li>
 <li><strong>Privacy</strong>:</li>
 <li>There are no Forge-hosted services: your project data stays on disk as ordinary folders and Finder tags.</li>
 </ul>
@@ -166,6 +167,7 @@ language models</strong>, for step-by-step notes and links).</p>
 <ul>
 <li><strong>Projects missing from the board</strong>:</li>
 <li>Check <code>config.yaml</code> to ensure your <code>project_roots</code> point at the correct workspace directories.</li>
+<li>If the project lives inside a grouping folder, set <code>project_scan_depth: 2</code> or add the grouping folder as its own <code>project_root</code>.</li>
 <li>
 <p>If <code>project_tag</code> is set, ensure the project folder carries that Finder tag.</p>
 </li>

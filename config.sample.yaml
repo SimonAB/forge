@@ -2,16 +2,20 @@ project_roots:
   - ~/Documents/Work/Projects
   - ~/Documents/Home
 
+# How many folder levels under each project_root to scan (default: 1 = direct children only).
+# Use 2 when projects live inside grouping folders (e.g. Projects/MyGroup/VHP2_manuscript).
+project_scan_depth: 1
+
 board:
   columns:
     - name: Plan
       tag: "Plan 📐"
       colour: 4
-    - name: Active
-      tag: "Active 🚧"
+    - name: Watch
+      tag: "Watch 👁️"
       colour: 2
-    - name: Analyse
-      tag: "Analyse 🔍"
+    - name: Coding
+      tag: "Coding 🤖"
       colour: 5
     - name: Write
       tag: "Write ✒️"

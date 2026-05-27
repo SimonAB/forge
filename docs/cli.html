@@ -267,7 +267,7 @@ forge calendar --json       # Structured output for assistants
 </tr>
 <tr>
 <td><code>column</code></td>
-<td>Target column name: Plan, Active, Analyse, Write, Review, Shipped, Paused</td>
+<td>Target column name: Plan, Watch, Coding, Write, Review, Shipped, Paused</td>
 </tr>
 </tbody>
 </table>
@@ -340,16 +340,20 @@ total projects, active count, and URGENT count.</p>
 </code></pre>
 <hr />
 <h2>Configuration: project roots</h2>
-<p>Set <strong><code>project_roots</code></strong> to a list of paths. Each path’s direct children are
-scanned as Forge projects (and filtered by <code>project_tag</code> if set). The first
-path is used as the primary workspace (e.g. for resolving the Forge directory
+<p>Set <strong><code>project_roots</code></strong> to a list of paths. Forge scans each root for project
+folders up to <strong><code>project_scan_depth</code></strong> levels (default <code>1</code> = direct children only).
+The first path is used as the primary workspace (e.g. for resolving the Forge directory
 when not found via config location).</p>
-<p>When <strong><code>project_tag</code></strong> is set (e.g. <code>"🔥 Forge"</code>), only direct children of each root that have that tag are included. Add multiple roots (e.g. <code>~/Documents/Sanctum</code>) to include more top-level project folders.</p>
+<p>When <strong><code>project_tag</code></strong> is set (e.g. <code>"🔥 Forge"</code>), only directories with that tag qualify.
+With <strong><code>project_scan_depth: 2</code></strong>, untagged folders under a root act as grouping containers:
+Forge scans inside them for tagged subfolders. A tagged folder is not scanned further. Add multiple
+roots (e.g. <code>~/Documents/Sanctum</code>) to include more top-level project folders.</p>
 <p><strong>Example:</strong></p>
 <pre><code class="language-yaml">project_roots:
   - ~/Documents/Work/Projects
   - ~/Documents/Sanctum
   - ~/Documents/Home
+project_scan_depth: 1     # use 2 for one level of grouping folders
 project_tag: &quot;🔥 Forge&quot;   # only folders with this tag are projects
 </code></pre>
 <p>Paths support <code>~</code> for the home directory. All commands that list projects

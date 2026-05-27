@@ -220,8 +220,8 @@ def _column_priority(column: str) -> int:
     """Sort columns from 'work in progress' to 'done/paused'."""
 
     return {
-        "Active": 1,
-        "Analyse": 2,
+        "Watch": 1,
+        "Coding": 2,
         "Write": 3,
         "Review": 4,
         "Plan": 5,
@@ -269,7 +269,7 @@ def build_brief(
     stale_sorted = _sorted_by_neglect(stale)
 
     active_overdue = [
-        p for p in projects if p.column in {"Active", "Analyse", "Write", "Review"} and p.days_since_activity >= overdue_active_days
+        p for p in projects if p.column in {"Watch", "Coding", "Write", "Review"} and p.days_since_activity >= overdue_active_days
     ]
     active_overdue_sorted = _sorted_by_neglect(active_overdue)
 
@@ -354,7 +354,7 @@ def build_brief(
         out.append("- None")
 
     out.append(
-        f"\nPossibly stuck in-flight (Active/Analyse/Write/Review ≥ {overdue_active_days:g} days) ({len(active_overdue_sorted)})"
+        f"\nPossibly stuck in-flight (Watch/Coding/Write/Review ≥ {overdue_active_days:g} days) ({len(active_overdue_sorted)})"
     )
     if active_overdue_sorted:
         for p in active_overdue_sorted[:show]:
@@ -387,7 +387,7 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
         "--overdue-active-days",
         type=float,
         default=14.0,
-        help="Threshold (days) for in-flight WIP (Active/Analyse/Write/Review) to flag as possibly stuck.",
+        help="Threshold (days) for in-flight WIP (Watch/Coding/Write/Review) to flag as possibly stuck.",
     )
     parser.add_argument(
         "--calendar-days",

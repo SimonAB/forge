@@ -15,6 +15,7 @@ The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 #### CLI
 
+- **`project_scan_depth`** — optional `config.yaml` setting (default `1`) controlling how many folder levels under each `project_root` Forge scans for tagged projects. Use `2` to discover projects inside untagged grouping folders (for example `Projects/MyGroup/VHP2_manuscript`). Tagged folders are not scanned further. Preferences saves preserve this value.
 - **`forge board --json`** — machine-readable kanban: `board.columns`, `meta_tags`, `tag_aliases`, and per-project column, tags, assignees, plus **Radar** fields (`radarBucket`, `daysSinceActivity`, `activityModificationDate`, `activitySource`) aligned with the board UI. **`KanbanRadar`** in ForgeCore centralises Radar logic (also used by **`forge-menubar` / `ForgeUI`**).
 - **`forge project-tag`** — `add`, `remove`, and `list` for **meta** and **`#Person`** Finder tags on project directories (`ProjectFolderTagPolicy` validates against `board.meta_tags`; workflow column tags use **`forge move`** only).
 - **`forge calendar`** / **`forge events`** — read-only listing of **Apple Calendar** events (EventKit); default window **next 7 days** (`ForgeCalendarDefaults.horizonDays`), with `--days`, `--start` (YYYY-MM-DD), and `--json`.
