@@ -8,7 +8,7 @@ import shutil
 from PIL import Image, ImageDraw, ImageFilter
 
 ICON_DIR = "/tmp/ForgeIcon.iconset"
-ICNS_OUT = "/Applications/Forge.app/Contents/Resources/AppIcon.icns"
+DEFAULT_ICNS_OUT = "/Applications/Forge.app/Contents/Resources/AppIcon.icns"
 
 
 def lerp(a, b, t):
@@ -322,7 +322,20 @@ def draw_icon(size):
 
 
 def main():
+    """Generate an AppIcon.icns file for Forge.app."""
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Generate the Forge app icon (.icns).")
+    parser.add_argument(
+        "--output",
+        default=DEFAULT_ICNS_OUT,
+        help="Output .icns path (default: /Applications/Forge.app/Contents/Resources/AppIcon.icns)",
+    )
+    args = parser.parse_args()
+    icns_out = args.output
+
     os.makedirs(ICON_DIR, exist_ok=True)
+    os.makedirs(os.path.dirname(icns_out), exist_ok=True)
 
     icon_sizes = [
         (16, "16x16"), (32, "16x16@2x"), (32, "32x32"), (64, "32x32@2x"),
@@ -337,7 +350,7 @@ def main():
         print(f"  {label} ({px}px)")
 
     result = subprocess.run(
-        ["iconutil", "-c", "icns", ICON_DIR, "-o", ICNS_OUT],
+        ["iconutil", "-c", "icns", ICON_DIR, "-o", icns_out],
         capture_output=True, text=True,
     )
     if result.returncode != 0:
@@ -345,7 +358,7 @@ def main():
         return
 
     shutil.rmtree(ICON_DIR)
-    print(f"\n  Created {ICNS_OUT}")
+    print(f"\n  Created {icns_out}")
 
 
 if __name__ == "__main__":

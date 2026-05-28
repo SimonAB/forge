@@ -58,21 +58,22 @@ fi
 echo ""
 echo "✓ Build complete"
 
-# 3. Create Forge.app bundle in /Applications (includes embedded forge CLI)
-APP_DIR="/Applications/Forge.app"
-"$FORGE_DIR/packaging/assemble_forge_app.sh" "$FORGE_DIR" "$BIN_PATH" "$APP_DIR"
-
-# Generate the app icon using Pillow (requires: pip3 install Pillow)
+# 3. Generate the app icon (optional, requires Pillow)
+# Generate into the local build directory, then bundle it into Forge.app.
 if command -v python3 >/dev/null 2>&1 && python3 -c "import PIL" 2>/dev/null; then
-    python3 "$FORGE_DIR/generate_icon.py"
+    python3 "$FORGE_DIR/generate_icon.py" --output "$BIN_PATH/AppIcon.icns"
     echo "✓ Generated app icon"
 else
     echo "⚠ Pillow not installed — skipping icon generation (pip3 install Pillow)"
 fi
 
+# 4. Create Forge.app bundle in /Applications (includes embedded forge CLI)
+APP_DIR="/Applications/Forge.app"
+"$FORGE_DIR/packaging/assemble_forge_app.sh" "$FORGE_DIR" "$BIN_PATH" "$APP_DIR"
+
 echo "✓ Installed Forge.app → /Applications/Forge.app"
 
-# 4. Optional: install Launch Agent for auto-start at login
+# 5. Optional: install Launch Agent for auto-start at login
 cat > "$LAUNCH_AGENT" << 'LAEOF'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -100,7 +101,7 @@ launchctl unload "$LAUNCH_AGENT" 2>/dev/null || true
 launchctl load "$LAUNCH_AGENT"
 echo "✓ Installed Launch Agent (Forge.app starts at login)"
 
-# 5. Verify
+# 6. Verify
 echo ""
 echo "Verifying..."
 EMBEDDED_CLI="$APP_DIR/Contents/Resources/bin/forge"
