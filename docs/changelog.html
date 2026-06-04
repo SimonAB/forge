@@ -95,12 +95,14 @@
 </ul>
 <h4>CLI</h4>
 <ul>
+<li><strong><code>project_scan_depth</code></strong> — optional <code>config.yaml</code> setting (default <code>1</code>) controlling how many folder levels under each <code>project_root</code> Forge scans for tagged projects. Use <code>2</code> to discover projects inside untagged grouping folders (for example <code>Projects/MyGroup/VHP2_manuscript</code>). Tagged folders are not scanned further. Preferences saves preserve this value.</li>
 <li><strong><code>forge board --json</code></strong> — machine-readable kanban: <code>board.columns</code>, <code>meta_tags</code>, <code>tag_aliases</code>, and per-project column, tags, assignees, plus <strong>Radar</strong> fields (<code>radarBucket</code>, <code>daysSinceActivity</code>, <code>activityModificationDate</code>, <code>activitySource</code>) aligned with the board UI. <strong><code>KanbanRadar</code></strong> in ForgeCore centralises Radar logic (also used by <strong><code>forge-menubar</code> / <code>ForgeUI</code></strong>).</li>
 <li><strong><code>forge project-tag</code></strong> — <code>add</code>, <code>remove</code>, and <code>list</code> for <strong>meta</strong> and <strong><code>#Person</code></strong> Finder tags on project directories (<code>ProjectFolderTagPolicy</code> validates against <code>board.meta_tags</code>; workflow column tags use <strong><code>forge move</code></strong> only).</li>
 <li><strong><code>forge calendar</code></strong> / <strong><code>forge events</code></strong> — read-only listing of <strong>Apple Calendar</strong> events (EventKit); default window <strong>next 7 days</strong> (<code>ForgeCalendarDefaults.horizonDays</code>), with <code>--days</code>, <code>--start</code> (YYYY-MM-DD), and <code>--json</code>.</li>
 </ul>
 <h4>Documentation</h4>
 <ul>
+<li><strong>Assistant operating manual</strong> — expanded <strong><code>AGENTS.md</code></strong> (OmniFocus AppleScript, kanban lifecycle, CLI reference); Cursor rules <strong><code>.cursor/rules/forge-cli.mdc</code></strong>, <strong><code>forge-workflows.mdc</code></strong>, <strong><code>task-gtd.mdc</code></strong>; Hermes skill <strong><code>.hermes/skills/forge-board/SKILL.md</code></strong>; <strong><code>PROJECT_TEMPLATE.md</code></strong> for new project READMEs.</li>
 <li>Recommended <strong>Ollama with Pi</strong> for privacy-conscious LLM-assisted workflows; setup
   summary and links in <strong><code>PRIVACY.md</code></strong>, cross-references in <strong><code>README.md</code></strong>,
   <strong><code>AGENTS.md</code></strong>, <strong><code>docs/app.md</code></strong>, <strong><code>docs/cli.md</code></strong>, <strong><code>docs/forge-manual.md</code></strong>, and

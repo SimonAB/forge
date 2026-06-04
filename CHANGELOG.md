@@ -22,6 +22,7 @@ The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 #### Documentation
 
+- **Assistant operating manual** — expanded **`AGENTS.md`** (OmniFocus AppleScript, kanban lifecycle, CLI reference); Cursor rules **`.cursor/rules/forge-cli.mdc`**, **`forge-workflows.mdc`**, **`task-gtd.mdc`**; Hermes skill **`.hermes/skills/forge-board/SKILL.md`**; **`PROJECT_TEMPLATE.md`** for new project READMEs.
 - Recommended **Ollama with Pi** for privacy-conscious LLM-assisted workflows; setup
   summary and links in **`PRIVACY.md`**, cross-references in **`README.md`**,
   **`AGENTS.md`**, **`docs/app.md`**, **`docs/cli.md`**, **`docs/forge-manual.md`**, and

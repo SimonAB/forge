@@ -1,0 +1,137 @@
+---
+description: Forge kanban workflow rules — board transitions, stale remediation, URGENT triage, collaboration patterns.
+globs:
+   - config.yaml
+   - "**/*.md"
+   - "tasks/**/*.md"
+alwaysApply: false
+---
+
+Define the kanban workflow, stale remediation, URGENT triage, and collaboration
+patterns for Forge project management. These rules govern the life-cycle of a
+project from Plan through Shipped.
+
+## Board transition rules
+
+Forge projects follow a left-to-right kanban flow:
+
+```
+Plan   →   Watch   →   Coding   →   Write   →   Review   →   Shipped
+```
+
+Plus a side-column for holding work:
+
+```
+Plan ← Paused → Shipped (and all other columns)
+```
+
+### Transition rules (apply strictly)
+
+| From | To | Allowed? | Notes |
+|------|------|----------|-------|
+| Plan | Watch | Yes | Moving from planning to active. |
+| Watch | Coding | Yes | Starting implementation. |
+| Coding | Write | Yes | Implementation done, writing/patching. |
+| Write | Review | Yes | Writing complete, ready for review. |
+| Review | Shipped | Yes | Review complete, shipped. |
+| Plan | Paused | Yes | Hold/stop a planning project. |
+| Watch | Paused | Yes | Hold an active project. |
+| Coding | Paused | Yes | Pause active work. |
+| Write | Paused | Yes | Pause writing in progress. |
+| Review | Paused | Yes | Pause during review. |
+| Shipped | Paused | No | A shipped project should stay Shipped. |
+| Any → Plan | Yes | After Paused or when restarting (rare). | Restarting a project. |
+| Any → Plan | Yes | For brand-new projects (initial state). | First column for everything. |
+| Any | Paused | Yes (from any column except Shipped) | Pausing any active project. |
+| Paused | Plan | Yes | Resuming a paused project (back to planning). |
+| Paused | Watch | Yes | Resuming directly to active. Rare but valid. |
+
+### Rules for the assistant
+
+- Never move a project forward two or more columns in a single operation.
+- Never move a project backward without explicit user instruction.
+- Always verify the current column with `forge board --json` before proposing a move.
+- Never move a project to `Shipped` without evidence of completion (e.g. merged PR, published deliverable, user confirmation).
+
+## URGENT triage procedure
+
+Projects tagged `URGENT ⚠️` require focused triage:
+
+1. **Surface**: Always list URGENT projects at the top of the board summary and brief output.
+2. **Assess**: For each URGENT project, note:
+   - Current column and workflow tag.
+   - Days since last activity (`daysSinceActivity` from `@radar` in `forge board --json`).
+   - Radar bucket (`calm`, `watch`, `heat`).
+   - Assignees (`#Person` tags).
+3. **Propose action**: Recommend the next action — move to an appropriate column, add a `#Person` for delegation, or mark the next specific step.
+4. **Resolve**: When an URGENT project is resolved, propose removing the `URGENT ⚠️` meta tag via `forge project-tag remove`.
+5. **Escalate if stale**: If an URGENT project is in Watch/Coding/Write/Review for more than 14 days without activity, add a second "stale in-work" flag in the report to the user.
+
+Never mark a project `URGENT ⚠️` without user approval. Never clear `URGENT ⚠️` without confirming resolution with the user.
+
+## Stale project remediation procedure
+
+A project is stale when its last recorded activity exceeds the configured threshold (default: 7 days for neglected, 14 days for in-flight).
+
+### Staleness thresholds
+
+| Category | Threshold | Meaning |
+|----------|-----------|---------|
+| Neglected (all columns) | ≥ 7 days | Stale regardless of column. |
+| Possibly stuck (active columns) | ≥ 14 days | Stale in Watch/Coding/Write/Review. |
+
+### Remediation procedure
+
+1. **Identify**: Run `forge board --json` or `scripts/forge-brief.py` to discover stale projects.
+2. **Categorize by column**:
+   - **Plan**: May have been intentionally inactive. Propose pausing rather than moving.
+   - **Watch / Coding / Write / Review**: Likely stuck. Propose a concrete next action.
+   - **Paused**: Check if the pause reason still applies.
+   - **Shipped**: Not stale; ignore.
+3. **Propose remediation options**:
+   - Move to `Paused` if no longer relevant.
+   - Move forward one column if work is complete for that stage.
+   - Add an assignee `#Person` tag to delegate.
+   - Move back to `Plan` for re-planning.
+   - Add `URGENT ⚠️` if the project has become critical.
+4. **Follow up**: Report stale projects in regular briefs until resolved.
+
+Never automatically move a stale project. Always present options to the user and wait for approval.
+
+## Collaboration patterns (#Person tags)
+
+Forge uses Finder tags starting with `#` for assignee/people tags:
+
+```
+forge project-tag add <project> "#Halfan"
+```
+
+### Collaboration rules
+
+- **Single assignee preferred**: Most projects should have exactly one `#Person` tag.
+- **Multiple assignees**: Allowed for collaborative projects (e.g., `#Halfan #Simon`).
+- **Never invent**: Only use `#Name` identifiers that correspond to real collaborators. Never invent `#Person` tags for people who do not exist in the user's network.
+- **Adding assignees**: Propose via `forge project-tag add`; always get user approval.
+- **Removing assignees**: Propose via `forge project-tag remove`; always get user approval.
+- **Resolving delegation**: When an assignee completes their work, consider removing their `#Person` tag or adding a second if work remains.
+
+### Collaboration in task files
+
+Within task file lines (`.md`), use `@person(#Name)` inline for attribution:
+
+```
+- [ ] Draft the methods section for the malaria paper @ctx(writing) @person(#Simon) <!-- id:abc123 -->
+```
+
+This notation appears in task descriptions within `TASKS.md` files and `tasks/*.md` files.
+
+## Stale project remediation checklist
+
+When remediating a stale project, work through this checklist:
+
+1. [ ] Is the project still relevant? → If no, pause it.
+2. [ ] Is the user waiting on someone else? → Delegation needed — add `#Person` tag.
+3. [ ] Is progress blocked? → Add notes to the project's TASKS.md.
+4. [ ] Is the next action clear? → Move to an appropriate column; make the next action explicit.
+5. [ ] Was the project completed? → Move to Shipped or Paused.
+6. [ ] Has an URGENT flag been missed? → Mark as URGENT if appropriate.

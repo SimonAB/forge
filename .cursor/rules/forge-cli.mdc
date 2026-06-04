@@ -1,0 +1,123 @@
+---
+description: Forge CLI command reference and assistant behaviour for kanban operations.
+globs:
+   - "**/*.md"
+   - "**/*.yaml"
+alwaysApply: false
+---
+
+Use Forge CLI commands consistently when interacting with project state.
+Follow these rules for safe and effective board management.
+
+## Safe operations (always permitted)
+
+Reading and reporting is always safe. The assistant may:
+
+- Run `forge board` or `forge board --json` to inspect the full board.
+- Run `forge board -c <column>` to filter by a specific column.
+- Run `forge board -a <Person>` to filter by assignee.
+- Run `forge project-tag list <project>` to inspect tags on a project.
+- Run `forge calendar --json` or `forge events --json` to inspect upcoming calendar events.
+- Run `forge status` to see a summary dashboard.
+- Run `python3 scripts/forge-brief.py` to generate a structured brief (URGENT, stale, stuck, hygiene).
+- Read project directory contents (TASKS.md, TASKS.csv, README.md) to understand project state.
+
+## Restricted operations (require explicit user approval)
+
+The assistant must **never** execute these without explicit user approval:
+
+- `forge move <project> <ColumnName>` — changing a project's kanban column.
+- `forge project-tag add <project> <tag>` — adding a meta tag or #Person assignee.
+- `forge project-tag remove <project> <tag>` — removing a meta tag or #Person assignee.
+
+Approval gate: always propose the change to the user first, state what you are about to do, and wait for explicit confirmation (e.g. "yes", "go ahead", "do it") before executing.
+
+## forge board
+
+Purpose: Read-only view of the kanban board.
+
+Usage:
+- `forge board` — full board with projects grouped by column.
+- `forge board --list -c Shipped` — compact list of projects in a specific column.
+- `forge board --json` — structured JSON with columns, meta_tags, tag_aliases, and per-project details (column, tags, radarBucket, daysSinceActivity, activitySource).
+- `forge board -a #Halfan` — filter projects by assignee.
+
+Use `forge board --json` when you need structured data to reason about projects (aging, radar, tags). Use `forge board --list` for compact overviews of a single column.
+
+## forge move
+
+Purpose: Move a project to a different kanban column (changes its Finder tag).
+
+Usage:
+- `forge move <project> <ColumnName>`
+
+Arguments:
+- `<project>` — the project directory name or a unique substring (e.g. "Manuscript" matches "Mus-Hb_Nutrition").
+- `<ColumnName>` — must match one of: Plan, Watch, Coding, Write, Review, Shipped, Paused.
+
+Workflow transitions (always progress left to right):
+- Plan → Watch → Coding → Write → Review → Shipped
+- Any column → Paused (hold/stop)
+- Paused → any active column (resume)
+
+Never assume a column transition; always ask the user for approval.
+
+## forge project-tag
+
+Purpose: Manage non-column Finder tags on a project (meta tags and assignee tags).
+
+Usage:
+- `forge project-tag add <project> <tag>` — add a tag if not present.
+- `forge project-tag remove <project> <tag>` — remove a tag by exact match.
+- `forge project-tag list <project> [--json]` — show all tags with kind hints.
+
+Allowed meta tags (from config.yaml `board.meta_tags`):
+- `URGENT ⚠️` — flag a project as urgent.
+- `Student 🎓` — indicate a student project.
+
+Assignee pattern: `#Name` (e.g., `#Halfan`, `#Simon`, `#AmyPedersen`). Use `forge move` for column tags only; `forge project-tag` rejects workflow column tags.
+
+Without `--force`, `add`/`remove` only work with meta tags from config or `#Person` assignees. With `--force`, non-conforming tags are allowed (use sparingly).
+
+## forge status
+
+Purpose: Quick summary dashboard — project counts per column, total projects, active count, URGENT count.
+
+Usage:
+- `forge status`
+
+Use for a quick health check. The board `--json` provides deeper detail when needed.
+
+## forge calendar / forge events
+
+Purpose: Read upcoming Apple Calendar events (read-only).
+
+Usage:
+- `forge calendar` — next 7 days (default).
+- `forge calendar --days 14` — next 14 days.
+- `forge calendar --json` — structured JSON output.
+- `forge events` — alias for `forge calendar`.
+
+Always safe to run. Use `--json` for structured processing.
+
+## forge brief (scripts/forge-brief.py)
+
+Purpose: Generate a compact, action-oriented brief from `forge board --json`.
+
+Usage:
+- `python3 scripts/forge-brief.py` — default brief.
+- `python3 scripts/forge-brief.py --stale-days 5` — catch stale projects earlier.
+- `python3 scripts/forge-brief.py --show 8` — fewer lines per section.
+- `python3 scripts/forge-brief.py --overdue-active-days 10` — flag stuck work sooner.
+
+Outputs sections: Calendar (today, upcoming, warnings), Column load, URGENT, Neglected (stale), Possibly stuck in-flight (Watch/Coding/Write/Review), Hygiene (missing column tag).
+
+Never modify project state with forge-brief; it is always read-only.
+
+## General rules for the assistant
+
+1. Always read board state before proposing changes.
+2. Never invent column names, meta tags, or #Person assignees — validate against `config.yaml` or `forge board --json`.
+3. Always propose changes and get explicit approval before executing `forge move` or `forge project-tag add/remove`.
+4. Never invent or hand-write task IDs (e.g., `<!-- id:... -->`). IDs are Forge-assigned and opaque.
+5. Report observations freely; change state only with approval.

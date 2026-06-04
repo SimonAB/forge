@@ -1,0 +1,129 @@
+---
+description: GTD-style task management rules for assistants in the Forge system.
+globs:
+   - "tasks/**/*.md"
+   - "tasks/*.md"
+alwaysApply: false
+---
+
+The Forge task system follows a GTD-inspired methodology with structured task
+files, context tags, and idempotent task IDs managed by the `forge` tool.
+Follow these rules when creating, updating, or processing tasks.
+
+## Inbox methodology
+
+All tasks enter through the inbox first before being processed into structured task files.
+
+- **Capture only**: When the user mentions a task or item, add it to `tasks/inbox.md` without further processing.
+- **Process later**: Inbox items are processed into organized project/task files, assigned context tags, due dates, and appropriate columns on the kanban board.
+- **Never delete**: Inbox captures are never discarded; they move to the next action state during processing.
+- **One item per line**: Each capture is a standalone line starting with `- [ ]`.
+
+## Context tagging conventions
+
+Forge uses `@ctx()` and `@context()` tags to label the context or location
+where a task can be completed. The patterns from the codebase are:
+
+| Tag | Examples | Meaning |
+|-----|----------|---------|
+| `@ctx(<context>)` | `@ctx(home)`, `@ctx(email)`, `@ctx(deep-work)` | Where/what context for the task. |
+| `@ctx(<context>/<sub>)` | `@ctx(home-security)`, `@ctx(document-check/pet)` | Sub-context nesting. |
+| `@context(<context>)` | `@context(travel)`, `@context(email)`, `@context(writing)` | Synonym of @ctx, used interchangeably. |
+| `@energy(<level>)` | `@energy(low)`, `@energy(high)` | Energy level needed to complete the task. |
+| `@defer(<date-or-label>)` | `@defer(today)`, `@defer(first-day)` | Defer to a date or condition. |
+
+Always use the simplest context tag that fits. Prefer single-word contexts (home, email, lab, review) over compound ones unless nesting is natural.
+
+## @due and @defer handling
+
+| Pattern | Meaning |
+|---------|---------|
+| `@due(YYYY-MM-DD)` | Due on a specific date. |
+| `@due(YYYY-MM-DD HH:MM)` | Due on a specific date and time. |
+| `@due(today)`, `@due(tomorrow)` | Relative due dates. |
+| `@defer(date)` | Defer completion to a date or label. |
+| `@repeat(period)` | `@repeat(w)` — weekly, `@repeat(2w)` — biweekly, `@repeat(m)` — monthly, etc. |
+
+Never invent a due date without the user specifying one. When a task has no explicit deadline, do not assign one.
+
+## Task status markers
+
+| Marker | Meaning |
+|--------|---------|
+| `- [ ]` | Open / pending task. |
+| `- [x]` | Completed task. Append `@done(YYYY-MM-DD)`. |
+| `~~[ ]~~` | Cancelled / no-longer relevant. Append `@moved_to(<folder>)`. |
+
+When completing a task, mark it `- [x]` with a `@done(date)` tag. Add the `<!-- id:... -->` comment if the task already has an ID (do not invent them).
+
+## When to create vs update vs complete tasks
+
+### Create a new task
+
+When the user explicitly mentions a task that does not yet exist:
+
+1. Add it to `tasks/inbox.md` as `- [ ] <task description>` with any available `@ctx()` and `@due()` tags.
+2. During processing, move the task to its home task file (e.g. `tasks/admin.md`, `tasks/research.md`).
+3. If the task maps to a kanban project, add it to the project's TASKS.md.
+
+### Update an existing task
+
+When the user provides new information about a known task:
+
+1. Locate the task in its source file (search by description or ID).
+2. Update the task description, context tags, due dates, or status.
+3. If the task moves columns on the kanban board, update with `forge move` (after approval).
+
+### Complete a task
+
+When the user confirms a task is done:
+
+1. Mark it `- [x]` with `@done(YYYY-MM-DD)` (use today's date).
+2. Add or update `<!-- id:... -->` if one exists.
+3. If the kanban project has moved to a later column, note it (but do not move without approval).
+
+## Never invent IDs
+
+The `<!-- id:... -->` comment at the end of each task line contains a Forge-assigned opaque ID.
+
+- **Never** invent or hand-write task IDs.
+- **Never** guess at ID formats or generate IDs yourself.
+- When creating new tasks, omit the `<!-- id:... -->` tag entirely; Forge tooling will assign one.
+- When updating existing tasks, preserve the existing `<!-- id:... -->` unchanged.
+
+## URGENT priority handling
+
+Projects or tasks tagged `URGENT ⚠️` require immediate attention:
+
+- Always surface URGENT items in briefs and status reports.
+- Report URGENT projects sorted by most stale first (they are at risk).
+- Propose moving URGENT items to their appropriate column if they are in the wrong one.
+- When an URGENT item is resolved, propose removing the `URGENT ⚠️` tag.
+
+## Task file organization
+
+- `tasks/inbox.md` — raw captures, unprocessed.
+- `tasks/due.md` — generated/aggregated view of overdue and upcoming tasks (auto-generated).
+- `tasks/admin.md`, `tasks/home.md`, `tasks/research.md`, etc. — organized task files by project or domain.
+- `tasks/someday-maybe.md` — tasks for later, no immediate action needed.
+- `tasks/horizons.md` — high-level goals and categories in context.
+- `tasks/teaching.md`, `tasks/spiritual.md`, `tasks/finance.md`, etc. — domain-specific task stores.
+
+Each task file has YAML frontmatter:
+```yaml
+---
+id: <folder-name>
+tags: [work, personal]
+date_created: YYYY-MM-DD
+date_modified: YYYY-MM-DD
+---
+```
+
+## Collaboration patterns
+
+When tasks involve collaboration:
+
+- Use `#Person` assignee tags for delegation (e.g., `#Halfan`, `#Simon`, `#AmyPedersen`).
+- Use the `@person(#Name)` inline syntax within task descriptions for attribution.
+- Propose adding `#Person` tags to kanban projects when collaboration is identified.
+- Track waiting-for items separately under `## Waiting For` sections in task files.

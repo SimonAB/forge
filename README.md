@@ -132,10 +132,19 @@ privacy-first local inference on your Mac, or a **cloud** assistant when you nee
 more capability — Forge stays agnostic. See **AI assistants and local language models**
 in [`PRIVACY.md`](PRIVACY.md#ai-assistants) for setup and trade-offs.
 
+## AI assistants (optional)
+
+If you use a coding assistant with this repo, **`AGENTS.md`** is the operating manual
+(Hephaestus stance, OmniFocus integration, kanban rules, brief format). Supporting
+material: **`.cursor/rules/`** (CLI, workflows, GTD tasks), **`PROJECT_TEMPLATE.md`**
+(new project READMEs), and **`python3 scripts/forge-brief.py`** for read-only board
+briefs. Privacy-first local inference: see **`PRIVACY.md`**.
+
 ## Directory layout
 
 ```
 ~/Documents/Forge/              Forge home (synced via iCloud Drive)
+├── AGENTS.md                   Assistant operating manual (kanban + OmniFocus)
 ├── config.yaml                 Configuration (board columns, workspace roots, tags)
 ├── build.sh                  Per-Mac build & install script
 ├── generate_icon.py            App icon generator (requires Pillow)

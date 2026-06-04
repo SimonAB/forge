@@ -237,8 +237,15 @@ into a chat), you can choose what fits: <strong>Ollama with the Pi coding agent<
 privacy-first local inference on your Mac, or a <strong>cloud</strong> assistant when you need
 more capability — Forge stays agnostic. See <strong>AI assistants and local language models</strong>
 in <a href="privacy.html#ai-assistants"><code>PRIVACY.md</code></a> for setup and trade-offs.</p>
+<h2>AI assistants (optional)</h2>
+<p>If you use a coding assistant with this repo, <strong><code>AGENTS.md</code></strong> is the operating manual
+(Hephaestus stance, OmniFocus integration, kanban rules, brief format). Supporting
+material: <strong><code>.cursor/rules/</code></strong> (CLI, workflows, GTD tasks), <strong><code>PROJECT_TEMPLATE.md</code></strong>
+(new project READMEs), and <strong><code>python3 scripts/forge-brief.py</code></strong> for read-only board
+briefs. Privacy-first local inference: see <strong><code>PRIVACY.md</code></strong>.</p>
 <h2>Directory layout</h2>
 <pre><code>~/Documents/Forge/              Forge home (synced via iCloud Drive)
+├── AGENTS.md                   Assistant operating manual (kanban + OmniFocus)
 ├── config.yaml                 Configuration (board columns, workspace roots, tags)
 ├── build.sh                  Per-Mac build &amp; install script
 ├── generate_icon.py            App icon generator (requires Pillow)
@@ -260,7 +267,8 @@ tag</strong> (visible in Finder and readable by Spotlight).</p>
 <p>Start from <a href="https://github.com/SimonAB/forge/blob/main/config.sample.yaml"><code>config.sample.yaml</code></a> and copy it to
 <code>config.yaml</code>, then adjust paths and names to match your setup. Key sections:</p>
 <ul>
-<li><strong><code>workspace</code></strong> — path to the directory containing project folders.</li>
+<li><strong><code>project_roots</code></strong> — one or more directories whose subfolders are Forge projects (legacy <code>workspace</code> still supported).</li>
+<li><strong><code>project_scan_depth</code></strong> — how many levels to scan under each root (<code>1</code> = direct children only; <code>2</code> = also inside untagged grouping folders).</li>
 <li><strong><code>board.columns</code></strong> — ordered kanban columns, each mapped to a Finder tag.</li>
 <li><strong><code>board.meta_tags</code></strong> — supplementary tags (e.g. Collab, Student, URGENT), used for per-project flags and for the board's Radar view.</li>
 <li><strong><code>terminal</code></strong> — preferred terminal app (<code>auto</code>, <code>iTerm</code>, <code>Terminal.app</code>).</li>
