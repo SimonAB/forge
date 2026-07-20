@@ -14,6 +14,12 @@ struct MoveCommand: AsyncParsableCommand {
     @Argument(help: "Target column name (e.g. Watch, Coding, Write, Review, Shipped, Paused, Plan).")
     var targetColumn: String
 
+    @Flag(
+        name: .long,
+        help: "Enforce left-to-right workflow rules (no multi-column jumps; Shipped stays Shipped)."
+    )
+    var strict: Bool = false
+
     mutating func run() async throws {
         let config = try ConfigLoader.load()
         let scanner = WorkspaceScanner(config: config)
@@ -29,6 +35,15 @@ struct MoveCommand: AsyncParsableCommand {
             throw ValidationError(
                 "No project matching '\(project)'. Use 'forge board --list' to see all projects."
             )
+        }
+
+        if strict {
+            switch KanbanTransitionPolicy.validate(from: matched.column, to: targetCol.name) {
+            case .allowed:
+                break
+            case .rejected(let reason):
+                throw ValidationError(reason)
+            }
         }
 
         if let existingWorkflowTag = matched.workflowTag {
@@ -58,7 +73,10 @@ struct MoveCommand: AsyncParsableCommand {
         }
         if matches.count > 1 {
             print("Ambiguous match for '\(query)':")
-            for m in matches { print("  • \(m.name)") }
+            for match in matches {
+                print("  - \(match.name)")
+            }
+            return nil
         }
         return nil
     }

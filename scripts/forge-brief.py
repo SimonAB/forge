@@ -22,7 +22,10 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Iterable, Mapping, Sequence
 
 
-URGENT_TAG = "URGENT ⚠️"
+def _is_urgent_tag(tag: str) -> bool:
+    """Return True if a tag is an URGENT meta tag (prefix match)."""
+
+    return tag.upper().startswith("URGENT")
 
 
 @dataclass(frozen=True)
@@ -45,7 +48,9 @@ class Project:
     def is_urgent(self) -> bool:
         """Return True if the project is marked URGENT."""
 
-        return URGENT_TAG in self.meta_tags or URGENT_TAG in self.tags
+        return any(_is_urgent_tag(t) for t in self.meta_tags) or any(
+            _is_urgent_tag(t) for t in self.tags
+        )
 
 
 @dataclass(frozen=True)
@@ -410,7 +415,7 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
     parser.add_argument(
         "--calendar-calendars",
         type=str,
-        default="Calendar,Work,Teaching",
+        default="",
         help="Comma-separated Calendar.app calendar names to include (empty = all calendars).",
     )
     return parser.parse_args(list(argv))

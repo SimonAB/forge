@@ -3,11 +3,33 @@
 # Forge build script — run this on each Mac to build and install Forge.
 # The source code syncs via iCloud Drive; this script builds locally.
 #
+# Flags:
+#   --no-clean         Skip `swift package clean` (faster rebuilds)
+#   --no-launch-agent  Skip writing/loading the login Launch Agent
+#
 set -e
 
 FORGE_DIR="$(cd "$(dirname "$0")" && pwd)"
 BUILD_DIR="$HOME/.forge-build"
 LAUNCH_AGENT="$HOME/Library/LaunchAgents/com.forge.menubar.plist"
+DO_CLEAN=1
+DO_LAUNCH_AGENT=1
+
+for arg in "$@"; do
+    case "$arg" in
+        --no-clean) DO_CLEAN=0 ;;
+        --no-launch-agent) DO_LAUNCH_AGENT=0 ;;
+        -h|--help)
+            echo "Usage: zsh build.sh [--no-clean] [--no-launch-agent]"
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $arg" >&2
+            echo "Usage: zsh build.sh [--no-clean] [--no-launch-agent]" >&2
+            exit 1
+            ;;
+    esac
+done
 
 echo "Forge build"
 echo "==========="
@@ -44,8 +66,12 @@ fi
 echo ""
 echo "Building Forge (menubar app and board app first; CLI may take longer due to dependency plugins)..."
 cd "$FORGE_DIR"
-# Clean first so ForgeUI (board backgrounds, tints) and all targets are fully rebuilt
-swift package clean 2>&1 || true
+if [ "$DO_CLEAN" -eq 1 ]; then
+    # Clean first so ForgeUI (board backgrounds, tints) and all targets are fully rebuilt
+    swift package clean 2>&1 || true
+else
+    echo "Skipping swift package clean (--no-clean)"
+fi
 # Single full build so all products (forge, forge-menubar, forge-board) are applied to the output directory
 swift build -c debug 2>&1
 BIN_PATH=$(swift build -c debug --show-bin-path)
@@ -74,7 +100,8 @@ APP_DIR="/Applications/Forge.app"
 echo "✓ Installed Forge.app → /Applications/Forge.app"
 
 # 5. Optional: install Launch Agent for auto-start at login
-cat > "$LAUNCH_AGENT" << 'LAEOF'
+if [ "$DO_LAUNCH_AGENT" -eq 1 ]; then
+    cat > "$LAUNCH_AGENT" << 'LAEOF'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -97,9 +124,12 @@ cat > "$LAUNCH_AGENT" << 'LAEOF'
 </plist>
 LAEOF
 
-launchctl unload "$LAUNCH_AGENT" 2>/dev/null || true
-launchctl load "$LAUNCH_AGENT"
-echo "✓ Installed Launch Agent (Forge.app starts at login)"
+    launchctl unload "$LAUNCH_AGENT" 2>/dev/null || true
+    launchctl load "$LAUNCH_AGENT"
+    echo "✓ Installed Launch Agent (Forge.app starts at login)"
+else
+    echo "Skipping Launch Agent (--no-launch-agent)"
+fi
 
 # 6. Verify
 echo ""

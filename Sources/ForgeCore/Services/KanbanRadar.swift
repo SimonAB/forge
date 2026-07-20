@@ -35,9 +35,7 @@ public enum KanbanRadar {
 
     /// Combines URGENT-prefixed meta tags with folder age (same thresholds as the board Radar filter).
     public static func bucket(for project: Project, now: Date, fileManager: FileManager = .default) -> KanbanRadarBucket {
-        let hasUrgentTag = project.metaTags.contains { tag in
-            tag.uppercased().hasPrefix("URGENT")
-        }
+        let hasUrgentTag = isUrgent(metaTags: project.metaTags)
         let modificationDate = activityModificationDate(for: project, fileManager: fileManager)
         let daysSinceChange = now.timeIntervalSince(modificationDate) / (60 * 60 * 24)
 
@@ -48,5 +46,10 @@ public enum KanbanRadar {
             return .watch
         }
         return .calm
+    }
+
+    /// Returns true when any meta tag is URGENT (case-insensitive prefix match).
+    public static func isUrgent(metaTags: [String]) -> Bool {
+        metaTags.contains { $0.uppercased().hasPrefix("URGENT") }
     }
 }

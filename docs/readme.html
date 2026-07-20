@@ -114,7 +114,7 @@ transparent system built on ordinary directories, Finder tags, and markdown
 files.</p>
 <p>Forge works well if you:</p>
 <ul>
-<li>Prefer plain-text, markdown-based systems you can search, diff, and version-control with git.</li>
+<li>Prefer plain-text systems you can search and version-control with git, alongside Finder tags.</li>
 <li>Want project state driven by Finder tags (including assignees as <code>#Person</code> tags).</li>
 <li>Want a kanban view for projects without a hosted backend.</li>
 <li>Care about local-first privacy: Forge uses no hosted servers.</li>
@@ -187,13 +187,13 @@ with <a href="assets/site.css"><code>docs/assets/site.css</code></a> and <a href
 </tr>
 </tbody>
 </table>
-<p>Regenerate the <code>*.html</code> files after editing documentation:</p>
+<p>Regenerate the <code>*.html</code> files after editing documentation (also done automatically
+in <code>.github/workflows/pages.yml</code> on pushes to <code>main</code>):</p>
 <pre><code class="language-bash">pip install -r docs/requirements.txt   # once per environment
 python3 docs/build_site.py
 </code></pre>
-<p>Commit the updated HTML so <strong>GitHub Pages</strong> serves the latest content.</p>
 <p>To publish with <strong>GitHub Pages</strong>, open <strong>Settings → Pages</strong>, set <strong>Build and deployment</strong>
-to <strong>Deploy from a branch</strong>, branch <strong>main</strong>, folder <strong><code>/docs</code></strong>.</p>
+<strong>Source</strong> to <strong>GitHub Actions</strong> (not “Deploy from a branch”).</p>
 <h2>Quick start</h2>
 <p>Pre-built binaries (macOS 14+, <strong>Apple Silicon arm64</strong>):</p>
 <ul>
@@ -231,7 +231,7 @@ files in the Forge directory, shared across machines however you choose to sync.
   or in a local-only folder if you prefer not to sync via any cloud service.</li>
 </ul>
 <p>See <code>PRIVACY.md</code> for a fuller description of what Forge stores, how sync works,
-and how to run in markdown-only or local-only modes.</p>
+and how to run without Calendar access or with local-only storage.</p>
 <p>If you use an <strong>AI assistant</strong> with Forge output (for example pasting <code>forge brief</code>
 into a chat), you can choose what fits: <strong>Ollama with the Pi coding agent</strong> for
 privacy-first local inference on your Mac, or a <strong>cloud</strong> assistant when you need

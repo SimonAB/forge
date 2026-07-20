@@ -25,15 +25,30 @@ This document summarises what data Forge uses, where it lives, and how it moves.
   - When you run `forge calendar`, Forge uses macOS EventKit to **read** events
     from your calendars for display in the terminal.
   - Nothing is written back to Calendar, and nothing is sent to Forge servers.
-  - Optional `gtd.calendar_include` in `config.yaml` (if present) limits which calendar
+  - Optional `calendar.include` in `config.yaml` (if present) limits which calendar
     **titles** are queried (exact match); if omitted or empty, all event
-    calendars are included.
+    calendars are included. Legacy `gtd.calendar_include` is still read as a
+    fallback.
 
-- **No telemetry or remote services**
-  - Forge sends **no usage analytics, telemetry, or task content** to any
-    external service.
-  - Network traffic, if any, is solely whatever macOS and your configured
-    accounts already perform via the system.
+- **Sparkle app updates (Forge.app)**
+  - The menubar app may check
+    [`docs/appcast.xml`](https://raw.githubusercontent.com/SimonAB/forge/main/docs/appcast.xml)
+    and download a signed app zip from GitHub Releases. This is update metadata
+    and the app binary only — not your board or project content.
+  - Disable checks via **Forge → Check for Updates…** preferences if you prefer
+    fully offline updates (install new builds yourself).
+
+- **In-app Brief (optional)**
+  - Preferences can send a **board + calendar summary** to a configured LLM
+    endpoint (typically local **Ollama** at `http://127.0.0.1:11434`). A
+    non-loopback base URL will transmit that summary off-machine.
+  - Prefer local models; see **AI assistants and local language models** below.
+
+- **No telemetry**
+  - Forge sends **no usage analytics or telemetry**.
+  - Aside from Sparkle updates (if enabled) and an optional Brief LLM endpoint
+    you configure, network traffic is solely whatever macOS and your accounts
+    already perform via the system.
 
 ### Running Forge in more private modes
 

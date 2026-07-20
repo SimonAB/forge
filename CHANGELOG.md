@@ -6,6 +6,36 @@ The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 ### Unreleased
 
+> **Current product:** Finder-tag kanban (`forge` CLI, Forge.app, optional Calendar read,
+> optional Ollama Brief). Older changelog entries that mention Reminders, `forge sync`,
+> or `TASKS.md` indexing describe historical behaviour.
+
+#### Quality / CI
+
+- **`swift test`** — CLI installer helpers moved into **ForgeCore** so tests no longer
+  link Sparkle via `forge-menubar` (fixes test-bundle load failures).
+- **CI** — `.github/workflows/ci.yml` runs `swift build`, `swift test`, and
+  `python3 -m py_compile scripts/forge-brief.py` on PRs and `main`.
+
+#### CLI
+
+- **`forge move --strict`** — optional workflow guards (one-column steps; Shipped stays
+  Shipped; Paused as side column). Default move remains permissive.
+- **URGENT detection** — `forge status` / menubar badge use URGENT-prefixed meta tags
+  (aligned with Radar), not a single hardcoded string.
+
+#### Documentation / privacy
+
+- **PRIVACY.md** — documents Sparkle updates, Brief→Ollama egress, and `calendar.include`.
+- **docs/cli.md** / **docs/app.md** — `forge init`, `scripts/forge-brief.py`, Brief prefs,
+  External agent stub.
+- **templates/omnifocus** — clarified as optional assistant tooling (no fictional CLI flags).
+
+#### Scripts
+
+- **`forge-brief.py`** — `--calendar-calendars` defaults to empty (all calendars).
+- **`build.sh`** — `--no-clean` and `--no-launch-agent` for a faster local loop.
+
 #### Forge.app / packaging
 
 - **Bundled CLI** — `Forge.app` now includes the `forge` binary at `Contents/Resources/bin/forge`.
@@ -13,14 +43,14 @@ The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.
 - **Maintainer tooling** — `packaging/package_forge_app.sh` assembles, Developer ID-signs, and optionally notarises the app zip.
 - **Privacy** — removed the outdated `NSRemindersUsageDescription` from the generated app `Info.plist`.
 
-#### CLI
+#### CLI (prior unreleased)
 
 - **`project_scan_depth`** — optional `config.yaml` setting (default `1`) controlling how many folder levels under each `project_root` Forge scans for tagged projects. Use `2` to discover projects inside untagged grouping folders (for example `Projects/MyGroup/VHP2_manuscript`). Tagged folders are not scanned further. Preferences saves preserve this value.
 - **`forge board --json`** — machine-readable kanban: `board.columns`, `meta_tags`, `tag_aliases`, and per-project column, tags, assignees, plus **Radar** fields (`radarBucket`, `daysSinceActivity`, `activityModificationDate`, `activitySource`) aligned with the board UI. **`KanbanRadar`** in ForgeCore centralises Radar logic (also used by **`forge-menubar` / `ForgeUI`**).
 - **`forge project-tag`** — `add`, `remove`, and `list` for **meta** and **`#Person`** Finder tags on project directories (`ProjectFolderTagPolicy` validates against `board.meta_tags`; workflow column tags use **`forge move`** only).
 - **`forge calendar`** / **`forge events`** — read-only listing of **Apple Calendar** events (EventKit); default window **next 7 days** (`ForgeCalendarDefaults.horizonDays`), with `--days`, `--start` (YYYY-MM-DD), and `--json`.
 
-#### Documentation
+#### Documentation (prior unreleased)
 
 - **Assistant operating manual** — expanded **`AGENTS.md`** (OmniFocus AppleScript, kanban lifecycle, CLI reference); Cursor rules **`.cursor/rules/forge-cli.mdc`**, **`forge-workflows.mdc`**, **`task-gtd.mdc`**; Hermes skill **`.hermes/skills/forge-board/SKILL.md`**; **`PROJECT_TEMPLATE.md`** for new project READMEs.
 - Recommended **Ollama with Pi** for privacy-conscious LLM-assisted workflows; setup

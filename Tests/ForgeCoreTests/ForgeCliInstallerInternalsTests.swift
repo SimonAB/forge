@@ -1,7 +1,6 @@
 import Foundation
+import ForgeCore
 import Testing
-
-@_spi(Testing) @testable import forge_menubar
 
 @Suite("Forge CLI installer internals")
 struct ForgeCliInstallerInternalsTests {

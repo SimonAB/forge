@@ -86,6 +86,36 @@
 <p>All notable changes to this project will be documented in this file.</p>
 <p>The format loosely follows <a href="https://keepachangelog.com/en/1.1.0/">Keep a Changelog</a>.</p>
 <h3>Unreleased</h3>
+<blockquote>
+<p><strong>Current product:</strong> Finder-tag kanban (<code>forge</code> CLI, Forge.app, optional Calendar read,
+optional Ollama Brief). Older changelog entries that mention Reminders, <code>forge sync</code>,
+or <code>TASKS.md</code> indexing describe historical behaviour.</p>
+</blockquote>
+<h4>Quality / CI</h4>
+<ul>
+<li><strong><code>swift test</code></strong> — CLI installer helpers moved into <strong>ForgeCore</strong> so tests no longer
+  link Sparkle via <code>forge-menubar</code> (fixes test-bundle load failures).</li>
+<li><strong>CI</strong> — <code>.github/workflows/ci.yml</code> runs <code>swift build</code>, <code>swift test</code>, and
+  <code>python3 -m py_compile scripts/forge-brief.py</code> on PRs and <code>main</code>.</li>
+</ul>
+<h4>CLI</h4>
+<ul>
+<li><strong><code>forge move --strict</code></strong> — optional workflow guards (one-column steps; Shipped stays
+  Shipped; Paused as side column). Default move remains permissive.</li>
+<li><strong>URGENT detection</strong> — <code>forge status</code> / menubar badge use URGENT-prefixed meta tags
+  (aligned with Radar), not a single hardcoded string.</li>
+</ul>
+<h4>Documentation / privacy</h4>
+<ul>
+<li><strong>PRIVACY.md</strong> — documents Sparkle updates, Brief→Ollama egress, and <code>calendar.include</code>.</li>
+<li><strong>docs/cli.md</strong> / <strong>docs/app.md</strong> — <code>forge init</code>, <code>scripts/forge-brief.py</code>, Brief prefs,
+  External agent stub.</li>
+<li><strong>templates/omnifocus</strong> — clarified as optional assistant tooling (no fictional CLI flags).</li>
+</ul>
+<h4>Scripts</h4>
+<ul>
+<li><strong><code>forge-brief.py</code></strong> — <code>--calendar-calendars</code> defaults to empty (all calendars).</li>
+</ul>
 <h4>Forge.app / packaging</h4>
 <ul>
 <li><strong>Bundled CLI</strong> — <code>Forge.app</code> now includes the <code>forge</code> binary at <code>Contents/Resources/bin/forge</code>.
@@ -93,14 +123,14 @@
 <li><strong>Maintainer tooling</strong> — <code>packaging/package_forge_app.sh</code> assembles, Developer ID-signs, and optionally notarises the app zip.</li>
 <li><strong>Privacy</strong> — removed the outdated <code>NSRemindersUsageDescription</code> from the generated app <code>Info.plist</code>.</li>
 </ul>
-<h4>CLI</h4>
+<h4>CLI (prior unreleased)</h4>
 <ul>
 <li><strong><code>project_scan_depth</code></strong> — optional <code>config.yaml</code> setting (default <code>1</code>) controlling how many folder levels under each <code>project_root</code> Forge scans for tagged projects. Use <code>2</code> to discover projects inside untagged grouping folders (for example <code>Projects/MyGroup/VHP2_manuscript</code>). Tagged folders are not scanned further. Preferences saves preserve this value.</li>
 <li><strong><code>forge board --json</code></strong> — machine-readable kanban: <code>board.columns</code>, <code>meta_tags</code>, <code>tag_aliases</code>, and per-project column, tags, assignees, plus <strong>Radar</strong> fields (<code>radarBucket</code>, <code>daysSinceActivity</code>, <code>activityModificationDate</code>, <code>activitySource</code>) aligned with the board UI. <strong><code>KanbanRadar</code></strong> in ForgeCore centralises Radar logic (also used by <strong><code>forge-menubar</code> / <code>ForgeUI</code></strong>).</li>
 <li><strong><code>forge project-tag</code></strong> — <code>add</code>, <code>remove</code>, and <code>list</code> for <strong>meta</strong> and <strong><code>#Person</code></strong> Finder tags on project directories (<code>ProjectFolderTagPolicy</code> validates against <code>board.meta_tags</code>; workflow column tags use <strong><code>forge move</code></strong> only).</li>
 <li><strong><code>forge calendar</code></strong> / <strong><code>forge events</code></strong> — read-only listing of <strong>Apple Calendar</strong> events (EventKit); default window <strong>next 7 days</strong> (<code>ForgeCalendarDefaults.horizonDays</code>), with <code>--days</code>, <code>--start</code> (YYYY-MM-DD), and <code>--json</code>.</li>
 </ul>
-<h4>Documentation</h4>
+<h4>Documentation (prior unreleased)</h4>
 <ul>
 <li><strong>Assistant operating manual</strong> — expanded <strong><code>AGENTS.md</code></strong> (OmniFocus AppleScript, kanban lifecycle, CLI reference); Cursor rules <strong><code>.cursor/rules/forge-cli.mdc</code></strong>, <strong><code>forge-workflows.mdc</code></strong>, <strong><code>task-gtd.mdc</code></strong>; Hermes skill <strong><code>.hermes/skills/forge-board/SKILL.md</code></strong>; <strong><code>PROJECT_TEMPLATE.md</code></strong> for new project READMEs.</li>
 <li>Recommended <strong>Ollama with Pi</strong> for privacy-conscious LLM-assisted workflows; setup

@@ -206,7 +206,7 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         }
         let scanner = WorkspaceScanner(config: config)
         let projects = (try? scanner.scanProjects()) ?? []
-        urgentProjectCount = projects.filter { $0.metaTags.contains("URGENT ⚠️") }.count
+        urgentProjectCount = projects.filter { KanbanRadar.isUrgent(metaTags: $0.metaTags) }.count
         updateBadge()
         rebuildMenu()
     }

@@ -192,13 +192,26 @@ indicates urgent items:</p>
 <h3>Privacy and data flow</h3>
 <ul>
 <li>Forge.app reads and writes only the Forge directory on your disk
-  (configuration and caches).</li>
+  (configuration and caches), plus Finder tags on your project folders.</li>
 <li>Optional <strong><code>forge calendar</code></strong> reads Calendar events locally for terminal output only (read-only).</li>
+<li><strong>Sparkle</strong> may check for app updates and download a signed zip from GitHub Releases
+  (app binary only — not your board content). See <strong><code>PRIVACY.md</code></strong>.</li>
+<li><strong>Preferences → Brief</strong> can send a board/calendar summary to <strong>local Ollama</strong>
+  (or another base URL you configure). Prefer loopback; external endpoints transmit data.
+  The <strong>External agent</strong> option is not implemented yet.</li>
 <li>You keep full control over where the Forge directory lives (for example on an
   encrypted volume, in a git repository, or in a local-only folder).</li>
 <li>If you use an <strong>LLM</strong> with Forge output, prefer <strong>Ollama with Pi</strong> for local
   inference; see <strong><code>PRIVACY.md</code></strong> (<strong>AI assistants and local language models</strong>).</li>
 </ul>
+<hr />
+<h2>Brief (Preferences)</h2>
+<p>Open <strong>Forge → Preferences… → Brief</strong> to generate an LLM-assisted board summary.</p>
+<ul>
+<li><strong>Local Ollama</strong> — default; uses <code>http://127.0.0.1:11434</code> unless you change the base URL.</li>
+<li><strong>External agent</strong> — placeholder only; generation fails with a clear “not implemented” message.</li>
+</ul>
+<p>You can review proposed column/tag changes before applying them.</p>
 <hr />
 <h2>Configuration resolution</h2>
 <p>Forge.app searches for <code>config.yaml</code> in this order:</p>

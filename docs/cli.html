@@ -109,6 +109,10 @@ no remote services; commands read and write only local state.</p>
 </thead>
 <tbody>
 <tr>
+<td><code>forge init</code></td>
+<td>Scaffold a Forge workspace (<code>config.yaml</code> and folders)</td>
+</tr>
+<tr>
 <td><code>forge board</code></td>
 <td>Display the kanban board</td>
 </tr>
@@ -122,7 +126,7 @@ no remote services; commands read and write only local state.</p>
 </tr>
 <tr>
 <td><code>forge status</code></td>
-<td>Summary dashboard of all projects</td>
+<td>Summary dashboard of all projects (column counts, active, URGENT)</td>
 </tr>
 <tr>
 <td><code>forge calendar</code> / <code>forge events</code></td>
@@ -130,6 +134,16 @@ no remote services; commands read and write only local state.</p>
 </tr>
 </tbody>
 </table>
+<p>Read-only brief (Python helper, not a <code>forge</code> subcommand):</p>
+<pre><code class="language-bash">python3 scripts/forge-brief.py
+</code></pre>
+<hr />
+<h2>forge init</h2>
+<p>Create a new Forge workspace directory with a starter <code>config.yaml</code>.
+If <code>config.yaml</code> already exists, the command reports that Forge is initialised
+and runs tag cleanup instead of overwriting the config.</p>
+<pre><code>forge init [--workspace &lt;path&gt;]
+</code></pre>
 <hr />
 <h2>forge board</h2>
 <p>Display the kanban board showing projects grouped by column.</p>
@@ -175,12 +189,12 @@ forge board --json -c Write
 <hr />
 <h2>forge move</h2>
 <p>Move a project to a different kanban column by changing its Finder tag.</p>
-<pre><code>forge move &lt;project&gt; &lt;column&gt;
+<pre><code>forge move &lt;project&gt; &lt;column&gt; [--strict]
 </code></pre>
 <table>
 <thead>
 <tr>
-<th>Argument</th>
+<th>Argument / option</th>
 <th>Description</th>
 </tr>
 </thead>
@@ -193,87 +207,17 @@ forge board --json -c Write
 <td><code>column</code></td>
 <td>Target column name (must match configured column names)</td>
 </tr>
+<tr>
+<td><code>--strict</code></td>
+<td>Enforce left-to-right workflow (one column at a time; Shipped stays Shipped; Paused is a side column)</td>
+</tr>
 </tbody>
 </table>
+<p>By default any configured column is allowed (scripts and power users stay
+unblocked). Use <code>--strict</code> when you want the documented kanban transition rules.</p>
 <p><strong>Example:</strong></p>
 <pre><code class="language-bash">forge move manuscript Review
-</code></pre>
-<hr />
-<h2>forge project-tag</h2>
-<p>Add, remove, or list <strong>Finder tags</strong> on a project directory for <strong>meta</strong> (<code>board.meta_tags</code>)
-and <strong>assignee</strong> (<code>#Name</code>) labels. <strong>Kanban column</strong> (workflow) tags are only changed
-with <strong><code>forge move</code></strong>.</p>
-<pre><code>forge project-tag add &lt;project&gt; &lt;tag&gt; [--force]
-forge project-tag remove &lt;project&gt; &lt;tag&gt; [--force]
-forge project-tag list &lt;project&gt; [--json]
-</code></pre>
-<hr />
-<h2>forge calendar / forge events</h2>
-<p>List upcoming events from <strong>Apple Calendar</strong> (read-only). <strong><code>forge events</code></strong> is an alias
-for <strong><code>forge calendar</code></strong> — use whichever you prefer.</p>
-<hr />
-<h2>forge calendar / forge events</h2>
-<p>List upcoming events from <strong>Apple Calendar</strong> (read-only). <strong><code>forge events</code></strong> is an alias for <strong><code>forge calendar</code></strong> — use whichever you prefer. By default the window is the <strong>next 7 days</strong> from the start of today (local timezone).</p>
-<p>Uses EventKit on your Mac; nothing is written to Calendar. Optional <code>calendar.include</code> in
-<code>config.yaml</code> restricts which calendar <strong>titles</strong> are read (exact match); if
-empty or omitted, all event calendars are used.</p>
-<pre><code>forge calendar [--days &lt;n&gt;] [--start YYYY-MM-DD] [--json]
-forge events   [--days &lt;n&gt;] [--start YYYY-MM-DD] [--json]
-</code></pre>
-<table>
-<thead>
-<tr>
-<th>Option</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--days</code></td>
-<td>Number of calendar days in the window from the anchor day’s midnight (default: <strong>7</strong>)</td>
-</tr>
-<tr>
-<td><code>--start</code></td>
-<td>Anchor day (<code>YYYY-MM-DD</code>, local timezone); default: today</td>
-</tr>
-<tr>
-<td><code>--json</code></td>
-<td>Print JSON (window bounds + events) for scripting or pasting into a chat</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Examples:</strong></p>
-<pre><code class="language-bash">forge calendar              # Next 7 days (default)
-forge events                # Same as forge calendar
-forge calendar --days 14 --start 2026-04-14
-forge calendar --json       # Structured output for assistants
-</code></pre>
-<hr />
-<h2>forge move</h2>
-<p>Move a project to a different kanban column by changing its Finder tag.</p>
-<pre><code>forge move &lt;project&gt; &lt;column&gt;
-</code></pre>
-<table>
-<thead>
-<tr>
-<th>Argument</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>project</code></td>
-<td>Project directory name or unique substring</td>
-</tr>
-<tr>
-<td><code>column</code></td>
-<td>Target column name: Plan, Watch, Coding, Write, Review, Shipped, Paused</td>
-</tr>
-</tbody>
-</table>
-<p>Both arguments support prefix matching (e.g. <code>act</code> matches <code>Active</code>).</p>
-<p><strong>Example:</strong></p>
-<pre><code class="language-bash">forge move manuscript Review
+forge move manuscript Write --strict
 </code></pre>
 <hr />
 <h2>forge project-tag</h2>
@@ -333,11 +277,60 @@ forge project-tag remove Apodemus-DTV_Vaccines &quot;URGENT ⚠️&quot;
 forge project-tag list SomeProject --json
 </code></pre>
 <hr />
+<h2>forge calendar / forge events</h2>
+<p>List upcoming events from <strong>Apple Calendar</strong> (read-only). <strong><code>forge events</code></strong> is an alias for <strong><code>forge calendar</code></strong> — use whichever you prefer. By default the window is the <strong>next 7 days</strong> from the start of today (local timezone).</p>
+<p>Uses EventKit on your Mac; nothing is written to Calendar. Optional <code>calendar.include</code> in
+<code>config.yaml</code> restricts which calendar <strong>titles</strong> are read (exact match); if
+empty or omitted, all event calendars are used.</p>
+<pre><code>forge calendar [--days &lt;n&gt;] [--start YYYY-MM-DD] [--json]
+forge events   [--days &lt;n&gt;] [--start YYYY-MM-DD] [--json]
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--days</code></td>
+<td>Number of calendar days in the window from the anchor day’s midnight (default: <strong>7</strong>)</td>
+</tr>
+<tr>
+<td><code>--start</code></td>
+<td>Anchor day as <code>YYYY-MM-DD</code> (default: today)</td>
+</tr>
+<tr>
+<td><code>--json</code></td>
+<td>Structured JSON output</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Examples:</strong></p>
+<pre><code class="language-bash">forge calendar              # Next 7 days (default)
+forge events                # Same as forge calendar
+forge calendar --days 14 --start 2026-04-14
+forge calendar --json       # Structured output for assistants
+</code></pre>
+<hr />
 <h2>forge status</h2>
-<p>Display a colour-coded summary dashboard showing project counts per column,
-total projects, active count, and URGENT count.</p>
+<p>Print a compact histogram of projects per column, total/active counts, and how
+many projects carry an <strong>URGENT</strong>-prefixed meta tag.</p>
 <pre><code>forge status
 </code></pre>
+<hr />
+<h2>scripts/forge-brief.py</h2>
+<p>Read-only operational brief built from <code>forge board --json</code> (and optionally
+<code>forge calendar --json</code>). Surfaces URGENT items, neglected projects, stuck
+in-flight work, column load, and hygiene notes.</p>
+<pre><code class="language-bash">python3 scripts/forge-brief.py
+python3 scripts/forge-brief.py --stale-days 5 --show 8
+python3 scripts/forge-brief.py --calendar-calendars &quot;Work,Teaching&quot;
+</code></pre>
+<p>With an empty <code>--calendar-calendars</code> (the default), all calendars returned by
+<code>forge calendar</code> are included. Restrict titles with a comma-separated list when needed.</p>
+<p>This is <strong>not</strong> a <code>forge</code> subcommand; it requires <code>forge</code> on your <code>$PATH</code>.</p>
 <hr />
 <h2>Configuration: project roots</h2>
 <p>Set <strong><code>project_roots</code></strong> to a list of paths. Forge scans each root for project

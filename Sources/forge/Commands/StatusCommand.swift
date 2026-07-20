@@ -41,8 +41,7 @@ struct StatusCommand: AsyncParsableCommand {
 
         print("\(bold)\(projects.count)\(reset) projects total, \(bold)\(activeCount)\(reset) active")
 
-        let urgentTags: Set<String> = ["URGENT ⚠️"]
-        let urgentCount = projects.filter { p in p.metaTags.contains(where: { urgentTags.contains($0) }) }.count
+        let urgentCount = projects.filter { KanbanRadar.isUrgent(metaTags: $0.metaTags) }.count
         if urgentCount > 0 {
             print("\(urgentCount) urgent")
         }

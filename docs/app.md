@@ -95,12 +95,28 @@ Grant access for full functionality. This is declared in the app's
 ### Privacy and data flow
 
 - Forge.app reads and writes only the Forge directory on your disk
-  (configuration and caches).
+  (configuration and caches), plus Finder tags on your project folders.
 - Optional **`forge calendar`** reads Calendar events locally for terminal output only (read-only).
+- **Sparkle** may check for app updates and download a signed zip from GitHub Releases
+  (app binary only — not your board content). See **`PRIVACY.md`**.
+- **Preferences → Brief** can send a board/calendar summary to **local Ollama**
+  (or another base URL you configure). Prefer loopback; external endpoints transmit data.
+  The **External agent** option is not implemented yet.
 - You keep full control over where the Forge directory lives (for example on an
   encrypted volume, in a git repository, or in a local-only folder).
 - If you use an **LLM** with Forge output, prefer **Ollama with Pi** for local
   inference; see **`PRIVACY.md`** (**AI assistants and local language models**).
+
+---
+
+## Brief (Preferences)
+
+Open **Forge → Preferences… → Brief** to generate an LLM-assisted board summary.
+
+- **Local Ollama** — default; uses `http://127.0.0.1:11434` unless you change the base URL.
+- **External agent** — placeholder only; generation fails with a clear “not implemented” message.
+
+You can review proposed column/tag changes before applying them.
 
 ---
 

@@ -26,11 +26,30 @@ forge <command> [options]
 
 | Command | Purpose |
 |---------|---------|
+| `forge init` | Scaffold a Forge workspace (`config.yaml` and folders) |
 | `forge board` | Display the kanban board |
 | `forge move` | Move a project between columns |
 | `forge project-tag` | Add, remove, or list meta / assignee Finder tags on a project folder |
-| `forge status` | Summary dashboard of all projects |
+| `forge status` | Summary dashboard of all projects (column counts, active, URGENT) |
 | `forge calendar` / `forge events` | List upcoming Calendar events (read-only; same command) |
+
+Read-only brief (Python helper, not a `forge` subcommand):
+
+```bash
+python3 scripts/forge-brief.py
+```
+
+---
+
+## forge init
+
+Create a new Forge workspace directory with a starter `config.yaml`.
+If `config.yaml` already exists, the command reports that Forge is initialised
+and runs tag cleanup instead of overwriting the config.
+
+```
+forge init [--workspace <path>]
+```
 
 ---
 
@@ -65,92 +84,23 @@ forge board --json -c Write
 Move a project to a different kanban column by changing its Finder tag.
 
 ```
-forge move <project> <column>
+forge move <project> <column> [--strict]
 ```
 
-| Argument | Description |
+| Argument / option | Description |
 |----------|-------------|
 | `project` | Project directory name or unique substring |
 | `column` | Target column name (must match configured column names) |
+| `--strict` | Enforce left-to-right workflow (one column at a time; Shipped stays Shipped; Paused is a side column) |
+
+By default any configured column is allowed (scripts and power users stay
+unblocked). Use `--strict` when you want the documented kanban transition rules.
 
 **Example:**
 
 ```bash
 forge move manuscript Review
-```
-
----
-
-## forge project-tag
-
-Add, remove, or list **Finder tags** on a project directory for **meta** (`board.meta_tags`)
-and **assignee** (`#Name`) labels. **Kanban column** (workflow) tags are only changed
-with **`forge move`**.
-
-```
-forge project-tag add <project> <tag> [--force]
-forge project-tag remove <project> <tag> [--force]
-forge project-tag list <project> [--json]
-```
-
----
-
-## forge calendar / forge events
-
-List upcoming events from **Apple Calendar** (read-only). **`forge events`** is an alias
-for **`forge calendar`** — use whichever you prefer.
-
----
-
-## forge calendar / forge events
-
-List upcoming events from **Apple Calendar** (read-only). **`forge events`** is an alias for **`forge calendar`** — use whichever you prefer. By default the window is the **next 7 days** from the start of today (local timezone).
-
-Uses EventKit on your Mac; nothing is written to Calendar. Optional `calendar.include` in
-`config.yaml` restricts which calendar **titles** are read (exact match); if
-empty or omitted, all event calendars are used.
-
-```
-forge calendar [--days <n>] [--start YYYY-MM-DD] [--json]
-forge events   [--days <n>] [--start YYYY-MM-DD] [--json]
-```
-
-| Option | Description |
-|--------|-------------|
-| `--days` | Number of calendar days in the window from the anchor day’s midnight (default: **7**) |
-| `--start` | Anchor day (`YYYY-MM-DD`, local timezone); default: today |
-| `--json` | Print JSON (window bounds + events) for scripting or pasting into a chat |
-
-**Examples:**
-
-```bash
-forge calendar              # Next 7 days (default)
-forge events                # Same as forge calendar
-forge calendar --days 14 --start 2026-04-14
-forge calendar --json       # Structured output for assistants
-```
-
----
-
-## forge move
-
-Move a project to a different kanban column by changing its Finder tag.
-
-```
-forge move <project> <column>
-```
-
-| Argument | Description |
-|----------|-------------|
-| `project` | Project directory name or unique substring |
-| `column` | Target column name: Plan, Watch, Coding, Write, Review, Shipped, Paused |
-
-Both arguments support prefix matching (e.g. `act` matches `Active`).
-
-**Example:**
-
-```bash
-forge move manuscript Review
+forge move manuscript Write --strict
 ```
 
 ---
@@ -187,14 +137,63 @@ forge project-tag list SomeProject --json
 
 ---
 
+## forge calendar / forge events
+
+List upcoming events from **Apple Calendar** (read-only). **`forge events`** is an alias for **`forge calendar`** — use whichever you prefer. By default the window is the **next 7 days** from the start of today (local timezone).
+
+Uses EventKit on your Mac; nothing is written to Calendar. Optional `calendar.include` in
+`config.yaml` restricts which calendar **titles** are read (exact match); if
+empty or omitted, all event calendars are used.
+
+```
+forge calendar [--days <n>] [--start YYYY-MM-DD] [--json]
+forge events   [--days <n>] [--start YYYY-MM-DD] [--json]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--days` | Number of calendar days in the window from the anchor day’s midnight (default: **7**) |
+| `--start` | Anchor day as `YYYY-MM-DD` (default: today) |
+| `--json` | Structured JSON output |
+
+**Examples:**
+
+```bash
+forge calendar              # Next 7 days (default)
+forge events                # Same as forge calendar
+forge calendar --days 14 --start 2026-04-14
+forge calendar --json       # Structured output for assistants
+```
+
+---
+
 ## forge status
 
-Display a colour-coded summary dashboard showing project counts per column,
-total projects, active count, and URGENT count.
+Print a compact histogram of projects per column, total/active counts, and how
+many projects carry an **URGENT**-prefixed meta tag.
 
 ```
 forge status
 ```
+
+---
+
+## scripts/forge-brief.py
+
+Read-only operational brief built from `forge board --json` (and optionally
+`forge calendar --json`). Surfaces URGENT items, neglected projects, stuck
+in-flight work, column load, and hygiene notes.
+
+```bash
+python3 scripts/forge-brief.py
+python3 scripts/forge-brief.py --stale-days 5 --show 8
+python3 scripts/forge-brief.py --calendar-calendars "Work,Teaching"
+```
+
+With an empty `--calendar-calendars` (the default), all calendars returned by
+`forge calendar` are included. Restrict titles with a comma-separated list when needed.
+
+This is **not** a `forge` subcommand; it requires `forge` on your `$PATH`.
 
 ---
 

@@ -114,17 +114,38 @@ This document summarises what data Forge uses, where it lives, and how it moves.
     from your calendars for display in the terminal.</li>
 <li>Nothing is written back to Calendar, and nothing is sent to Forge servers.</li>
 <li>
-<p>Optional <code>gtd.calendar_include</code> in <code>config.yaml</code> (if present) limits which calendar
+<p>Optional <code>calendar.include</code> in <code>config.yaml</code> (if present) limits which calendar
     <strong>titles</strong> are queried (exact match); if omitted or empty, all event
-    calendars are included.</p>
+    calendars are included. Legacy <code>gtd.calendar_include</code> is still read as a
+    fallback.</p>
 </li>
 <li>
-<p><strong>No telemetry or remote services</strong></p>
+<p><strong>Sparkle app updates (Forge.app)</strong></p>
 </li>
-<li>Forge sends <strong>no usage analytics, telemetry, or task content</strong> to any
-    external service.</li>
-<li>Network traffic, if any, is solely whatever macOS and your configured
-    accounts already perform via the system.</li>
+<li>The menubar app may check
+    <a href="https://raw.githubusercontent.com/SimonAB/forge/main/docs/appcast.xml"><code>docs/appcast.xml</code></a>
+    and download a signed app zip from GitHub Releases. This is update metadata
+    and the app binary only — not your board or project content.</li>
+<li>
+<p>Disable checks via <strong>Forge → Check for Updates…</strong> preferences if you prefer
+    fully offline updates (install new builds yourself).</p>
+</li>
+<li>
+<p><strong>In-app Brief (optional)</strong></p>
+</li>
+<li>Preferences can send a <strong>board + calendar summary</strong> to a configured LLM
+    endpoint (typically local <strong>Ollama</strong> at <code>http://127.0.0.1:11434</code>). A
+    non-loopback base URL will transmit that summary off-machine.</li>
+<li>
+<p>Prefer local models; see <strong>AI assistants and local language models</strong> below.</p>
+</li>
+<li>
+<p><strong>No telemetry</strong></p>
+</li>
+<li>Forge sends <strong>no usage analytics or telemetry</strong>.</li>
+<li>Aside from Sparkle updates (if enabled) and an optional Brief LLM endpoint
+    you configure, network traffic is solely whatever macOS and your accounts
+    already perform via the system.</li>
 </ul>
 <h3>Running Forge in more private modes</h3>
 <ul>

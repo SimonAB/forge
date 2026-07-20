@@ -50,17 +50,19 @@ Purpose: Move a project to a different kanban column (changes its Finder tag).
 
 Usage:
 - `forge move <project> <ColumnName>`
+- `forge move <project> <ColumnName> --strict` — enforce one-column steps; reject Shipped→Paused / leaving Shipped.
 
 Arguments:
 - `<project>` — the project directory name or a unique substring (e.g. "Manuscript" matches "Mus-Hb_Nutrition").
 - `<ColumnName>` — must match one of: Plan, Watch, Coding, Write, Review, Shipped, Paused.
 
-Workflow transitions (always progress left to right):
-- Plan → Watch → Coding → Write → Review → Shipped
-- Any column → Paused (hold/stop)
-- Paused → any active column (resume)
+By default any configured column is allowed. Prefer `--strict` (or assistant approval gates) when following the workflow table below.
 
-Never assume a column transition; always ask the user for approval.
+Workflow transitions (strict / assistant policy):
+- Plan → Watch → Coding → Write → Review → Shipped (one step at a time)
+- Any column except Shipped → Paused (hold/stop)
+- Paused → any column (resume)
+- Never assume a column transition; always ask the user for approval.
 
 ## forge project-tag
 

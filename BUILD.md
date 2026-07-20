@@ -18,6 +18,9 @@ A full `swift build` builds the **forge** CLI, which depends on **swift-argument
 
 The **build.sh** script builds the app targets first, then the CLI, so the menubar and board apps are available sooner.
 
+Developer flags: `zsh build.sh --no-clean` (skip `swift package clean`) and
+`zsh build.sh --no-launch-agent` (skip login agent install).
+
 ## Targets
 
 | Target         | Description                    |
@@ -38,3 +41,13 @@ The **build.sh** script builds the app targets first, then the CLI, so the menub
 # CLI
 .build/debug/forge board
 ```
+
+## Tests
+
+```bash
+swift test
+```
+
+Installer helpers live in **ForgeCore** so the suite does not link Sparkle.
+CI runs `swift build`, `swift test`, and `python3 -m py_compile scripts/forge-brief.py`
+on pull requests and pushes to `main` (see `.github/workflows/ci.yml`).

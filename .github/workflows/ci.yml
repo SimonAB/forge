@@ -1,0 +1,35 @@
+# Build and test on pull requests and pushes to main.
+#
+# Uses macos-15 so the toolchain matches Swift 6 / swift-tools-version 6.0.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: macos-15
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Toolchain
+        run: swift --version && xcodebuild -version
+
+      - name: Build
+        run: swift build
+
+      - name: Test
+        run: swift test
+
+      - name: Compile brief script
+        run: python3 -m py_compile scripts/forge-brief.py

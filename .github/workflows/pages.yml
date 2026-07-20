@@ -33,6 +33,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Install docs dependencies
+        run: pip3 install -r docs/requirements.txt
+
+      - name: Regenerate static HTML from markdown
+        run: python3 docs/build_site.py
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
 

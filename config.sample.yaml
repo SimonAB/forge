@@ -44,9 +44,11 @@ calendar:
   #   - Work
   #   - Teaching
 
-# Legacy task-system configuration (kept for backwards compatibility).
+# Legacy keys (kept for backwards compatibility; unused by the kanban CLI).
+# Prefer `calendar.include` above. These may emit deprecation notes in future releases.
 gtd:
   reminders_list: Forge
+# due_conflict_policy, workspace_tags, and project_areas are similarly legacy.
 
 terminal: auto
 project_tag: "🔥 Forge"

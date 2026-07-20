@@ -217,7 +217,7 @@ See `@.cursor/rules/forge-workflows.mdc` for stale remediation and URGENT triage
 | `forge project-tag list <proj>`| Show tags                     |
 | `forge project-tag add <proj> <tag>` | Add tag              |
 | `forge project-tag remove <proj> <tag>` | Remove tag          |
-| `forge status`                  | OmniFocus task count          |
+| `forge status`                  | Summary dashboard (column counts, URGENT) |
 
 ### Restricted (Require Approval)
 
@@ -314,6 +314,6 @@ Never invent or hand-write task IDs. IDs are OmniFocus and `forge` assigned and 
 | `forge project-tag list <proj>`| Yes      | Show tags                      |
 | `forge project-tag add <proj> <tag>` | No       | Add tag                   |
 | `forge project-tag remove <proj> <tag>` | No       | Remove tag              |
-| `forge status`                   | Yes     | OmniFocus task count            |
+| `forge status`                   | Yes     | Summary dashboard (column counts, URGENT) |
 
 For full specs: `@.cursor/rules/forge-cli.mdc`, `@.cursor/rules/forge-workflows.mdc`, `.hermes/skills/forge-board/SKILL.md`. New project README scaffold: `PROJECT_TEMPLATE.md`.

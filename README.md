@@ -35,7 +35,7 @@ files.
 
 Forge works well if you:
 
-- Prefer plain-text, markdown-based systems you can search, diff, and version-control with git.
+- Prefer plain-text systems you can search and version-control with git, alongside Finder tags.
 - Want project state driven by Finder tags (including assignees as `#Person` tags).
 - Want a kanban view for projects without a hosted backend.
 - Care about local-first privacy: Forge uses no hosted servers.
@@ -69,17 +69,16 @@ The **full documentation** is also published as static HTML next to the landing 
 | [`docs/readme.html`](docs/readme.html) | [`README.md`](README.md) |
 | [`docs/changelog.html`](docs/changelog.html) | [`CHANGELOG.md`](CHANGELOG.md) |
 
-Regenerate the `*.html` files after editing documentation:
+Regenerate the `*.html` files after editing documentation (also done automatically
+in `.github/workflows/pages.yml` on pushes to `main`):
 
 ```bash
 pip install -r docs/requirements.txt   # once per environment
 python3 docs/build_site.py
 ```
 
-Commit the updated HTML so **GitHub Pages** serves the latest content.
-
 To publish with **GitHub Pages**, open **Settings → Pages**, set **Build and deployment**
-to **Deploy from a branch**, branch **main**, folder **`/docs`**.
+**Source** to **GitHub Actions** (not “Deploy from a branch”).
 
 ## Quick start
 
@@ -124,7 +123,7 @@ files in the Forge directory, shared across machines however you choose to sync.
   or in a local-only folder if you prefer not to sync via any cloud service.
 
 See `PRIVACY.md` for a fuller description of what Forge stores, how sync works,
-and how to run in markdown-only or local-only modes.
+and how to run without Calendar access or with local-only storage.
 
 If you use an **AI assistant** with Forge output (for example pasting `forge brief`
 into a chat), you can choose what fits: **Ollama with the Pi coding agent** for
