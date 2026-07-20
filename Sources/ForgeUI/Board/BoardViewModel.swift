@@ -46,13 +46,13 @@ public final class BoardViewModel {
     )?
 
     private let fetchProjects: @Sendable () async throws -> [Project]
-    private let moveProject: @Sendable (Project, ColumnConfig) throws -> Void
+    private let moveProject: @Sendable (Project, ColumnConfig) async throws -> Void
     private let performSync: (@Sendable () async throws -> Void)?
 
     public init(
         config: ForgeConfig,
         fetchProjects: @escaping @Sendable () async throws -> [Project],
-        moveProject: @escaping @Sendable (Project, ColumnConfig) throws -> Void,
+        moveProject: @escaping @Sendable (Project, ColumnConfig) async throws -> Void,
         filterMetaTags: [String]? = nil,
         performSync: (@Sendable () async throws -> Void)? = nil
     ) {
@@ -103,11 +103,20 @@ public final class BoardViewModel {
 
     /// Move a project to a target column by calling the injected move closure, then refresh.
     public func move(project: Project, toColumn column: ColumnConfig) {
-        do {
-            try moveProject(project, column)
-            load()
-        } catch {
-            self.error = error.localizedDescription
+        isLoading = true
+        error = nil
+        Task {
+            do {
+                try await moveProject(project, column)
+                await MainActor.run {
+                    self.load()
+                }
+            } catch {
+                await MainActor.run {
+                    self.isLoading = false
+                    self.error = error.localizedDescription
+                }
+            }
         }
     }
 

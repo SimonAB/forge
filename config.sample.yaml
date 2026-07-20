@@ -50,5 +50,41 @@ gtd:
   reminders_list: Forge
 # due_conflict_policy, workspace_tags, and project_areas are similarly legacy.
 
+# Optional OmniFocus bridge (Omni Automation / OmniJS via JXA).
+# Dry-run is the default for align/apply; nothing writes OF or Finder tags without --apply.
+omnifocus:
+  enabled: false
+  sync_on_move: false
+  # On board Refresh, pull a unanimous OF column onto Finder workflow tags.
+  sync_from_omnifocus: true
+  # When a linked OF project is Done/Dropped, move Finder folder to Shipped on Refresh.
+  sync_completed_project_to_shipped: true
+  allow_sync_with_drift: false
+  snapshot_max_age_seconds: 900
+  default_untagged_column: Watch
+  propose_urgent_on_overdue: true
+  propose_shipped_when_idle: true
+  # Match Finder project_tag (default). Older pilots used plain "Forge".
+  link_tag_root: "🔥 Forge"
+  legacy_link_tag_roots: ["Forge"]
+  # Nested fallback root (used only when flat_column_tags is false, or a column has no alias).
+  column_tag_root: KanbanStatus
+  legacy_column_tag_roots: ["ForgeColumn"]
+  # Prefer existing OF status tags as the sole column markers (recommended).
+  flat_column_tags: true
+  # column_tag_aliases:
+  #   Plan: "Plan 💡"
+  #   Watch: "Watch 🚧"
+  #   Coding: "Coding 🤖"
+  #   Write: "Write ✒️"
+  #   Review: "Review 🖍️"
+  #   Shipped: "Shipped 🚀"
+  #   Paused: "On hold ⏸︎"
+  # Extra OF names still recognised when reading (not written):
+  # column_tag_alias_reads:
+  #   "Watch Later 🎬": Watch
+  # folder_aliases:
+  #   OldTagName: ActualFolderName
+
 terminal: auto
 project_tag: "🔥 Forge"

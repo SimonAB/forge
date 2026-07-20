@@ -185,6 +185,13 @@ public struct BoardView: View {
                 }
                 .disabled(viewModel.isLoading)
                 .keyboardShortcut("s", modifiers: .command)
+                .help({
+                    let of = viewModel.config.omnifocus
+                    if of.enabled && (of.syncFromOmnifocus || of.syncOnMove || of.syncCompletedProjectToShipped) {
+                        return "Refresh board and sync OmniFocus ↔ Finder columns"
+                    }
+                    return "Refresh board from Finder tags"
+                }())
             }
         }
         .onAppear {

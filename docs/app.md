@@ -73,9 +73,16 @@ indicates urgent items:
 | Item | Shortcut | Description |
 |------|----------|-------------|
 | **Board** | Cmd+B | Opens the native Kanban board window |
+| **OmniFocus Align…** | — | When OmniFocus integration is enabled: dry-run alignment plan; **Apply** writes OF/Finder tags after confirmation |
 | **Open Board in Terminal** | — | Runs `forge board` in your terminal |
 | **Quit Forge** | Cmd+Q | Exits Forge.app |
 | **Check for Updates…** | — | Sparkle: compares with **`docs/appcast.xml`** and offers signed **`Forge-macos-arm64.app.zip`** |
+
+### OmniFocus (optional)
+
+Enable under **Preferences → OmniFocus**. With `sync_on_move`, board column moves mirror onto linked OF tasks. With `sync_from_omnifocus`, board **Refresh** pulls OF column tags onto Finder (and clears stacked leftover OF kanban tags on those folders). Finder→OF is not rewritten from Refresh. With `sync_completed_project_to_shipped`, a completed/dropped OF **project** moves the matching Finder folder to **Shipped** on Refresh.
+
+CLI: `forge omnifocus doctor` → `align` (dry-run) → `align --apply`. See [cli.md](cli.md) and `packaging/omnifocus/README.md`.
 
 ---
 

@@ -20,6 +20,12 @@ struct MoveCommand: AsyncParsableCommand {
     )
     var strict: Bool = false
 
+    @Flag(
+        name: .long,
+        help: "With OmniFocus sync_on_move, proceed even when doctor reports drift."
+    )
+    var force: Bool = false
+
     mutating func run() async throws {
         let config = try ConfigLoader.load()
         let scanner = WorkspaceScanner(config: config)
@@ -54,6 +60,27 @@ struct MoveCommand: AsyncParsableCommand {
 
         let from = matched.column ?? "Untagged"
         print("\(matched.name): \(from) → \(targetCol.name)")
+
+        let forgeDir = ConfigLoader.forgeDirectory(for: config)
+        let outcome = OmniFocusMoveSync.mirrorFinderColumn(
+            config: config,
+            forgeDir: forgeDir,
+            projects: projects,
+            project: matched,
+            column: targetCol.name,
+            force: force
+        )
+        switch outcome {
+        case .disabled:
+            break
+        case .skipped(let reason):
+            print("OmniFocus sync skipped: \(reason)")
+        case .synced(let count, let alias, let missing):
+            var msg = "OmniFocus sync: \(config.omnifocus.columnTagLabel(for: targetCol.name)) on \(count) task(s)."
+            if let alias { msg += " alias \(alias)" }
+            if !missing.isEmpty { msg += " (missing alias: \(missing.joined(separator: ", ")))" }
+            print(msg)
+        }
     }
 
     private func findColumn(named name: String, in config: ForgeConfig) -> ColumnConfig? {

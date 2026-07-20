@@ -108,13 +108,52 @@ private struct BoardRootView: View {
         let scanner = WorkspaceScanner(config: config)
         let tagStore = FinderTagStore()
         let fetch: @Sendable () async throws -> [Project] = { try await scanner.scanProjects() }
-        let move: @Sendable (Project, ColumnConfig) throws -> Void = { project, column in
+        let move: @Sendable (Project, ColumnConfig) async throws -> Void = { project, column in
             if let existing = project.workflowTag {
                 try tagStore.removeTag(existing, at: project.path)
             }
             try tagStore.addTag(column.tag, at: project.path)
+
+            guard config.omnifocus.enabled, config.omnifocus.syncOnMove else { return }
+            guard let resolvedForgeDir = forgeDir else { return }
+            let projects = try await scanner.scanProjects()
+            let outcome = OmniFocusMoveSync.mirrorFinderColumn(
+                config: config,
+                forgeDir: resolvedForgeDir,
+                projects: projects,
+                project: project,
+                column: column.name
+            )
+            if case .skipped(let reason) = outcome, reason.contains("ambiguous") {
+                throw OmniJSBridgeError.evaluationFailed("OmniFocus sync skipped: \(reason)")
+            }
         }
-        let performSync: (@Sendable () async throws -> Void)? = nil
+        let performSync: (@Sendable () async throws -> Void)? = {
+            guard let resolvedForgeDir = forgeDir else {
+                throw OmniJSBridgeError.evaluationFailed(
+                    "Forge directory unknown; cannot sync OmniFocus."
+                )
+            }
+            let configPath = (resolvedForgeDir as NSString).appendingPathComponent("config.yaml")
+            let activeConfig = (try? ForgeConfig.load(from: configPath)) ?? config
+            guard activeConfig.omnifocus.enabled else { return }
+            guard activeConfig.omnifocus.syncOnMove
+                || activeConfig.omnifocus.syncFromOmnifocus
+                || activeConfig.omnifocus.syncCompletedProjectToShipped else { return }
+
+            let freshScanner = WorkspaceScanner(config: activeConfig)
+            let projects = try await freshScanner.scanProjects()
+            let outcome = try OmniFocusMoveSync.syncBidirectionalOnRefresh(
+                config: activeConfig,
+                forgeDir: resolvedForgeDir,
+                projects: projects
+            )
+            if !outcome.errors.isEmpty {
+                throw OmniJSBridgeError.evaluationFailed(
+                    "OmniFocus refresh: \(outcome.errors.joined(separator: "; "))"
+                )
+            }
+        }
         return BoardViewModel(
             config: config,
             fetchProjects: fetch,

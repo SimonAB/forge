@@ -6,8 +6,46 @@ The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 ### Unreleased
 
+#### OmniFocus bridge (optional)
+
+- **`forge omnifocus`** — Omni Automation (OmniJS via JXA) bridge: `doctor`,
+  `align` (dry-run by default; `--apply` to write), `refresh` (local snapshot),
+  `status`, `show`, `proposals` / `apply`.
+- **`tag_matching_of_project`** — for structure_hint name matches, propose tagging
+  the OF project + active tasks with `🔥 Forge:<name>` (legacy `Forge:` still
+  readable; use
+  `align --structure-hints-only` to preview just those).
+- **`link_tag_root`** — defaults to `🔥 Forge` (matches Finder `project_tag`);
+  `legacy_link_tag_roots` keeps older `Forge` tags readable.
+- **`column_tag_root`** — nested fallback (`KanbanStatus`; legacy `ForgeColumn` still readable).
+- **`flat_column_tags`** (default true) + **`column_tag_aliases`** — use existing OF status
+  tags (e.g. `Write ✒️`, `Watch 🚧`) as the sole column markers; nested `KanbanStatus/…`
+  is read for migration only. `column_tag_alias_reads` keeps old names readable.
+  `align --aliases-only` proposes missing flat tags / strip nested duplicates.
+- **`align --column-only`** — propose only kanban-status / Finder column drift fixes.
+- **Forge.app Preferences → OmniFocus** — optional toggles for `omnifocus.enabled` and
+  `sync_on_move` (writes `config.yaml`; board reloads so the setting takes effect).
+- **`sync_on_move`** — gated per-project (ambiguous links only), not board-wide `forge_only`;
+  refreshes the local snapshot after a successful mirror. Column writes batch into one
+  OmniJS call and resolve tasks via `Task.byIdentifier` when IDs are known.
+  Board / menubar moves and Refresh now call the same OmniFocus mirror (previously CLI-only).
+- **`sync_from_omnifocus`** (default true) — board **Refresh** pulls OF columns onto Finder;
+  `forge omnifocus refresh --apply-finder` does the same from CLI.
+- **`sync_completed_project_to_shipped`** (default true) — when an OF *project* is Done/Dropped,
+  Refresh moves the matching Finder folder to Shipped.
+- **Multi-tag OF tasks** — default resolve keeps Finder’s column when it is among them,
+  otherwise the furthest main-flow column. **Refresh pull** prefers a stacked tag that
+  *differs* from Finder (e.g. Watch added while Review remains), then strips OF extras
+  to that column. Refresh no longer pushes stale Finder columns onto OmniFocus.
+- **Menubar OmniFocus Align…** — preview-first sheet; Apply confirms writes.
+- **Align ignore list** — `.cache/omnifocus-align-ignore.json` for OF-only noise.
+- **Alignment gate** — `sync_on_move` skips OF writes while doctor reports drift
+  unless `allow_sync_with_drift` or `forge move --force`.
+- **Board JSON** — optional per-project `omnifocus` enrichment from the snapshot cache.
+- **Plug-in** — `packaging/omnifocus/` Automation menu helper.
+
 > **Current product:** Finder-tag kanban (`forge` CLI, Forge.app, optional Calendar read,
-> optional Ollama Brief). Older changelog entries that mention Reminders, `forge sync`,
+> optional Ollama Brief, optional OmniFocus bridge). Older changelog entries that mention Reminders, `forge sync`,
 > or `TASKS.md` indexing describe historical behaviour.
 
 #### Quality / CI

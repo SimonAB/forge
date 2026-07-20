@@ -109,7 +109,21 @@ Tasks in OmniFocus map to Forge kanban columns via Finder tags:
 | `flt task` in `Projects` with `Next Action` | `Watch` |
 | `flt task` in `Projects` mid-flow | `Coding`/`Write`/`Review` |
 
-Use `forge board` to read kanban state; use OmniFocus AppleScript for task-level detail. When a Forge project's column changes, propose updating the corresponding OmniFocus task properties.
+Use `forge board` to read kanban state; use **`forge omnifocus doctor` / `align` / `show`**
+(when `omnifocus.enabled`) for OmniFocus-linked tasks. Prefer the OmniJS bridge over
+hand-rolled OFML AppleScript. When a Forge project's column changes with
+`omnifocus.sync_on_move`, Forge mirrors the configured OF column tag (flat aliases such as
+`Watch 🚧` when `flat_column_tags` is set, otherwise `KanbanStatus/<Column>`) onto linked OF tasks.
+With `omnifocus.sync_from_omnifocus` (default true), board **Refresh** and
+`forge omnifocus refresh --apply-finder` pull OF columns onto Finder. When a task
+carries several kanban tags, Refresh prefers a tag that differs from the current
+Finder column (typical when Watch is added without clearing Review), then strips
+leftover OF kanban tags on folders it updated. Refresh does **not** push Finder
+columns onto OmniFocus — that happens on `forge move` / board drag with
+`sync_on_move`. With `omnifocus.sync_completed_project_to_shipped` (default true),
+a completed/dropped OF **project** moves the matching Finder folder to Shipped on
+Refresh. (After doctor is clean for ambiguous links.) For live OFML experiments,
+validate simple queries first.
 
 ### OFML Data Schema
 

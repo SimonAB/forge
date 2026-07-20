@@ -194,6 +194,7 @@ public struct ForgeConfig: Codable, Sendable {
     public let projectRoots: [String]
     public let board: BoardConfig
     public let calendar: CalendarConfig
+    public let omnifocus: OmniFocusConfig
     public let gtd: GTDConfig
     public let workspaceTags: [String]
     public var projectAreas: [String: [String]]
@@ -217,7 +218,7 @@ public struct ForgeConfig: Codable, Sendable {
 
     enum CodingKeys: String, CodingKey {
         case workspace
-        case board, calendar
+        case board, calendar, omnifocus
         case gtd
         case projectRoots = "project_roots"
         case workspaceTags = "workspace_tags"
@@ -233,6 +234,7 @@ public struct ForgeConfig: Codable, Sendable {
         try container.encode(projectRoots, forKey: .projectRoots)
         try container.encode(board, forKey: .board)
         try container.encode(calendar, forKey: .calendar)
+        try container.encode(omnifocus, forKey: .omnifocus)
         try container.encode(gtd, forKey: .gtd)
         try container.encode(workspaceTags, forKey: .workspaceTags)
         try container.encode(projectAreas, forKey: .projectAreas)
@@ -246,6 +248,7 @@ public struct ForgeConfig: Codable, Sendable {
         projectRoots: [String],
         board: BoardConfig,
         calendar: CalendarConfig = CalendarConfig(),
+        omnifocus: OmniFocusConfig = OmniFocusConfig(),
         gtd: GTDConfig = GTDConfig(),
         workspaceTags: [String] = ["work"],
         projectAreas: [String: [String]] = [:],
@@ -257,6 +260,7 @@ public struct ForgeConfig: Codable, Sendable {
         self.projectRoots = projectRoots
         self.board = board
         self.calendar = calendar
+        self.omnifocus = omnifocus
         self.gtd = gtd
         self.workspaceTags = workspaceTags
         self.projectAreas = projectAreas
@@ -302,6 +306,7 @@ extension ForgeConfig {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         board = try container.decode(BoardConfig.self, forKey: .board)
         var decodedCalendar = (try? container.decode(CalendarConfig.self, forKey: .calendar)) ?? CalendarConfig()
+        omnifocus = (try? container.decode(OmniFocusConfig.self, forKey: .omnifocus)) ?? OmniFocusConfig()
         gtd = (try? container.decode(GTDConfig.self, forKey: .gtd)) ?? GTDConfig()
         let roots = try container.decodeIfPresent([String].self, forKey: .projectRoots)
         let legacyWorkspace = try container.decodeIfPresent(String.self, forKey: .workspace)

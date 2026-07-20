@@ -163,6 +163,11 @@ indicates urgent items:</p>
 <td>Opens the native Kanban board window</td>
 </tr>
 <tr>
+<td><strong>OmniFocus Align…</strong></td>
+<td>—</td>
+<td>When OmniFocus integration is enabled: dry-run alignment plan; <strong>Apply</strong> writes OF/Finder tags after confirmation</td>
+</tr>
+<tr>
 <td><strong>Open Board in Terminal</strong></td>
 <td>—</td>
 <td>Runs <code>forge board</code> in your terminal</td>
@@ -179,6 +184,9 @@ indicates urgent items:</p>
 </tr>
 </tbody>
 </table>
+<h3>OmniFocus (optional)</h3>
+<p>Enable under <strong>Preferences → OmniFocus</strong>. With <code>sync_on_move</code>, board column moves mirror onto linked OF tasks. With <code>sync_from_omnifocus</code>, board <strong>Refresh</strong> pulls OF column tags onto Finder (and clears stacked leftover OF kanban tags on those folders). Finder→OF is not rewritten from Refresh. With <code>sync_completed_project_to_shipped</code>, a completed/dropped OF <strong>project</strong> moves the matching Finder folder to <strong>Shipped</strong> on Refresh.</p>
+<p>CLI: <code>forge omnifocus doctor</code> → <code>align</code> (dry-run) → <code>align --apply</code>. See <a href="cli.md">cli.md</a> and <code>packaging/omnifocus/README.md</code>.</p>
 <hr />
 <h2>Quick capture</h2>
 <p>Forge no longer includes a GTD task system, so there is no quick-capture panel.</p>

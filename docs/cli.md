@@ -197,6 +197,40 @@ This is **not** a `forge` subcommand; it requires `forge` on your `$PATH`.
 
 ---
 
+## forge omnifocus
+
+Optional bridge to **OmniFocus** via Omni Automation (OmniJS). Requires
+`omnifocus.enabled: true` in `config.yaml`. Mutating commands **default to
+dry-run**; pass `--apply` (and confirm, unless `--yes`) before anything is written
+to OmniFocus or Finder tags. `refresh` updates the local
+`.cache/omnifocus-snapshot.json`; with `--apply-finder` it also pulls OF columns
+onto Finder (when `sync_from_omnifocus` is true). Board **Refresh**
+does the same pull (and strips leftover OF kanban tags on folders it updated).
+Finder→OF writes happen on `forge move` / board drag when `sync_on_move` is on.
+
+```
+forge omnifocus doctor [--json] [--live]
+forge omnifocus align [--json] [--apply [--yes]] [--prefer finder|omnifocus] [--structure-hints-only] [--column-only] [--migrate-columns-only] [--aliases-only]
+forge omnifocus refresh [--apply-finder]
+forge omnifocus status
+forge omnifocus show <project> [--live]
+forge omnifocus proposals [--json]
+forge omnifocus apply [--apply [--yes]]   # same as align; dry-run unless --apply
+```
+
+Typical first-time flow:
+
+```bash
+forge omnifocus doctor
+forge omnifocus align          # review the plan
+forge omnifocus align --apply  # confirm when prompted
+```
+
+See `packaging/omnifocus/README.md` for the optional Automation plug-in and tag
+conventions (`🔥 Forge:…` by default, legacy `Forge:…` still readable; flat `column_tag_aliases` such as `Watch 🚧` when `flat_column_tags` is true; nested `KanbanStatus/…` / legacy `ForgeColumn/…` for fallback and migration).
+
+---
+
 ## Configuration: project roots
 
 Set **`project_roots`** to a list of paths. Forge scans each root for project

@@ -332,6 +332,31 @@ python3 scripts/forge-brief.py --calendar-calendars &quot;Work,Teaching&quot;
 <code>forge calendar</code> are included. Restrict titles with a comma-separated list when needed.</p>
 <p>This is <strong>not</strong> a <code>forge</code> subcommand; it requires <code>forge</code> on your <code>$PATH</code>.</p>
 <hr />
+<h2>forge omnifocus</h2>
+<p>Optional bridge to <strong>OmniFocus</strong> via Omni Automation (OmniJS). Requires
+<code>omnifocus.enabled: true</code> in <code>config.yaml</code>. Mutating commands <strong>default to
+dry-run</strong>; pass <code>--apply</code> (and confirm, unless <code>--yes</code>) before anything is written
+to OmniFocus or Finder tags. <code>refresh</code> updates the local
+<code>.cache/omnifocus-snapshot.json</code>; with <code>--apply-finder</code> it also pulls OF columns
+onto Finder (when <code>sync_from_omnifocus</code> is true). Board <strong>Refresh</strong>
+does the same pull (and strips leftover OF kanban tags on folders it updated).
+Finder→OF writes happen on <code>forge move</code> / board drag when <code>sync_on_move</code> is on.</p>
+<pre><code>forge omnifocus doctor [--json] [--live]
+forge omnifocus align [--json] [--apply [--yes]] [--prefer finder|omnifocus] [--structure-hints-only] [--column-only] [--migrate-columns-only] [--aliases-only]
+forge omnifocus refresh [--apply-finder]
+forge omnifocus status
+forge omnifocus show &lt;project&gt; [--live]
+forge omnifocus proposals [--json]
+forge omnifocus apply [--apply [--yes]]   # same as align; dry-run unless --apply
+</code></pre>
+<p>Typical first-time flow:</p>
+<pre><code class="language-bash">forge omnifocus doctor
+forge omnifocus align          # review the plan
+forge omnifocus align --apply  # confirm when prompted
+</code></pre>
+<p>See <code>packaging/omnifocus/README.md</code> for the optional Automation plug-in and tag
+conventions (<code>🔥 Forge:…</code> by default, legacy <code>Forge:…</code> still readable; flat <code>column_tag_aliases</code> such as <code>Watch 🚧</code> when <code>flat_column_tags</code> is true; nested <code>KanbanStatus/…</code> / legacy <code>ForgeColumn/…</code> for fallback and migration).</p>
+<hr />
 <h2>Configuration: project roots</h2>
 <p>Set <strong><code>project_roots</code></strong> to a list of paths. Forge scans each root for project
 folders up to <strong><code>project_scan_depth</code></strong> levels (default <code>1</code> = direct children only).

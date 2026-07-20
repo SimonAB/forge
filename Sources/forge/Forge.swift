@@ -14,6 +14,7 @@ struct Forge: AsyncParsableCommand {
             ProjectTagCommand.self,
             StatusCommand.self,
             CalendarCommand.self,
+            OmniFocusCommand.self,
         ]
     )
 }

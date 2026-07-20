@@ -1,7 +1,7 @@
 import AppKit
 import ForgeCore
 
-/// Preferences window with tabbed panels: General, Board, Workspace.
+/// Preferences window with tabbed panels: General, Board, Brief, OmniFocus, Workspace, Shortcuts.
 final class PreferencesWindowController: NSWindowController {
 
     static let windowTitle = "Preferences"
@@ -19,7 +19,7 @@ final class PreferencesWindowController: NSWindowController {
 
     init() {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 500, height: 380),
+            contentRect: NSRect(x: 0, y: 0, width: 520, height: 420),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
@@ -53,6 +53,21 @@ final class PreferencesWindowController: NSWindowController {
         briefItem.label = "Brief"
         briefItem.view = PreferencesBriefView(configPath: configPath, config: config)
         tabView.addTabViewItem(briefItem)
+
+        let omnifocusItem = NSTabViewItem(identifier: "omnifocus")
+        omnifocusItem.label = "OmniFocus"
+        omnifocusItem.view = PreferencesOmniFocusView(
+            configPath: configPath,
+            config: config,
+            onSave: { [weak self] enabled, syncOnMove, syncFromOmnifocus in
+                self?.saveOmniFocus(
+                    enabled: enabled,
+                    syncOnMove: syncOnMove,
+                    syncFromOmnifocus: syncFromOmnifocus
+                ) ?? false
+            }
+        )
+        tabView.addTabViewItem(omnifocusItem)
 
         let workspaceItem = NSTabViewItem(identifier: "workspace")
         workspaceItem.label = "Workspace"
@@ -105,6 +120,7 @@ final class PreferencesWindowController: NSWindowController {
             projectRoots: newRoots,
             board: current.board,
             calendar: current.calendar,
+            omnifocus: current.omnifocus,
             gtd: current.gtd,
             workspaceTags: current.workspaceTags,
             projectAreas: current.projectAreas,
@@ -116,6 +132,7 @@ final class PreferencesWindowController: NSWindowController {
         do {
             try updated.save(to: path)
             config = updated
+            NotificationCenter.default.post(name: .forgeConfigDidChange, object: path)
             return true
         } catch {
             return false
@@ -129,6 +146,7 @@ final class PreferencesWindowController: NSWindowController {
             projectRoots: current.projectRoots,
             board: current.board,
             calendar: current.calendar,
+            omnifocus: current.omnifocus,
             gtd: current.gtd,
             workspaceTags: current.workspaceTags,
             projectAreas: current.projectAreas,
@@ -140,6 +158,38 @@ final class PreferencesWindowController: NSWindowController {
         do {
             try updated.save(to: path)
             config = updated
+            NotificationCenter.default.post(name: .forgeConfigDidChange, object: path)
+            return true
+        } catch {
+            return false
+        }
+    }
+
+    /// Persist OmniFocus integration flags to config.yaml.
+    fileprivate func saveOmniFocus(enabled: Bool, syncOnMove: Bool, syncFromOmnifocus: Bool) -> Bool {
+        guard let path = configPath, let current = config else { return false }
+        let of = current.omnifocus.updating(
+            enabled: enabled,
+            syncOnMove: syncOnMove,
+            syncFromOmnifocus: syncFromOmnifocus
+        )
+        let updated = ForgeConfig(
+            projectRoots: current.projectRoots,
+            board: current.board,
+            calendar: current.calendar,
+            omnifocus: of,
+            gtd: current.gtd,
+            workspaceTags: current.workspaceTags,
+            projectAreas: current.projectAreas,
+            terminal: current.terminal,
+            projectTag: current.projectTag,
+            projectScanDepth: current.projectScanDepth,
+            dueConflictPolicy: current.dueConflictPolicy
+        )
+        do {
+            try updated.save(to: path)
+            config = updated
+            NotificationCenter.default.post(name: .forgeConfigDidChange, object: path)
             return true
         } catch {
             return false
@@ -493,6 +543,147 @@ private extension Array {
     subscript(safe index: Int) -> Element? {
         guard indices.contains(index) else { return nil }
         return self[index]
+    }
+}
+
+// MARK: - Board panel
+
+// MARK: - OmniFocus panel
+
+private final class PreferencesOmniFocusView: NSView {
+    private let configPath: String?
+    private let onSave: (Bool, Bool, Bool) -> Bool
+    private var enabledCheckbox: NSButton!
+    private var syncOnMoveCheckbox: NSButton!
+    private var syncFromOmnifocusCheckbox: NSButton!
+    private var statusLabel: NSTextField!
+
+    override var isFlipped: Bool { true }
+
+    init(configPath: String?, config: ForgeConfig?, onSave: @escaping (Bool, Bool, Bool) -> Bool) {
+        self.configPath = configPath
+        self.onSave = onSave
+        super.init(frame: .zero)
+
+        let title = NSTextField(labelWithString: "OmniFocus")
+        title.font = .systemFont(ofSize: 13, weight: .semibold)
+        title.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(title)
+
+        let blurb = NSTextField(wrappingLabelWithString: """
+        Optional local bridge to OmniFocus (Automation / OmniJS). When enabled, Forge can link projects and mirror kanban columns both ways. Nothing is sent to the cloud.
+        """)
+        blurb.font = .systemFont(ofSize: 12, weight: .regular)
+        blurb.textColor = .secondaryLabelColor
+        blurb.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(blurb)
+
+        let enabled = NSButton(
+            checkboxWithTitle: "Enable OmniFocus integration",
+            target: self,
+            action: #selector(togglesChanged(_:))
+        )
+        enabled.translatesAutoresizingMaskIntoConstraints = false
+        enabled.state = (config?.omnifocus.enabled == true) ? .on : .off
+        enabled.isEnabled = configPath != nil
+        addSubview(enabled)
+        enabledCheckbox = enabled
+
+        let sync = NSButton(
+            checkboxWithTitle: "Board moves → OmniFocus (Finder column onto linked OF tasks)",
+            target: self,
+            action: #selector(togglesChanged(_:))
+        )
+        sync.translatesAutoresizingMaskIntoConstraints = false
+        sync.state = (config?.omnifocus.syncOnMove == true) ? .on : .off
+        sync.isEnabled = configPath != nil && enabled.state == .on
+        addSubview(sync)
+        syncOnMoveCheckbox = sync
+
+        let pull = NSButton(
+            checkboxWithTitle: "OmniFocus → board on Refresh (OF column onto Finder tags)",
+            target: self,
+            action: #selector(togglesChanged(_:))
+        )
+        pull.translatesAutoresizingMaskIntoConstraints = false
+        pull.state = (config?.omnifocus.syncFromOmnifocus != false) ? .on : .off
+        pull.isEnabled = configPath != nil && enabled.state == .on
+        addSubview(pull)
+        syncFromOmnifocusCheckbox = pull
+
+        let note = NSTextField(wrappingLabelWithString: """
+        Requires OmniFocus running with Automation permission for Forge. Change a column tag in OmniFocus, then press Refresh on the board. Advanced options remain in config.yaml.
+        """)
+        note.font = .systemFont(ofSize: 11, weight: .regular)
+        note.textColor = .tertiaryLabelColor
+        note.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(note)
+
+        let status = NSTextField(labelWithString: "")
+        status.font = .systemFont(ofSize: 11, weight: .regular)
+        status.textColor = .secondaryLabelColor
+        status.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(status)
+        statusLabel = status
+
+        NSLayoutConstraint.activate([
+            title.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            title.topAnchor.constraint(equalTo: topAnchor, constant: 20),
+            title.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
+
+            blurb.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            blurb.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
+            blurb.topAnchor.constraint(equalTo: title.bottomAnchor, constant: 8),
+
+            enabled.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            enabled.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
+            enabled.topAnchor.constraint(equalTo: blurb.bottomAnchor, constant: 16),
+
+            sync.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            sync.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
+            sync.topAnchor.constraint(equalTo: enabled.bottomAnchor, constant: 10),
+
+            pull.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            pull.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
+            pull.topAnchor.constraint(equalTo: sync.bottomAnchor, constant: 8),
+
+            note.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            note.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
+            note.topAnchor.constraint(equalTo: pull.bottomAnchor, constant: 16),
+
+            status.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            status.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
+            status.topAnchor.constraint(equalTo: note.bottomAnchor, constant: 12),
+        ])
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    @objc private func togglesChanged(_ sender: NSButton) {
+        let enabled = enabledCheckbox.state == .on
+        syncOnMoveCheckbox.isEnabled = configPath != nil && enabled
+        syncFromOmnifocusCheckbox.isEnabled = configPath != nil && enabled
+        if !enabled {
+            syncOnMoveCheckbox.state = .off
+            syncFromOmnifocusCheckbox.state = .off
+        }
+        let syncOnMove = enabled && syncOnMoveCheckbox.state == .on
+        let syncFromOmnifocus = enabled && syncFromOmnifocusCheckbox.state == .on
+        guard configPath != nil else {
+            statusLabel.stringValue = "No config.yaml loaded."
+            statusLabel.textColor = .systemRed
+            return
+        }
+        if onSave(enabled, syncOnMove, syncFromOmnifocus) {
+            statusLabel.stringValue = "Saved to config.yaml."
+            statusLabel.textColor = .secondaryLabelColor
+        } else {
+            statusLabel.stringValue = "Could not save OmniFocus settings."
+            statusLabel.textColor = .systemRed
+        }
     }
 }
 

@@ -90,6 +90,24 @@ Usage:
 
 Use for a quick health check. The board `--json` provides deeper detail when needed.
 
+## forge omnifocus
+
+Purpose: Optional OmniFocus bridge (OmniJS). Requires `omnifocus.enabled: true`.
+
+Safe (read-only / dry-run):
+- `forge omnifocus doctor`
+- `forge omnifocus align` (dry-run plan; no writes)
+- `forge omnifocus proposals`
+- `forge omnifocus status` / `show` / `refresh` (refresh writes local cache only)
+- `forge omnifocus refresh --apply-finder` — OF→Finder like board Refresh (strips leftover OF kanban tags on updated folders; does not push Finder→OF)
+
+Restricted (require `--apply` and user confirmation):
+- `forge omnifocus align --apply`
+- `forge omnifocus apply --apply`
+
+Never invent OmniFocus task IDs. Prefer doctor → align dry-run → align --apply.
+Refresh is OF-authoritative for columns; Finder→OF is `forge move` / board drag when `sync_on_move` is on.
+
 ## forge calendar / forge events
 
 Purpose: Read upcoming Apple Calendar events (read-only).

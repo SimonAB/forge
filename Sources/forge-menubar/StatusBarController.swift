@@ -11,6 +11,7 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     private var config: ForgeConfig?
     private var forgeDir: String?
     private var boardWindowController: BoardWindowController?
+    private var omnifocusAlignWindowController: OmniFocusAlignWindowController?
 
     /// We keep a single menu instance and mutate it in-place. Replacing `statusItem.menu`
     /// while the menu is open does not update the visible dropdown (macOS continues showing
@@ -44,6 +45,21 @@ final class StatusBarController: NSObject, NSMenuDelegate {
             name: ShortcutPreferences.didChangeNotification,
             object: nil
         )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(configDidChange),
+            name: .forgeConfigDidChange,
+            object: nil
+        )
+    }
+
+    @objc private func configDidChange(_ note: Notification) {
+        loadConfig()
+        if let board = boardWindowController {
+            board.closeWindow()
+            boardWindowController = nil
+        }
+        rebuildMenu()
     }
 
     private func requestNotificationPermissionIfNeeded() {
@@ -152,6 +168,16 @@ final class StatusBarController: NSObject, NSMenuDelegate {
             boardItem.target = self
             menu.addItem(boardItem)
 
+            if config?.omnifocus.enabled == true {
+                let alignItem = NSMenuItem(
+                    title: "OmniFocus Align…",
+                    action: #selector(openOmniFocusAlign),
+                    keyEquivalent: ""
+                )
+                alignItem.target = self
+                menu.addItem(alignItem)
+            }
+
             let delegationMenu = NSMenu()
             for name in favouriteAssignees {
                 let boardForAssignee = NSMenuItem(
@@ -209,6 +235,35 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         urgentProjectCount = projects.filter { KanbanRadar.isUrgent(metaTags: $0.metaTags) }.count
         updateBadge()
         rebuildMenu()
+    }
+
+    @objc private func openOmniFocusAlign() {
+        guard let config, let forgeDir, config.omnifocus.enabled else { return }
+        Task {
+            do {
+                let plan = try await OmniFocusAlignWindowController.loadPlan(
+                    config: config,
+                    forgeDir: forgeDir
+                )
+                await MainActor.run {
+                    let controller = OmniFocusAlignWindowController(
+                        config: config,
+                        forgeDir: forgeDir,
+                        plan: plan
+                    )
+                    self.omnifocusAlignWindowController = controller
+                    controller.showWindow(nil)
+                    NSApp.activate(ignoringOtherApps: true)
+                }
+            } catch {
+                await MainActor.run {
+                    let alert = NSAlert()
+                    alert.messageText = "OmniFocus Align"
+                    alert.informativeText = error.localizedDescription
+                    alert.runModal()
+                }
+            }
+        }
     }
 
     @objc private func openBoardWindow() {

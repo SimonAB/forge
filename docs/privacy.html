@@ -140,12 +140,27 @@ This document summarises what data Forge uses, where it lives, and how it moves.
 <p>Prefer local models; see <strong>AI assistants and local language models</strong> below.</p>
 </li>
 <li>
+<p><strong>OmniFocus (optional)</strong></p>
+</li>
+<li>When <code>omnifocus.enabled</code> is true (Preferences → OmniFocus, or config.yaml), Forge may use macOS Automation to run
+    OmniJS inside OmniFocus (read inventory; with explicit <code>--apply</code> or menubar <strong>OmniFocus Align… → Apply</strong>, create
+    <code>🔥 Forge:</code> link tags and set flat column tags such as <code>Watch 🚧</code>; nested <code>KanbanStatus/</code> / legacy <code>ForgeColumn/</code>
+    remain readable for migration). Data stays on your Mac.</li>
+<li>Align/apply default to <strong>dry-run</strong>; nothing is written without <code>--apply</code> or
+    a menubar Apply confirmation.</li>
+<li>Board <strong>Refresh</strong> may update Finder tags from OF (columns / completed projects) when
+    <code>sync_from_omnifocus</code> / <code>sync_completed_project_to_shipped</code> are enabled.</li>
+<li>
+<p>Requires OmniFocus installed and Automation permission for your terminal
+    and/or Forge.app.</p>
+</li>
+<li>
 <p><strong>No telemetry</strong></p>
 </li>
 <li>Forge sends <strong>no usage analytics or telemetry</strong>.</li>
-<li>Aside from Sparkle updates (if enabled) and an optional Brief LLM endpoint
-    you configure, network traffic is solely whatever macOS and your accounts
-    already perform via the system.</li>
+<li>Aside from Sparkle updates (if enabled), an optional Brief LLM endpoint
+    you configure, and optional local OmniFocus Automation, network traffic is
+    solely whatever macOS and your accounts already perform via the system.</li>
 </ul>
 <h3>Running Forge in more private modes</h3>
 <ul>

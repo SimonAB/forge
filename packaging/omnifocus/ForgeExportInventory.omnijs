@@ -1,0 +1,76 @@
+/*{
+  "type": "action",
+  "targets": ["omnifocus"],
+  "author": "Forge",
+  "identifier": "com.forge.omnifocus.export-inventory",
+  "version": "1.0",
+  "description": "Export Forge-linked tasks and tags as JSON (copy-friendly). Prefer `forge omnifocus refresh` for the app cache.",
+  "label": "Forge: Export Inventory JSON",
+  "shortLabel": "Forge Export"
+}*/
+(() => {
+  const action = new PlugIn.Action(function (selection, sender) {
+    // Same linking convention as ForgeCore OmniJSSnippets.exportInventory.
+    const linkRoots = ["🔥 Forge", "Forge"];
+    function isRootName(name) {
+      return linkRoots.indexOf(name) !== -1;
+    }
+    function tagPathComponents(tag) {
+      const parts = [];
+      let current = tag;
+      while (current) {
+        parts.unshift((current.name || "").trim());
+        current = current.parent;
+      }
+      return parts.filter((p) => p.length > 0);
+    }
+    function folderFromForgeTag(tag) {
+      const comps = tagPathComponents(tag);
+      if (comps.length >= 2 && isRootName(comps[0])) {
+        return { path: comps.join(":"), folder: comps[comps.length - 1] };
+      }
+      const flat = (tag.name || "").trim();
+      for (const root of linkRoots) {
+        const prefix = root + "/";
+        if (flat.startsWith(prefix) && flat.length > prefix.length) {
+          return { path: flat, folder: flat.slice(prefix.length) };
+        }
+      }
+      return null;
+    }
+    function firstForgeLink(task) {
+      for (const t of task.tags || []) {
+        const info = folderFromForgeTag(t);
+        if (info) return info;
+      }
+      return null;
+    }
+
+    const tasksOut = [];
+    for (const task of flattenedTasks) {
+      if (task.completed) continue;
+      if (task.effectiveActive === false) continue;
+      const link = firstForgeLink(task);
+      if (!link) continue;
+      tasksOut.push({
+        id: String(task.id.primaryKey),
+        title: task.name || "Untitled",
+        projectFolderName: link.folder,
+        projectTag: link.path,
+      });
+    }
+    const payload = {
+      generatedAt: new Date().toISOString(),
+      tasks: tasksOut,
+      note: "Install via Automation → Configure Plug-Ins. CLI: forge omnifocus refresh",
+    };
+    const json = JSON.stringify(payload, null, 2);
+    Pasteboard.general.string = json;
+    new Alert("Forge export", `Copied ${tasksOut.length} linked task(s) to the clipboard as JSON.`).show();
+  });
+
+  action.validate = function () {
+    return true;
+  };
+  return action;
+})();

@@ -86,9 +86,47 @@
 <p>All notable changes to this project will be documented in this file.</p>
 <p>The format loosely follows <a href="https://keepachangelog.com/en/1.1.0/">Keep a Changelog</a>.</p>
 <h3>Unreleased</h3>
+<h4>OmniFocus bridge (optional)</h4>
+<ul>
+<li><strong><code>forge omnifocus</code></strong> — Omni Automation (OmniJS via JXA) bridge: <code>doctor</code>,
+  <code>align</code> (dry-run by default; <code>--apply</code> to write), <code>refresh</code> (local snapshot),
+  <code>status</code>, <code>show</code>, <code>proposals</code> / <code>apply</code>.</li>
+<li><strong><code>tag_matching_of_project</code></strong> — for structure_hint name matches, propose tagging
+  the OF project + active tasks with <code>🔥 Forge:&lt;name&gt;</code> (legacy <code>Forge:</code> still
+  readable; use
+  <code>align --structure-hints-only</code> to preview just those).</li>
+<li><strong><code>link_tag_root</code></strong> — defaults to <code>🔥 Forge</code> (matches Finder <code>project_tag</code>);
+  <code>legacy_link_tag_roots</code> keeps older <code>Forge</code> tags readable.</li>
+<li><strong><code>column_tag_root</code></strong> — nested fallback (<code>KanbanStatus</code>; legacy <code>ForgeColumn</code> still readable).</li>
+<li><strong><code>flat_column_tags</code></strong> (default true) + <strong><code>column_tag_aliases</code></strong> — use existing OF status
+  tags (e.g. <code>Write ✒️</code>, <code>Watch 🚧</code>) as the sole column markers; nested <code>KanbanStatus/…</code>
+  is read for migration only. <code>column_tag_alias_reads</code> keeps old names readable.
+  <code>align --aliases-only</code> proposes missing flat tags / strip nested duplicates.</li>
+<li><strong><code>align --column-only</code></strong> — propose only kanban-status / Finder column drift fixes.</li>
+<li><strong>Forge.app Preferences → OmniFocus</strong> — optional toggles for <code>omnifocus.enabled</code> and
+  <code>sync_on_move</code> (writes <code>config.yaml</code>; board reloads so the setting takes effect).</li>
+<li><strong><code>sync_on_move</code></strong> — gated per-project (ambiguous links only), not board-wide <code>forge_only</code>;
+  refreshes the local snapshot after a successful mirror. Column writes batch into one
+  OmniJS call and resolve tasks via <code>Task.byIdentifier</code> when IDs are known.
+  Board / menubar moves and Refresh now call the same OmniFocus mirror (previously CLI-only).</li>
+<li><strong><code>sync_from_omnifocus</code></strong> (default true) — board <strong>Refresh</strong> pulls OF columns onto Finder;
+  <code>forge omnifocus refresh --apply-finder</code> does the same from CLI.</li>
+<li><strong><code>sync_completed_project_to_shipped</code></strong> (default true) — when an OF <em>project</em> is Done/Dropped,
+  Refresh moves the matching Finder folder to Shipped.</li>
+<li><strong>Multi-tag OF tasks</strong> — default resolve keeps Finder’s column when it is among them,
+  otherwise the furthest main-flow column. <strong>Refresh pull</strong> prefers a stacked tag that
+  <em>differs</em> from Finder (e.g. Watch added while Review remains), then strips OF extras
+  to that column. Refresh no longer pushes stale Finder columns onto OmniFocus.</li>
+<li><strong>Menubar OmniFocus Align…</strong> — preview-first sheet; Apply confirms writes.</li>
+<li><strong>Align ignore list</strong> — <code>.cache/omnifocus-align-ignore.json</code> for OF-only noise.</li>
+<li><strong>Alignment gate</strong> — <code>sync_on_move</code> skips OF writes while doctor reports drift
+  unless <code>allow_sync_with_drift</code> or <code>forge move --force</code>.</li>
+<li><strong>Board JSON</strong> — optional per-project <code>omnifocus</code> enrichment from the snapshot cache.</li>
+<li><strong>Plug-in</strong> — <code>packaging/omnifocus/</code> Automation menu helper.</li>
+</ul>
 <blockquote>
 <p><strong>Current product:</strong> Finder-tag kanban (<code>forge</code> CLI, Forge.app, optional Calendar read,
-optional Ollama Brief). Older changelog entries that mention Reminders, <code>forge sync</code>,
+optional Ollama Brief, optional OmniFocus bridge). Older changelog entries that mention Reminders, <code>forge sync</code>,
 or <code>TASKS.md</code> indexing describe historical behaviour.</p>
 </blockquote>
 <h4>Quality / CI</h4>
@@ -115,6 +153,7 @@ or <code>TASKS.md</code> indexing describe historical behaviour.</p>
 <h4>Scripts</h4>
 <ul>
 <li><strong><code>forge-brief.py</code></strong> — <code>--calendar-calendars</code> defaults to empty (all calendars).</li>
+<li><strong><code>build.sh</code></strong> — <code>--no-clean</code> and <code>--no-launch-agent</code> for a faster local loop.</li>
 </ul>
 <h4>Forge.app / packaging</h4>
 <ul>
