@@ -107,23 +107,37 @@ Grant access for full functionality. This is declared in the app's
 - **Sparkle** may check for app updates and download a signed zip from GitHub Releases
   (app binary only — not your board content). See **`PRIVACY.md`**.
 - **Preferences → Brief** can send a board/calendar summary to **local Ollama**
-  (or another base URL you configure). Prefer loopback; external endpoints transmit data.
-  The **External agent** option is not implemented yet.
+  (loopback by default). A non-loopback base URL may transmit data off-machine.
+- **Preferences → Hermes** checks and runs setup for the recommended local
+  assistant (Hermes + Ollama + `forge-board` skill). See **`docs/hermes.md`**.
 - You keep full control over where the Forge directory lives (for example on an
   encrypted volume, in a git repository, or in a local-only folder).
-- If you use an **LLM** with Forge output, prefer **Ollama with Pi** for local
-  inference; see **`PRIVACY.md`** (**AI assistants and local language models**).
+- If you use an **LLM** with Forge output, prefer **Hermes with Ollama** for local
+  inference; see **`docs/hermes.md`** and **`PRIVACY.md`** (**AI assistants and local language models**).
 
 ---
 
 ## Brief (Preferences)
 
-Open **Forge → Preferences… → Brief** to generate an LLM-assisted board summary.
+Open **Forge → Preferences… → Brief** to generate an LLM-assisted board summary via **local Ollama**.
 
-- **Local Ollama** — default; uses `http://127.0.0.1:11434` unless you change the base URL.
-- **External agent** — placeholder only; generation fails with a clear “not implemented” message.
+- Default base URL: `http://127.0.0.1:11434/v1`
+- Use loopback URLs only for privacy-first use
+- Review proposed column/tag changes before applying them
 
-You can review proposed column/tag changes before applying them.
+For the full local kanban assistant (skills, terminal, tools), use **Preferences → Hermes**.
+
+---
+
+## Hermes (Preferences)
+
+Open **Forge → Preferences… → Hermes** for privacy-first local assistant setup.
+
+- **Check setup** — Ollama, Hermes, `forge` CLI, and `forge-board` skill status
+- **Run setup in Terminal** — runs `python3 scripts/setup-hermes-forge.py`
+- **Open guide** — `docs/hermes.md`
+
+See **`docs/hermes.md`** for full instructions.
 
 ---
 

@@ -102,11 +102,14 @@ This document summarises what data Forge uses, where it lives, and how it moves.
 
 Pasting `forge brief` output, task lists, or project paths into a **cloud-hosted**
 assistant sends that material to the provider’s infrastructure. For **strong
-privacy** when using LLM-assisted coding or task workflows, this project
-recommends **Ollama with [Pi](https://github.com/badlogic/pi-mono)** — the
-minimal coding agent integrated with Ollama (“Ollama Pi” in upstream docs).
-Inference can stay on your Mac via Ollama’s local API; prompts and responses do
-not need to leave the machine if you use **local** models only.
+privacy** when using LLM-assisted kanban or coding workflows, this project
+recommends **[Hermes Agent](https://hermes-agent.nousresearch.com/)** with
+**[Ollama](https://ollama.com)** — local inference on your Mac via Ollama’s API.
+Prompts and responses need not leave the machine when you use **local** models
+and keep Hermes `fallback_providers` empty.
+
+Full setup: **`docs/hermes.md`** or run `python3 scripts/setup-hermes-forge.py`
+from your Forge directory. Forge.app → Preferences → **Hermes** runs the same checks.
 
 **Typical setup:**
 
@@ -115,21 +118,26 @@ not need to leave the machine if you use **local** models only.
    `http://127.0.0.1:11434`.
 2. Pull a **local** model, for example: `ollama pull qwen3-coder` — choose a
    size that fits your RAM and latency expectations.
-3. Install Pi: `npm install -g @mariozechner/pi-coding-agent`.
-4. Run **`ollama launch pi`** — this wires Ollama in as a provider and starts
-   an interactive session. For configuration without launching, use
-   **`ollama launch pi --config`**.
-5. For privacy, use **local** model names in Pi/Ollama. Avoid cloud-backed
-   options (for example models or flags advertised as **cloud**) if you require
-   prompts to stay off third-party inference.
+3. Install **[Hermes Agent](https://hermes-agent.nousresearch.com/)** and point
+   it at Ollama (`http://127.0.0.1:11434/v1`, local model name).
+4. Run **`python3 scripts/setup-hermes-forge.py`** to wire the bundled
+   `forge-board` skill into `~/.hermes/config.yaml`.
+5. Start Hermes in your Forge directory: `hermes`, then `/skill:forge-board`.
+6. For privacy, use **local** model names only. Avoid cloud-backed providers or
+   Hermes fallback routes if you require prompts to stay off third-party inference.
 
-**Manual configuration** (without `ollama launch pi`) is documented in Ollama’s
-**[Pi integration guide](https://docs.ollama.com/integrations/pi)** (notably
-`~/.pi/agent/models.json` and `~/.pi/agent/settings.json`).
+**In-app Brief (Forge.app):** Preferences → Brief sends a board/calendar summary
+to the configured Ollama endpoint (loopback by default). This is separate from
+Hermes but uses the same local Ollama stack.
+
+**Lighter alternative:** **[Pi](https://github.com/badlogic/pi-mono)** — minimal
+coding agent via `ollama launch pi`; see Ollama’s
+**[Pi integration guide](https://docs.ollama.com/integrations/pi)**.
 
 **Editors (e.g. Cursor):** Many tools support an OpenAI-compatible **base URL**
 pointing at `http://127.0.0.1:11434/v1` with a placeholder API key, so chat can
 use Ollama locally; refer to your editor’s settings for “Ollama” or “local LLM”.
+Use Hermes for sensitive board work; Cursor for code when you accept cloud models.
 
 ### Your responsibilities
 

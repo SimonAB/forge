@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en-GB" dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Hermes + Ollama · Forge</title>
+    <meta name="description" content="Privacy-first local assistant setup for Forge with Hermes and Ollama." />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/site.css?v=3" />
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem("forge-theme-appearance");
+          var mode =
+            stored === "light" || stored === "dark" || stored === "system"
+              ? stored
+              : "system";
+          var root = document.documentElement;
+          if (mode === "light") {
+            root.classList.add("light");
+          } else if (mode === "dark") {
+            root.classList.add("dark");
+          }
+        } catch (err) {
+          /* localStorage unavailable — CSS alone follows prefers-color-scheme */
+        }
+      })();
+    </script>
+
+  </head>
+  <body>
+    <a href="#main" class="visually-hidden">Skip to content</a>
+    <header class="site-nav">
+      <div class="site-nav__inner">
+        <a class="site-nav__brand" href="index.html">Forge</a>
+        <nav class="site-nav__links" aria-label="Main navigation">
+  <a class="site-nav__link" href="index.html">Home</a>
+  <a class="site-nav__link" href="cli.html">CLI</a>
+  <a class="site-nav__link" href="app.html">Forge.app</a>
+  <a class="site-nav__link is-active" href="hermes.html">Hermes</a>
+  <a class="site-nav__link" href="neovim.html">Neovim</a>
+  <a class="site-nav__link" href="manual.html">Manual</a>
+  <a class="site-nav__link" href="privacy.html">Privacy</a>
+  <a class="site-nav__link" href="readme.html">Readme</a>
+  <a class="site-nav__link" href="changelog.html">Changelog</a>
+  <a class="site-nav__link" href="https://github.com/SimonAB/forge" target="_blank" rel="noopener noreferrer">GitHub</a>
+</nav>
+        <div class="site-nav__actions">
+          <button
+            type="button"
+            class="theme-toggle"
+            id="theme-toggle"
+            aria-label="Toggle dark mode"
+            title="Toggle theme"
+          >
+            <span class="theme-toggle__icon theme-toggle__icon--sun" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="4" />
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+              </svg>
+            </span>
+            <span class="theme-toggle__icon theme-toggle__icon--moon" aria-hidden="true" hidden>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+              </svg>
+            </span>
+          </button>
+          <a
+            class="btn btn--alt"
+            href="https://github.com/SimonAB/forge"
+            target="_blank"
+            rel="noopener noreferrer"
+            >View on GitHub</a
+          >
+        </div>
+      </div>
+    </header>
+    <main id="main" class="doc-page">
+      <article class="doc-content">
+<h1>Hermes + Forge (local assistant)</h1>
+<p>Forge recommends <strong><a href="https://hermes-agent.nousresearch.com/">Hermes Agent</a></strong> with <strong><a href="https://ollama.com">Ollama</a></strong> for privacy-first LLM-assisted kanban work. Inference stays on your Mac; Forge does not send board data to any Forge-hosted service.</p>
+<h2>Privacy first</h2>
+<table>
+<thead>
+<tr>
+<th>Surface</th>
+<th>What leaves your Mac</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>forge board</code>, <code>forge-brief.py</code></td>
+<td>Nothing (no LLM)</td>
+</tr>
+<tr>
+<td><strong>Forge.app → Brief</strong></td>
+<td>Board/calendar summary to the URL you configure (use loopback Ollama only for local-only)</td>
+</tr>
+<tr>
+<td><strong>Hermes + Ollama</strong></td>
+<td>Prompts/responses to your local Ollama instance when configured for a loopback provider</td>
+</tr>
+<tr>
+<td><strong>Cursor (optional)</strong></td>
+<td>Depends on your Cursor model settings — use Hermes for sensitive board/OmniFocus work</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Strict local-only checklist:</strong></p>
+<ol>
+<li>Ollama serving <strong>local</strong> models only (not Ollama Cloud).</li>
+<li>Hermes <code>model.provider</code> → custom Ollama at <code>http://127.0.0.1:11434/v1</code>.</li>
+<li><code>fallback_providers: []</code> in <code>~/.hermes/config.yaml</code>.</li>
+<li>Brief base URL → <code>http://127.0.0.1:11434/v1</code> (or leave default).</li>
+</ol>
+<p>Forge has <strong>no telemetry</strong>. LLM egress is entirely under your control.</p>
+<h2>Requirements</h2>
+<ul>
+<li>macOS 14+</li>
+<li><a href="https://ollama.com">Ollama</a> running (menu bar app or <code>ollama serve</code>)</li>
+<li><a href="https://hermes-agent.nousresearch.com/docs/guides/local-ollama-setup">Hermes Agent</a> installed</li>
+<li><code>forge</code> on <code>$PATH</code> (Forge → Preferences → Install CLI…)</li>
+<li>A tool-capable local model sized to your RAM (e.g. <code>qwen3-coder</code>, <code>qwen3.6</code> coding variants)</li>
+</ul>
+<h2>Quick setup (plug-and-play)</h2>
+<p>From your Forge directory:</p>
+<pre><code class="language-bash">python3 scripts/setup-hermes-forge.py
+</code></pre>
+<p>This script (idempotent):</p>
+<ul>
+<li>Adds <code>{forge-home}/.hermes/skills</code> to <code>skills.external_dirs</code> in <code>~/.hermes/config.yaml</code></li>
+<li>Optionally creates <code>~/.cursor/mcp.json</code> from <code>packaging/hermes/cursor-mcp.sample.json</code> if missing</li>
+<li>Verifies Ollama, Hermes, <code>forge</code>, and the <code>forge-board</code> skill</li>
+</ul>
+<p>Flags: <code>--dry-run</code>, <code>--forge-home PATH</code>, <code>--skip-cursor-mcp</code>, <code>--verify-only</code>.</p>
+<p><strong>Forge.app:</strong> Preferences → <strong>Hermes</strong> tab → <strong>Check setup</strong> / <strong>Run setup in Terminal</strong>.</p>
+<h2>Verify</h2>
+<pre><code class="language-bash">python3 scripts/setup-hermes-forge.py --verify-only
+hermes skills list | grep forge-board
+forge status
+python3 scripts/forge-brief.py | head
+</code></pre>
+<p>Start Hermes in your Forge directory:</p>
+<pre><code class="language-bash">cd ~/Documents/Forge   # or your Forge home
+hermes
+/skill:forge-board
+</code></pre>
+<p>Ask for a read-only brief first; approve any column or tag changes explicitly.</p>
+<h2>Daily use</h2>
+<table>
+<thead>
+<tr>
+<th>Task</th>
+<th>Tool</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Morning board scan (no LLM)</td>
+<td><code>python3 scripts/forge-brief.py</code></td>
+</tr>
+<tr>
+<td>URGENT / stale triage, proposed moves</td>
+<td>Hermes + <code>/skill:forge-board</code></td>
+</tr>
+<tr>
+<td>Quick narrative brief in the app</td>
+<td>Forge → Preferences → Brief → Ollama</td>
+</tr>
+<tr>
+<td>Code edits</td>
+<td>Cursor (or your editor)</td>
+</tr>
+</tbody>
+</table>
+<p>Hermes follows the same approval gates as <code>AGENTS.md</code>: reads are safe; <code>forge move</code> and <code>forge project-tag</code> need your confirmation.</p>
+<h2>Cursor complement</h2>
+<p>Cursor excels at in-repo coding. Hermes handles sensitive board context locally.</p>
+<p>Optional MCP bridge (after setup):</p>
+<pre><code class="language-json">{
+  &quot;mcpServers&quot;: {
+    &quot;hermes&quot;: {
+      &quot;command&quot;: &quot;hermes&quot;,
+      &quot;args&quot;: [&quot;mcp&quot;, &quot;serve&quot;]
+    }
+  }
+}
+</code></pre>
+<p>See <code>packaging/hermes/cursor-mcp.sample.json</code>. Restart Cursor after adding <code>~/.cursor/mcp.json</code>.</p>
+<h2>Troubleshooting</h2>
+<table>
+<thead>
+<tr>
+<th>Issue</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>forge-board</code> not in <code>hermes skills list</code></td>
+<td>Re-run <code>python3 scripts/setup-hermes-forge.py</code>; restart Hermes</td>
+</tr>
+<tr>
+<td><code>forge</code> not found</td>
+<td>Preferences → General → Install CLI…</td>
+</tr>
+<tr>
+<td>Ollama unreachable</td>
+<td>Start Ollama; confirm <code>curl http://127.0.0.1:11434/api/tags</code></td>
+</tr>
+<tr>
+<td>Hermes config missing</td>
+<td>Run <code>hermes setup</code>, then setup script again</td>
+</tr>
+<tr>
+<td>General health</td>
+<td><code>hermes doctor</code></td>
+</tr>
+</tbody>
+</table>
+<h2>Lighter alternative: Pi</h2>
+<p>For a minimal terminal coding agent (no full Hermes stack), see <strong>Ollama with <a href="https://github.com/badlogic/pi-mono">Pi</a></strong> in <a href="../PRIVACY.md#ai-assistants"><code>PRIVACY.md</code></a>. Forge remains agnostic; Hermes is recommended for kanban skills and autonomous board workflows.</p>
+<h2>See also</h2>
+<ul>
+<li><a href="../AGENTS.md"><code>AGENTS.md</code></a> — assistant operating manual</li>
+<li><a href="../.hermes/skills/forge-board/SKILL.md"><code>.hermes/skills/forge-board/SKILL.md</code></a> — skill reference</li>
+<li><a href="app.md"><code>docs/app.md</code></a> — Brief and Hermes preferences tabs</li>
+</ul>
+      </article>
+    </main>
+    <footer class="site-footer">
+      <p>
+        <a href="index.html">Home</a>
+        · Source markdown in the
+        <a href="https://github.com/SimonAB/forge" target="_blank" rel="noopener noreferrer">repository</a>
+      </p>
+      <p>Released under the Apache License, Version 2.0.</p>
+    </footer>
+    <script src="assets/theme.js?v=3"></script>
+  </body>
+</html>

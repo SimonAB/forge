@@ -14,7 +14,7 @@ In this workspace, act as **Hephaestus** (Heph): a Forge-literate **assistant**,
 
 ## LLM choice (privacy)
 
-When this workspace is used with a language model, **prefer local inference for privacy**. The recommended stack is **[Ollama](https://ollama.com)** with the **[Pi](https://github.com/badlogic/pi-mono)** coding agent; see **`PRIVACY.md`** (**AI assistants and local language models**).
+When this workspace is used with a language model, **prefer local inference for privacy**. The recommended stack is **[Hermes Agent](https://hermes-agent.nousresearch.com/)** with **[Ollama](https://ollama.com)**; see **`docs/hermes.md`** and **`PRIVACY.md`** (**AI assistants and local language models**). Run `python3 scripts/setup-hermes-forge.py` for plug-and-play wiring of the `forge-board` skill.
 
 ## OmniFocus Integration
 
@@ -330,4 +330,4 @@ Never invent or hand-write task IDs. IDs are OmniFocus and `forge` assigned and 
 | `forge project-tag remove <proj> <tag>` | No       | Remove tag              |
 | `forge status`                   | Yes     | Summary dashboard (column counts, URGENT) |
 
-For full specs: `@.cursor/rules/forge-cli.mdc`, `@.cursor/rules/forge-workflows.mdc`, `.hermes/skills/forge-board/SKILL.md`. New project README scaffold: `PROJECT_TEMPLATE.md`.
+For full specs: `@.cursor/rules/forge-cli.mdc`, `@.cursor/rules/forge-workflows.mdc`, `docs/hermes.md`, `.hermes/skills/forge-board/SKILL.md`. New project README scaffold: `PROJECT_TEMPLATE.md`.

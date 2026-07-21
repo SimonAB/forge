@@ -19,7 +19,7 @@ final class PreferencesWindowController: NSWindowController {
 
     init() {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 520, height: 420),
+            contentRect: NSRect(x: 0, y: 0, width: 560, height: 460),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
@@ -53,6 +53,11 @@ final class PreferencesWindowController: NSWindowController {
         briefItem.label = "Brief"
         briefItem.view = PreferencesBriefView(configPath: configPath, config: config)
         tabView.addTabViewItem(briefItem)
+
+        let hermesItem = NSTabViewItem(identifier: "hermes")
+        hermesItem.label = "Hermes"
+        hermesItem.view = PreferencesHermesView(configPath: configPath, config: config)
+        tabView.addTabViewItem(hermesItem)
 
         let omnifocusItem = NSTabViewItem(identifier: "omnifocus")
         omnifocusItem.label = "OmniFocus"

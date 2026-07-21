@@ -34,6 +34,7 @@ NAV_ITEMS: tuple[tuple[str, str, str], ...] = (
     ("index.html", "Home", "home"),
     ("cli.html", "CLI", "cli"),
     ("app.html", "Forge.app", "app"),
+    ("hermes.html", "Hermes", "hermes"),
     ("neovim.html", "Neovim", "neovim"),
     ("manual.html", "Manual", "manual"),
     ("privacy.html", "Privacy", "privacy"),
@@ -233,6 +234,13 @@ def main() -> None:
         page_title="Forge.app",
         description="Menu bar companion: sync, quick capture, overdue badges, and setup.",
         active="app",
+    )
+    build_page(
+        source=DOCS_DIR / "hermes.md",
+        out_name="hermes.html",
+        page_title="Hermes + Ollama",
+        description="Privacy-first local assistant setup for Forge with Hermes and Ollama.",
+        active="hermes",
     )
     build_page(
         source=DOCS_DIR / "neovim.md",

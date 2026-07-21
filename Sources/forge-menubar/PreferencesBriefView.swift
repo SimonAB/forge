@@ -7,7 +7,6 @@ final class PreferencesBriefView: NSView {
     private let configPath: String?
     private let config: ForgeConfig?
 
-    private var providerPopup: NSPopUpButton?
     private var baseURLField: NSTextField?
     private var modelField: NSTextField?
     private var daysField: NSTextField?
@@ -52,26 +51,19 @@ final class PreferencesBriefView: NSView {
             return
         }
 
-        let privacy = NSTextField(labelWithString: "Brief is local-first. Local Ollama runs on this Mac; external providers may transmit board and calendar data.")
+        let privacy = NSTextField(wrappingLabelWithString:
+            "Brief uses local Ollama via an OpenAI-compatible API. When the base URL is loopback (127.0.0.1 or localhost), board and calendar summaries stay on this Mac. A non-loopback URL may transmit that data elsewhere."
+        )
         privacy.textColor = .secondaryLabelColor
         privacy.maximumNumberOfLines = 0
         root.addArrangedSubview(privacy)
 
-        let providerRow = NSStackView()
-        providerRow.orientation = .horizontal
-        providerRow.alignment = .centerY
-        providerRow.spacing = 8
-
-        let providerLabel = NSTextField(labelWithString: "Provider:")
-        let popup = NSPopUpButton()
-        popup.addItems(withTitles: ["Local Ollama", "External agent (advanced)"])
-        popup.target = self
-        popup.action = #selector(providerChanged)
-        providerPopup = popup
-
-        providerRow.addArrangedSubview(providerLabel)
-        providerRow.addArrangedSubview(popup)
-        root.addArrangedSubview(providerRow)
+        let hermesNote = NSTextField(wrappingLabelWithString:
+            "For the full local kanban assistant (skills, tools, terminal), see the Hermes tab."
+        )
+        hermesNote.textColor = .secondaryLabelColor
+        hermesNote.maximumNumberOfLines = 0
+        root.addArrangedSubview(hermesNote)
 
         let settingsGrid = NSGridView(views: [
             [NSTextField(labelWithString: "Base URL:"), NSTextField(string: "http://127.0.0.1:11434/v1")],
@@ -134,19 +126,6 @@ final class PreferencesBriefView: NSView {
         apply.isEnabled = false
         applyButton = apply
         root.addArrangedSubview(apply)
-
-        updateProviderEnabledState()
-    }
-
-    @objc private func providerChanged() {
-        updateProviderEnabledState()
-    }
-
-    private func updateProviderEnabledState() {
-        let isExternal = (providerPopup?.indexOfSelectedItem ?? 0) == 1
-        baseURLField?.isEnabled = !isExternal
-        modelField?.isEnabled = !isExternal
-        statusLabel?.stringValue = isExternal ? "External agent provider is not yet implemented." : ""
     }
 
     @objc private func generateBrief() {
@@ -156,7 +135,12 @@ final class PreferencesBriefView: NSView {
         let includeCalendar = (includeCalendarCheckbox?.state ?? .on) == .on
         let days = Int(daysField?.stringValue.trimmingCharacters(in: .whitespacesAndNewlines) ?? "") ?? 2
 
-        let providerIndex = providerPopup?.indexOfSelectedItem ?? 0
+        let baseURLString = baseURLField?.stringValue.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if let host = URL(string: baseURLString)?.host?.lowercased(),
+           host != "127.0.0.1", host != "localhost" {
+            statusLabel?.stringValue = "Warning: non-loopback base URL — data may leave this Mac."
+        }
+
         statusLabel?.stringValue = "Working…"
         generateButton?.isEnabled = false
         applyButton?.isEnabled = false
@@ -166,17 +150,11 @@ final class PreferencesBriefView: NSView {
         Task {
             do {
                 let context = try await BriefContextBuilder(config: config, forgeDir: forgeDir).build(days: max(1, days), includeCalendar: includeCalendar)
-                let result: BriefResult
-                if providerIndex == 0 {
-                    let baseURL = URL(string: baseURLField?.stringValue.trimmingCharacters(in: .whitespacesAndNewlines) ?? "")
-                    guard let baseURL else { throw ForgeAIError.invalidEndpoint("Invalid base URL.") }
-                    let model = modelField?.stringValue.trimmingCharacters(in: .whitespacesAndNewlines) ?? "qwen3-coder"
-                    let settings = LocalOllamaProvider.Settings(baseURL: baseURL, model: model)
-                    result = try await LocalOllamaProvider(settings: settings).generateBrief(context: context)
-                } else {
-                    let endpoint = URL(string: "http://127.0.0.1:0")!
-                    result = try await ExternalAgentProvider(settings: .init(endpoint: endpoint)).generateBrief(context: context)
-                }
+                let baseURL = URL(string: baseURLString)
+                guard let baseURL else { throw ForgeAIError.invalidEndpoint("Invalid base URL.") }
+                let model = modelField?.stringValue.trimmingCharacters(in: .whitespacesAndNewlines) ?? "qwen3-coder"
+                let settings = LocalOllamaProvider.Settings(baseURL: baseURL, model: model)
+                let result = try await LocalOllamaProvider(settings: settings).generateBrief(context: context)
 
                 lastResult = result
                 outputView?.string = result.briefMarkdown

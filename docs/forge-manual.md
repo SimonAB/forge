@@ -28,10 +28,10 @@ Forge is a good fit if you:
 ## Optional: AI assistants and privacy
 
 Some people paste `forge board --json` output or project paths into a coding assistant. For
-**privacy**, this project recommends **Ollama** with the **Pi** coding agent
-(install Ollama, pull a local model, install `@mariozechner/pi-coding-agent`, then
-`ollama launch pi` — see **`PRIVACY.md`**, section **AI assistants and local
-language models**, for step-by-step notes and links).
+**privacy**, this project recommends **Hermes Agent** with **Ollama**
+(install Ollama, install Hermes, run `python3 scripts/setup-hermes-forge.py` —
+see **`docs/hermes.md`** and **`PRIVACY.md`**, section **AI assistants and local
+language models**).
 
 ## Core concepts
 

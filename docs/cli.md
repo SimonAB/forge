@@ -197,6 +197,19 @@ This is **not** a `forge` subcommand; it requires `forge` on your `$PATH`.
 
 ---
 
+## Hermes + Ollama (local assistant)
+
+Privacy-first interactive kanban assistant. Plug-and-play setup from your Forge directory:
+
+```bash
+python3 scripts/setup-hermes-forge.py
+hermes skills list | grep forge-board
+```
+
+See **`docs/hermes.md`**. Forge.app → Preferences → **Hermes** runs the same checks.
+
+---
+
 ## forge omnifocus
 
 Optional bridge to **OmniFocus** via Omni Automation (OmniJS). Requires

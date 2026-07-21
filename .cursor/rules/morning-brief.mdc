@@ -27,8 +27,8 @@ If the user agrees:
   - any obvious missing next move (e.g. items stuck mid-flow)
 - Do not change project columns or tags without explicit instruction.
 
-If the user asks how to keep assistant traffic private, recommend **Ollama with Pi**
-(local inference) per **`PRIVACY.md`** (**AI assistants and local language models**).
+If the user asks how to keep assistant traffic private, recommend **Hermes Agent with Ollama**
+(local inference) per **`docs/hermes.md`** and **`PRIVACY.md`** (**AI assistants and local language models**).
 
 When you need to make changes, prefer Forge’s non-interactive kanban commands:
 

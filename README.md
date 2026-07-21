@@ -57,12 +57,13 @@ The public site is <a href="https://simonab.github.io/forge/"><img src="docs/fav
 (fork: `https://<user>.github.io/<repo>/`). Landing page: [`docs/index.html`](docs/index.html)
 with [`docs/assets/site.css`](docs/assets/site.css) and [`docs/favicon.svg`](docs/favicon.svg).
 
-The **full documentation** is also published as static HTML next to the landing page, generated from the same markdown as the repo (`README.md`, `CHANGELOG.md`, `PRIVACY.md`, `docs/cli.md`, `docs/app.md`, `docs/neovim.md`, `docs/forge-manual.md`):
+The **full documentation** is also published as static HTML next to the landing page, generated from the same markdown as the repo (`README.md`, `CHANGELOG.md`, `PRIVACY.md`, `docs/cli.md`, `docs/app.md`, `docs/hermes.md`, `docs/neovim.md`, `docs/forge-manual.md`):
 
 | Page | Source |
 |------|--------|
 | [`docs/cli.html`](docs/cli.html) | [`docs/cli.md`](docs/cli.md) |
 | [`docs/app.html`](docs/app.html) | [`docs/app.md`](docs/app.md) |
+| [`docs/hermes.html`](docs/hermes.html) | [`docs/hermes.md`](docs/hermes.md) |
 | [`docs/neovim.html`](docs/neovim.html) | [`docs/neovim.md`](docs/neovim.md) |
 | [`docs/manual.html`](docs/manual.html) | [`docs/forge-manual.md`](docs/forge-manual.md) |
 | [`docs/privacy.html`](docs/privacy.html) | [`PRIVACY.md`](PRIVACY.md) |
@@ -126,18 +127,18 @@ See `PRIVACY.md` for a fuller description of what Forge stores, how sync works,
 and how to run without Calendar access or with local-only storage.
 
 If you use an **AI assistant** with Forge output (for example pasting `forge brief`
-into a chat), you can choose what fits: **Ollama with the Pi coding agent** for
-privacy-first local inference on your Mac, or a **cloud** assistant when you need
-more capability — Forge stays agnostic. See **AI assistants and local language models**
-in [`PRIVACY.md`](PRIVACY.md#ai-assistants) for setup and trade-offs.
+into a chat), the privacy-first recommendation is **Hermes Agent with Ollama**
+on your Mac (`python3 scripts/setup-hermes-forge.py` — see **`docs/hermes.md`**).
+You may also use a **cloud** assistant when you need more capability — Forge stays
+agnostic. See **AI assistants and local language models** in [`PRIVACY.md`](PRIVACY.md#ai-assistants) for setup and trade-offs.
 
 ## AI assistants (optional)
 
 If you use a coding assistant with this repo, **`AGENTS.md`** is the operating manual
 (Hephaestus stance, OmniFocus integration, kanban rules, brief format). Supporting
-material: **`.cursor/rules/`** (CLI, workflows, GTD tasks), **`PROJECT_TEMPLATE.md`**
-(new project READMEs), and **`python3 scripts/forge-brief.py`** for read-only board
-briefs. Privacy-first local inference: see **`PRIVACY.md`**.
+material: **`.cursor/rules/`** (CLI, workflows, GTD tasks), **`docs/hermes.md`**
+(Hermes + Ollama setup), **`PROJECT_TEMPLATE.md`** (new project READMEs), and
+**`python3 scripts/forge-brief.py`** for read-only board briefs without any LLM.
 
 ## Directory layout
 
