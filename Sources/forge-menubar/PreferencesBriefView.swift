@@ -36,14 +36,15 @@ final class PreferencesBriefView: NSView {
         let root = NSStackView()
         root.orientation = .vertical
         root.alignment = .leading
-        root.spacing = 10
+        root.spacing = 12
+        root.distribution = .fill
         root.translatesAutoresizingMaskIntoConstraints = false
         addSubview(root)
         NSLayoutConstraint.activate([
-            root.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 14),
-            root.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -14),
-            root.topAnchor.constraint(equalTo: topAnchor, constant: 12),
-            root.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -12),
+            root.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            root.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
+            root.topAnchor.constraint(equalTo: topAnchor, constant: 16),
+            root.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -16),
         ])
 
         guard configPath != nil, config != nil else {
@@ -56,14 +57,18 @@ final class PreferencesBriefView: NSView {
         )
         privacy.textColor = .secondaryLabelColor
         privacy.maximumNumberOfLines = 0
+        privacy.setContentHuggingPriority(.required, for: .vertical)
         root.addArrangedSubview(privacy)
+        privacy.widthAnchor.constraint(equalTo: root.widthAnchor).isActive = true
 
         let hermesNote = NSTextField(wrappingLabelWithString:
             "For the full local kanban assistant (skills, tools, terminal), see the Hermes tab."
         )
         hermesNote.textColor = .secondaryLabelColor
         hermesNote.maximumNumberOfLines = 0
+        hermesNote.setContentHuggingPriority(.required, for: .vertical)
         root.addArrangedSubview(hermesNote)
+        hermesNote.widthAnchor.constraint(equalTo: root.widthAnchor).isActive = true
 
         let settingsGrid = NSGridView(views: [
             [NSTextField(labelWithString: "Base URL:"), NSTextField(string: "http://127.0.0.1:11434/v1")],
@@ -73,6 +78,7 @@ final class PreferencesBriefView: NSView {
         settingsGrid.rowSpacing = 6
         settingsGrid.columnSpacing = 10
         settingsGrid.translatesAutoresizingMaskIntoConstraints = false
+        settingsGrid.setContentHuggingPriority(.required, for: .vertical)
         baseURLField = settingsGrid.cell(atColumnIndex: 1, rowIndex: 0).contentView as? NSTextField
         modelField = settingsGrid.cell(atColumnIndex: 1, rowIndex: 1).contentView as? NSTextField
         daysField = settingsGrid.cell(atColumnIndex: 1, rowIndex: 2).contentView as? NSTextField
@@ -81,12 +87,14 @@ final class PreferencesBriefView: NSView {
         let includeCalendar = NSButton(checkboxWithTitle: "Include Calendar events", target: nil, action: nil)
         includeCalendar.state = .on
         includeCalendarCheckbox = includeCalendar
+        includeCalendar.setContentHuggingPriority(.required, for: .vertical)
         root.addArrangedSubview(includeCalendar)
 
         let actionRow = NSStackView()
         actionRow.orientation = .horizontal
         actionRow.alignment = .centerY
         actionRow.spacing = 10
+        actionRow.setContentHuggingPriority(.required, for: .vertical)
         let generate = NSButton(title: "Generate brief", target: self, action: #selector(generateBrief))
         generateButton = generate
         let status = NSTextField(labelWithString: "")
@@ -100,18 +108,28 @@ final class PreferencesBriefView: NSView {
         scroll.hasVerticalScroller = true
         scroll.borderType = .bezelBorder
         scroll.translatesAutoresizingMaskIntoConstraints = false
-        scroll.heightAnchor.constraint(equalToConstant: 170).isActive = true
+        scroll.setContentHuggingPriority(.defaultLow, for: .vertical)
+        scroll.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
+        scroll.heightAnchor.constraint(greaterThanOrEqualToConstant: 200).isActive = true
 
         let text = NSTextView()
         text.isEditable = false
         text.isSelectable = true
         text.string = ""
+        text.minSize = NSSize(width: 0, height: 0)
+        text.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+        text.isVerticallyResizable = true
+        text.isHorizontallyResizable = false
+        text.autoresizingMask = [.width]
+        text.textContainer?.widthTracksTextView = true
         outputView = text
         scroll.documentView = text
         root.addArrangedSubview(scroll)
+        scroll.widthAnchor.constraint(equalTo: root.widthAnchor).isActive = true
 
         let proposalsLabel = NSTextField(labelWithString: "Proposals (optional)")
         proposalsLabel.font = NSFont.boldSystemFont(ofSize: NSFont.systemFontSize)
+        proposalsLabel.setContentHuggingPriority(.required, for: .vertical)
         root.addArrangedSubview(proposalsLabel)
 
         let proposalsStack = NSStackView()
@@ -119,11 +137,13 @@ final class PreferencesBriefView: NSView {
         proposalsStack.alignment = .leading
         proposalsStack.spacing = 6
         proposalsStack.translatesAutoresizingMaskIntoConstraints = false
+        proposalsStack.setContentHuggingPriority(.required, for: .vertical)
         self.proposalsStack = proposalsStack
         root.addArrangedSubview(proposalsStack)
 
         let apply = NSButton(title: "Apply selected", target: self, action: #selector(applySelected))
         apply.isEnabled = false
+        apply.setContentHuggingPriority(.required, for: .vertical)
         applyButton = apply
         root.addArrangedSubview(apply)
     }

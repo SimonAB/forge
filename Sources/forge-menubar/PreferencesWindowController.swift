@@ -1,10 +1,12 @@
 import AppKit
 import ForgeCore
 
-/// Preferences window with tabbed panels: General, Board, Brief, OmniFocus, Workspace, Shortcuts.
+/// Preferences window with tabbed panels: General, Board, Brief, Hermes, OmniFocus, Workspace, Shortcuts.
 final class PreferencesWindowController: NSWindowController {
 
     static let windowTitle = "Preferences"
+    private static let defaultContentSize = NSSize(width: 720, height: 560)
+    private static let minimumContentSize = NSSize(width: 640, height: 480)
     private static let userDefaultsConfigPathKey = "forge.config.path"
     private static let configCandidates: [String] = {
         let home = NSHomeDirectory()
@@ -19,19 +21,32 @@ final class PreferencesWindowController: NSWindowController {
 
     init() {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 560, height: 460),
-            styleMask: [.titled, .closable],
+            contentRect: NSRect(origin: .zero, size: Self.defaultContentSize),
+            styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered,
             defer: false
         )
         window.title = Self.windowTitle
+        window.minSize = Self.minimumContentSize
+        window.setContentSize(Self.defaultContentSize)
         window.center()
         super.init(window: window)
 
         loadConfig()
 
+        let container = NSView(frame: .zero)
+        container.translatesAutoresizingMaskIntoConstraints = false
+        window.contentView = container
+
         let tabView = NSTabView()
         tabView.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(tabView)
+        NSLayoutConstraint.activate([
+            tabView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            tabView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            tabView.topAnchor.constraint(equalTo: container.topAnchor),
+            tabView.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+        ])
 
         let generalItem = NSTabViewItem(identifier: "general")
         generalItem.label = "General"
@@ -89,14 +104,6 @@ final class PreferencesWindowController: NSWindowController {
         shortcutsItem.label = "Shortcuts"
         shortcutsItem.view = PreferencesShortcutsView()
         tabView.addTabViewItem(shortcutsItem)
-
-        window.contentView = tabView
-        NSLayoutConstraint.activate([
-            tabView.leadingAnchor.constraint(equalTo: window.contentView!.leadingAnchor),
-            tabView.trailingAnchor.constraint(equalTo: window.contentView!.trailingAnchor),
-            tabView.topAnchor.constraint(equalTo: window.contentView!.topAnchor),
-            tabView.bottomAnchor.constraint(equalTo: window.contentView!.bottomAnchor),
-        ])
     }
 
     private func loadConfig() {
@@ -798,7 +805,7 @@ private final class PreferencesWorkspaceView: NSView {
         textView.isSelectable = true
         textView.font = .monospacedSystemFont(ofSize: 11, weight: .regular)
         textView.drawsBackground = false
-        textView.textContainer?.containerSize = NSSize(width: 440, height: CGFloat.greatestFiniteMagnitude)
+        textView.textContainer?.containerSize = NSSize(width: 0, height: CGFloat.greatestFiniteMagnitude)
         textView.textContainer?.widthTracksTextView = true
         textView.minSize = NSSize(width: 0, height: 0)
         textView.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
@@ -849,12 +856,16 @@ private final class PreferencesWorkspaceView: NSView {
             scrollView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
             scrollView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
             scrollView.topAnchor.constraint(equalTo: prompt.bottomAnchor, constant: 12),
-            scrollView.heightAnchor.constraint(equalToConstant: 180),
+            scrollView.heightAnchor.constraint(greaterThanOrEqualToConstant: 180),
             saveButton.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
             saveButton.topAnchor.constraint(equalTo: scrollView.bottomAnchor, constant: 12),
+            saveButton.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -20),
             statusLabel.leadingAnchor.constraint(equalTo: saveButton.trailingAnchor, constant: 12),
             statusLabel.centerYAnchor.constraint(equalTo: saveButton.centerYAnchor),
+            statusLabel.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -20),
         ])
+        scrollView.setContentHuggingPriority(.defaultLow, for: .vertical)
+        scrollView.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
     }
 
     @objc private func saveTapped(_ sender: NSButton) {

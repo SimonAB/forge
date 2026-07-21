@@ -37,14 +37,14 @@ final class PreferencesHermesView: NSView {
         let root = NSStackView()
         root.orientation = .vertical
         root.alignment = .leading
-        root.spacing = 10
+        root.spacing = 12
         root.translatesAutoresizingMaskIntoConstraints = false
         addSubview(root)
         NSLayoutConstraint.activate([
-            root.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 14),
-            root.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -14),
-            root.topAnchor.constraint(equalTo: topAnchor, constant: 12),
-            root.bottomAnchor.constraint(lessThanOrEqualTo: bottomAnchor, constant: -12),
+            root.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            root.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
+            root.topAnchor.constraint(equalTo: topAnchor, constant: 16),
+            root.bottomAnchor.constraint(lessThanOrEqualTo: bottomAnchor, constant: -16),
         ])
 
         let title = NSTextField(labelWithString: "Hermes (local assistant)")
@@ -57,6 +57,7 @@ final class PreferencesHermesView: NSView {
         privacy.textColor = .secondaryLabelColor
         privacy.maximumNumberOfLines = 0
         root.addArrangedSubview(privacy)
+        privacy.widthAnchor.constraint(equalTo: root.widthAnchor).isActive = true
 
         let blurb = NSTextField(wrappingLabelWithString:
             "Recommended for interactive kanban work with the bundled forge-board skill. In-app Brief (previous tab) uses Ollama directly for quick summaries."
@@ -64,23 +65,28 @@ final class PreferencesHermesView: NSView {
         blurb.textColor = .secondaryLabelColor
         blurb.maximumNumberOfLines = 0
         root.addArrangedSubview(blurb)
+        blurb.widthAnchor.constraint(equalTo: root.widthAnchor).isActive = true
 
         let summary = NSTextField(labelWithString: "Checking setup…")
         summary.textColor = .secondaryLabelColor
         summary.maximumNumberOfLines = 0
         summaryLabel = summary
         root.addArrangedSubview(summary)
+        summary.widthAnchor.constraint(equalTo: root.widthAnchor).isActive = true
 
         let stack = NSStackView()
         stack.orientation = .vertical
         stack.alignment = .leading
-        stack.spacing = 4
+        stack.spacing = 6
         statusStack = stack
         root.addArrangedSubview(stack)
+        stack.widthAnchor.constraint(equalTo: root.widthAnchor).isActive = true
 
         let actions = NSStackView()
         actions.orientation = .horizontal
         actions.spacing = 8
+        actions.distribution = .fill
+        actions.setHuggingPriority(.defaultHigh, for: .horizontal)
 
         let check = NSButton(title: "Check setup", target: self, action: #selector(checkTapped))
         checkButton = check

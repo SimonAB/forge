@@ -78,6 +78,11 @@ indicates urgent items:
 | **Quit Forge** | Cmd+Q | Exits Forge.app |
 | **Check for Updates…** | — | Sparkle: compares with **`docs/appcast.xml`** and offers signed **`Forge-macos-arm64.app.zip`** |
 
+### Preferences
+
+**Forge → Preferences…** opens a resizable tabbed window (default about 720×560;
+minimum 640×480). Brief and Workspace panels expand when you enlarge the window.
+
 ### OmniFocus (optional)
 
 Enable under **Preferences → OmniFocus**. With `sync_on_move`, board column moves mirror onto linked OF tasks. With `sync_from_omnifocus`, board **Refresh** pulls OF column tags onto Finder (and clears stacked leftover OF kanban tags on those folders). Finder→OF is not rewritten from Refresh. With `sync_completed_project_to_shipped`, a completed/dropped OF **project** moves the matching Finder folder to **Shipped** on Refresh.
