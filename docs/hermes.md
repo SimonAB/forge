@@ -100,7 +100,8 @@ See `packaging/hermes/cursor-mcp.sample.json`. Restart Cursor after adding `~/.c
 | Issue | Fix |
 |-------|-----|
 | `forge-board` not in `hermes skills list` | Re-run `python3 scripts/setup-hermes-forge.py`; restart Hermes |
-| `forge` not found | Preferences → General → Install CLI… |
+| `forge` not found | Preferences → General → Install CLI… (typically `~/bin` or `/usr/local/bin`) |
+| Preferences → Hermes fails PATH checks | Forge searches Homebrew and user bin prefixes (`~/bin`, `~/.local/bin`, …) even when launched from Finder; install CLI / Hermes into one of those, or ensure they appear on your interactive shell `PATH` |
 | Ollama unreachable | Start Ollama; confirm `curl http://127.0.0.1:11434/api/tags` |
 | Hermes config missing | Run `hermes setup`, then setup script again |
 | General health | `hermes doctor` |

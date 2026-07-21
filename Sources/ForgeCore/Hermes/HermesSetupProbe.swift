@@ -102,18 +102,21 @@ public struct HermesSetupProbe: Sendable {
             detail: options.ollamaTagsURL.absoluteString
         ))
 
-        let hermesPath = Self.executablePath(named: "hermes")
+        let hermesPath = ExecutablePathResolver.find(named: "hermes")
         checks.append(HermesSetupCheck(
             label: "Hermes on PATH",
             passed: hermesPath != nil,
             detail: hermesPath ?? "Install Hermes and add it to PATH"
         ))
 
-        let forgePath = Self.executablePath(named: "forge")
-            ?? Self.embeddedForgeCliPath()
+        let forgeCandidates = [ExecutablePathResolver.embeddedForgeCLIPath()].compactMap { $0 }
+        let forgePath = ExecutablePathResolver.find(
+            named: "forge",
+            additionalCandidates: forgeCandidates
+        )
         checks.append(HermesSetupCheck(
             label: "forge on PATH",
-            passed: Self.executablePath(named: "forge") != nil,
+            passed: forgePath != nil,
             detail: forgePath ?? "Forge → Preferences → Install CLI…"
         ))
 
@@ -151,24 +154,6 @@ public struct HermesSetupProbe: Sendable {
         } catch {
             return false
         }
-    }
-
-    private static func executablePath(named name: String) -> String? {
-        let paths = (ProcessInfo.processInfo.environment["PATH"] ?? "")
-            .split(separator: ":")
-            .map(String.init)
-        for dir in paths {
-            let candidate = (dir as NSString).appendingPathComponent(name)
-            if FileManager.default.isExecutableFile(atPath: candidate) {
-                return candidate
-            }
-        }
-        return nil
-    }
-
-    private static func embeddedForgeCliPath() -> String? {
-        let path = "/Applications/Forge.app/Contents/Resources/bin/forge"
-        return FileManager.default.isExecutableFile(atPath: path) ? path : nil
     }
 
     private static func hermesListsSkill(hermesPath: String, skillName: String) -> Bool {

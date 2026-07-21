@@ -6,14 +6,20 @@ The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 ### Unreleased
 
+_(nothing yet)_
+
+### 0.9.2
+
 #### Hermes + local LLM (privacy-first)
 
 - **`docs/hermes.md`** — canonical Hermes + Ollama setup guide; Hermes recommended over Pi for kanban assistant work.
 - **`scripts/setup-hermes-forge.py`** — idempotent plug-and-play wiring (`skills.external_dirs`, optional Cursor MCP sample, verification).
 - **Forge.app → Preferences → Hermes** — setup status checks, run setup in Terminal, open guide, copy start command.
 - **`HermesSetupProbe`** (ForgeCore) — Ollama/Hermes/forge/skill checks for Preferences and diagnostics.
+- **`ExecutablePathResolver`** — GUI apps search Homebrew and user bin prefixes (`~/bin`, `~/.local/bin`, …) so Hermes/`forge` checks match an interactive shell; Terminal launches use the same layout.
 - **Brief tab** — removed unimplemented External agent option; clarified loopback-only privacy for in-app Ollama briefs.
 - Documentation sweep: **`PRIVACY.md`**, **`AGENTS.md`**, **`README.md`**, **`docs/app.md`**, **`docs/cli.md`**, **`docs/forge-manual.md`**, **`docs/index.html`**, **`.cursor/rules/morning-brief.mdc`**.
+- Enhanced brief script hardening (`scripts/forge-brief--with-full.py`) — surface board/calendar load warnings; tighter calendar↔project matching.
 
 #### OmniFocus bridge (optional)
 

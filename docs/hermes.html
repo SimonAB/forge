@@ -208,7 +208,11 @@ hermes
 </tr>
 <tr>
 <td><code>forge</code> not found</td>
-<td>Preferences → General → Install CLI…</td>
+<td>Preferences → General → Install CLI… (typically <code>~/bin</code> or <code>/usr/local/bin</code>)</td>
+</tr>
+<tr>
+<td>Preferences → Hermes fails PATH checks</td>
+<td>Forge searches Homebrew and user bin prefixes (<code>~/bin</code>, <code>~/.local/bin</code>, …) even when launched from Finder; install CLI / Hermes into one of those, or ensure they appear on your interactive shell <code>PATH</code></td>
 </tr>
 <tr>
 <td>Ollama unreachable</td>

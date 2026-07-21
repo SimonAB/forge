@@ -231,6 +231,10 @@ indicates urgent items:</p>
 <li><strong>Run setup in Terminal</strong> — runs <code>python3 scripts/setup-hermes-forge.py</code></li>
 <li><strong>Open guide</strong> — <code>docs/hermes.md</code></li>
 </ul>
+<p>PATH checks use Forge’s shared resolver (<code>ExecutablePathResolver</code>): Homebrew and
+common user prefixes (<code>~/bin</code>, <code>~/.local/bin</code>, <code>~/.cargo/bin</code>) are searched even
+when Forge.app is launched from Finder (which otherwise sees a minimal GUI
+<code>PATH</code>). The same layout is applied when Forge opens a Terminal window.</p>
 <p>See <strong><code>docs/hermes.md</code></strong> for full instructions.</p>
 <hr />
 <h2>Configuration resolution</h2>

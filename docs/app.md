@@ -137,6 +137,11 @@ Open **Forge → Preferences… → Hermes** for privacy-first local assistant s
 - **Run setup in Terminal** — runs `python3 scripts/setup-hermes-forge.py`
 - **Open guide** — `docs/hermes.md`
 
+PATH checks use Forge’s shared resolver (`ExecutablePathResolver`): Homebrew and
+common user prefixes (`~/bin`, `~/.local/bin`, `~/.cargo/bin`) are searched even
+when Forge.app is launched from Finder (which otherwise sees a minimal GUI
+`PATH`). The same layout is applied when Forge opens a Terminal window.
+
 See **`docs/hermes.md`** for full instructions.
 
 ---

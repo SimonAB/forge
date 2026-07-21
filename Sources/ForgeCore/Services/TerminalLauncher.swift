@@ -74,7 +74,8 @@ public struct TerminalLauncher: Sendable {
     /// Writes the command to a script file and launches the terminal with that script so the command always runs correctly.
     /// After the command runs, starts an interactive shell so you can keep using the window.
     public func run(_ command: String, workingDirectory: String? = nil) {
-        let pathLine = "export PATH=\"/opt/homebrew/bin:/usr/local/bin:$PATH\""
+        // GUI apps often lack ~/bin and ~/.local/bin; use the shared resolver layout.
+        let pathLine = "export PATH=\"\(ExecutablePathResolver.augmentedPATH())\""
         let cdLine: String
         if let wd = workingDirectory, !wd.isEmpty {
             let escapedWd = wd.replacingOccurrences(of: "\\", with: "\\\\")
@@ -373,15 +374,9 @@ public struct TerminalLauncher: Sendable {
 #endif
     }
 
-    /// `PATH` for Neovim subprocesses: ensure Homebrew prefixes exist but keep the caller’s entries (nvm, cargo, …).
+    /// `PATH` for Neovim subprocesses: same GUI-friendly layout as Hermes / terminal launches.
     private static func neovimPathValue(processEnvironment env: [String: String]) -> String {
-        let prefix = "/opt/homebrew/bin:/usr/local/bin"
-        let fallback = "\(prefix):/usr/bin:/bin:/usr/sbin:/sbin"
-        guard let existing = env["PATH"], !existing.isEmpty else { return fallback }
-        if existing.contains("/opt/homebrew/bin") || existing.contains("/usr/local/bin") {
-            return existing
-        }
-        return "\(prefix):\(existing)"
+        ExecutablePathResolver.augmentedPATH(basePATH: env["PATH"])
     }
 
     /// Stable `HOME` / `XDG_*` / `PATH` for Neovim so plugin managers match a normal terminal session.
