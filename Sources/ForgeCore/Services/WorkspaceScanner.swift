@@ -3,10 +3,10 @@ import Foundation
 /// Scans the workspace directory and builds a list of projects with their Finder tag metadata.
 public struct WorkspaceScanner: Sendable {
 
-    private let tagStore: FinderTagStore
+    private let tagStore: any TagReading
     private let config: ForgeConfig
 
-    public init(config: ForgeConfig, tagStore: FinderTagStore = FinderTagStore()) {
+    public init(config: ForgeConfig, tagStore: some TagReading = FinderTagStore()) {
         self.config = config
         self.tagStore = tagStore
     }
@@ -25,7 +25,7 @@ public struct WorkspaceScanner: Sendable {
                 at: workspacePath,
                 remainingDepth: config.resolvedProjectScanDepth,
                 fileManager: fm,
-                tagReader: { path in tagStore.readTagsIfAvailable(at: path) ?? [] },
+                tagReader: { path in tagStore.tags(at: path) },
                 into: &projects
             )
         }
@@ -43,7 +43,7 @@ public struct WorkspaceScanner: Sendable {
                 at: workspacePath,
                 remainingDepth: config.resolvedProjectScanDepth,
                 fileManager: fm,
-                tagReader: { path in await tagStore.readTagsIfAvailable(at: path) ?? [] },
+                tagReader: { path in await tagStore.tags(at: path) },
                 into: &projects
             )
         }

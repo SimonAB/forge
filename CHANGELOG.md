@@ -7,6 +7,7 @@ The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.
 ### Unreleased
 
 - Preferences window is larger by default (720×560), resizable (min 640×480), and Brief/Workspace panels grow with the window.
+- CI: `WorkspaceScanner` tests use an in-memory ``TagReading`` store so they no longer depend on Finder xattrs on GitHub runners.
 
 ### 0.9.2
 

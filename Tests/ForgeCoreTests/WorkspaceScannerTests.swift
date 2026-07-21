@@ -14,8 +14,8 @@ struct WorkspaceScannerTests {
         let nested = (container as NSString).appendingPathComponent("NestedProject")
         try FileManager.default.createDirectory(atPath: nested, withIntermediateDirectories: true)
 
-        let tagStore = FinderTagStore()
-        try tagStore.writeTags(["🔥 Forge", "Watch 👁️"], at: nested)
+        let tagStore = InMemoryTagStore()
+        tagStore.setTags(["🔥 Forge", "Watch 👁️"], at: nested)
 
         let config = ForgeConfig.defaultConfig(projectRoots: [root])
         let projects = try WorkspaceScanner(config: config, tagStore: tagStore).scanProjects()
@@ -32,8 +32,8 @@ struct WorkspaceScannerTests {
         let nested = (container as NSString).appendingPathComponent("NestedProject")
         try FileManager.default.createDirectory(atPath: nested, withIntermediateDirectories: true)
 
-        let tagStore = FinderTagStore()
-        try tagStore.writeTags(["🔥 Forge", "Write ✒️"], at: nested)
+        let tagStore = InMemoryTagStore()
+        tagStore.setTags(["🔥 Forge", "Write ✒️"], at: nested)
 
         let config = ForgeConfig(
             projectRoots: [root],
@@ -43,10 +43,11 @@ struct WorkspaceScannerTests {
         )
         let projects = try WorkspaceScanner(config: config, tagStore: tagStore).scanProjects()
 
+        let project = try #require(projects.first)
         #expect(projects.count == 1)
-        #expect(projects[0].name == "NestedProject")
-        #expect(projects[0].column == "Write")
-        #expect(projects[0].path == nested)
+        #expect(project.name == "NestedProject")
+        #expect(project.column == "Write")
+        #expect(project.path == nested)
     }
 
     @Test func depthTwoStillIncludesTopLevelProjects() throws {
@@ -56,8 +57,8 @@ struct WorkspaceScannerTests {
         let top = (root as NSString).appendingPathComponent("TopLevel")
         try FileManager.default.createDirectory(atPath: top, withIntermediateDirectories: true)
 
-        let tagStore = FinderTagStore()
-        try tagStore.writeTags(["🔥 Forge", "Plan 📐"], at: top)
+        let tagStore = InMemoryTagStore()
+        tagStore.setTags(["🔥 Forge", "Plan 📐"], at: top)
 
         let config = ForgeConfig(
             projectRoots: [root],
@@ -67,8 +68,9 @@ struct WorkspaceScannerTests {
         )
         let projects = try WorkspaceScanner(config: config, tagStore: tagStore).scanProjects()
 
+        let project = try #require(projects.first)
         #expect(projects.count == 1)
-        #expect(projects[0].name == "TopLevel")
+        #expect(project.name == "TopLevel")
     }
 
     @Test func taggedContainerDoesNotRecurseIntoChildren() throws {
@@ -80,9 +82,9 @@ struct WorkspaceScannerTests {
         let nested = (container as NSString).appendingPathComponent("Child")
         try FileManager.default.createDirectory(atPath: nested, withIntermediateDirectories: true)
 
-        let tagStore = FinderTagStore()
-        try tagStore.writeTags(["🔥 Forge", "Watch 👁️"], at: container)
-        try tagStore.writeTags(["🔥 Forge", "Coding 🤖"], at: nested)
+        let tagStore = InMemoryTagStore()
+        tagStore.setTags(["🔥 Forge", "Watch 👁️"], at: container)
+        tagStore.setTags(["🔥 Forge", "Coding 🤖"], at: nested)
 
         let config = ForgeConfig(
             projectRoots: [root],
