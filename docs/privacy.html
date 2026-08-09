@@ -141,12 +141,28 @@ document summarises what data Forge uses, where it lives, and how it moves.</p>
 <p>Prefer local models; see <strong>AI assistants and local language models</strong> below.</p>
 </li>
 <li>
-<p><strong>Reminders</strong></p>
+<p><strong>Reminders (optional)</strong></p>
 </li>
+<li>When <code>reminders.enabled</code> is true (Preferences → Reminders, or config.yaml),
+    Forge may use EventKit to <strong>read</strong> reminder lists and items and match lists to
+    Forge project folders.</li>
+<li>With explicit <code>forge reminders align --apply</code>, Forge may <strong>create missing lists</strong>
+    (unmatched personal lists are left alone) and (when column sync is on) write one
+    sentinel reminder per list. Ordinary reminder items are not created or completed.</li>
+<li>On list create, on <code>forge move</code> / board drag, and on board <strong>Refresh</strong> /
+    Preferences <strong>Refresh now</strong> / <code>forge reminders refresh</code>, Forge may <strong>set list colour</strong>
+    from the Finder column. List icons are not changed (no EventKit API).</li>
+<li>When Finder carries <code>URGENT ⚠️</code>, Forge may set <strong>high priority</strong> on that list’s
+    sentinel reminder (EventKit has no Flagged API), including on Refresh.
+    Removing URGENT clears it.</li>
+<li>Background snapshot refresh in Forge.app updates <code>.cache/reminders-snapshot.json</code>
+    only (no colour or priority paint).</li>
+<li>With <code>sync_on_move</code> / <code>sync_from_reminders</code>, Forge may update the sentinel
+    or pull its column onto Finder (single-column steps).</li>
+<li>Forge.app may cache a snapshot under <code>.cache/reminders-snapshot.json</code> so the
+    CLI can display reminders without terminal Reminders permission.</li>
 <li>
-<p>A Reminders backend is planned via EventKit (same optional role as OmniFocus:
-    link tasks to Forge <em>projects</em>). Until then, keep day-to-day tasks in Reminders
-    independently.</p>
+<p>Deny Reminders access, or leave <code>reminders.enabled: false</code>, to disable.</p>
 </li>
 <li>
 <p><strong>OmniFocus (optional)</strong></p>
@@ -177,6 +193,13 @@ document summarises what data Forge uses, where it lives, and how it moves.</p>
 <li>
 <p>Avoid <code>forge calendar</code>, and/or deny Calendars permission when prompted.
     Other commands are unaffected.</p>
+</li>
+<li>
+<p><strong>No Reminders access</strong></p>
+</li>
+<li>
+<p>Leave <code>reminders.enabled: false</code>, and/or deny Reminders permission when
+    prompted. Other commands are unaffected.</p>
 </li>
 <li>
 <p><strong>Local-only storage</strong></p>

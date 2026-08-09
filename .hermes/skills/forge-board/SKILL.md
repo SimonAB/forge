@@ -50,6 +50,7 @@ Side-column: All active columns can move to/from Paused.
 4. `forge board -a <Person>` — Filter by assignee.
 5. `forge board --json` — Full JSON with metadata (columns, meta_tags, radar, daysSinceActivity, activitySource). **Use this for structured analysis.**
 6. `forge status` — Color-coded summary dashboard (column counts, total projects, active count, URGENT count).
+7. `forge reminders` / `status` / `show` / `refresh` / `doctor` / `align` — optional Apple Reminders task backend (requires `reminders.enabled`). IDs are EventKit identifiers. `refresh` writes the snapshot, paints list colours, and sets URGENT sentinel priority; create lists with `align --apply`. `forge board --json` may include a `reminders` object per folder.
 
 ### Board Structure
 
@@ -153,6 +154,8 @@ Workflow for URGENT projects:
 3. **Identify next action**: Determine what the very next step is.
 4. **Propose changes**: Move the project to the right column. Assign a `#Person` if needed. Propose to the user.
 5. **Resolve**: After approval, `forge project-tag remove <Project> "URGENT ⚠️"`.
+   When Reminders is enabled, adding or removing URGENT also sets high / none
+   priority on that list’s sentinel (EventKit has no Flagged API).
 6. **Escalate if needed**: If no progress after 14 days, note it as potentially stuck.
 
 ### Stale Remediation

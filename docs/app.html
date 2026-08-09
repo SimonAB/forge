@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Forge.app · Forge</title>
-    <meta name="description" content="Menu bar companion: project board, Radar, optional OmniFocus align, and setup." />
+    <meta name="description" content="Menu bar companion: project board, Radar, optional OmniFocus and Reminders, and setup." />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -162,7 +162,7 @@ indicates urgent items:</p>
 <tr>
 <td><strong>Board</strong></td>
 <td>Cmd+B</td>
-<td>Opens the native Kanban board window</td>
+<td>Opens the native Kanban board window (menu bar icon, or <strong>Window → Board</strong>)</td>
 </tr>
 <tr>
 <td><strong>OmniFocus Align…</strong></td>
@@ -188,13 +188,32 @@ indicates urgent items:</p>
 </table>
 <h3 id="preferences">Preferences</h3>
 <p><strong>Forge → Preferences…</strong> opens a resizable tabbed window (default about 720×560;
-minimum 640×480). Brief and Workspace panels expand when you enlarge the window.</p>
+minimum 640×480). Brief and Workspace panels expand when you enlarge the window.
+Saving Preferences reloads the board in place; it does not close the board window.
+Reopen the board with <strong>Window → Board</strong> (Cmd+B), the menu bar <strong>Board</strong> item, or
+the Dock icon when no windows are visible.</p>
 <h3 id="omnifocus-optional">OmniFocus (optional)</h3>
 <p>Optional: keep <strong>project</strong> kanban columns in step with OmniFocus. Day-to-day
-tasks stay in the task app. A Reminders backend (same role) is planned; Things
-is a possible later addition.</p>
+tasks stay in the task app. Apple Reminders is the other optional backend
+(EventKit); Things is a possible later addition.</p>
 <p>Enable under <strong>Preferences → OmniFocus</strong>. With <code>sync_on_move</code>, board column moves mirror onto linked OF tasks. With <code>sync_from_omnifocus</code>, board <strong>Refresh</strong> pulls OF column tags onto Finder (and clears stacked leftover OF kanban tags on those folders). Finder→OF is not rewritten from Refresh. With <code>sync_completed_project_to_shipped</code>, a completed/dropped OF <strong>project</strong> moves the matching Finder folder to <strong>Shipped</strong> on Refresh.</p>
 <p>CLI: <code>forge omnifocus doctor</code> → <code>align</code> (dry-run) → <code>align --apply</code>. See <a href="cli.html">cli.md</a> and <code>packaging/omnifocus/README.md</code>.</p>
+<h3 id="reminders-optional">Reminders (optional)</h3>
+<p>Optional EventKit <strong>task backend</strong>. Lists match Forge project folders by title;
+capture next actions in Reminders.app. Enable under <strong>Preferences → Reminders</strong>.
+The panel writes <code>reminders.enabled</code>, <code>reminders.sync_on_move</code>,
+<code>reminders.sync_from_reminders</code>, <code>reminders.include_completed</code>, and
+<code>reminders.list</code>; shows snapshot age; and offers <strong>Refresh now</strong> (same as board
+<strong>Refresh</strong>: snapshot, list colours, URGENT → sentinel priority, and sentinel →
+Finder when that toggle is on). Background snapshot refresh does not paint.
+Create missing lists with <code>forge reminders align --apply</code>. List colour follows
+the Finder column. Finder <code>URGENT ⚠️</code> sets high priority on the list’s sentinel.
+Optional sentinel reminders mirror columns when the sync flags are on. Folder
+aliases stay in <code>config.yaml</code>.</p>
+<p>With <code>sync_on_move</code>, board column moves update the matched list’s sentinel.
+With <code>sync_from_reminders</code>, board <strong>Refresh</strong> / Preferences <strong>Refresh now</strong> pull
+a single-column sentinel onto Finder (after OmniFocus, when both are on).</p>
+<p>CLI: <code>forge reminders</code> / <code>status</code> / <code>show</code> / <code>doctor</code> / <code>align</code> / <code>refresh</code> / <code>paint-colours</code> / <code>paint-priorities</code>. See <a href="reminders.html">reminders.md</a>.</p>
 <hr />
 <h2 id="quick-capture">Quick capture</h2>
 <p>There is no capture panel. Day-to-day tasks can live in OmniFocus, Reminders,
@@ -203,6 +222,7 @@ Things, or another app.</p>
 <p>On first launch, macOS will prompt for access to:</p>
 <ul>
 <li><strong>Calendars</strong> — only if you use CLI commands that read Calendar (<code>forge calendar</code>). Forge does not modify calendar data.</li>
+<li><strong>Reminders</strong> — only if Reminders integration is enabled. Forge may read lists and items, create missing lists (<code>align --apply</code>), set list colour from the Finder column, and update one sentinel reminder per list when column sync is on.</li>
 </ul>
 <p>Grant access for full functionality. This is declared in the app's
 <code>Info.plist</code>.</p>

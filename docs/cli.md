@@ -33,6 +33,7 @@ forge <command> [options]
 | `forge status` | Summary dashboard of all projects (column counts, active, URGENT) |
 | `forge calendar` / `forge events` | List upcoming Calendar events (read-only; same command) |
 | `forge omnifocus` | Optional OmniFocus bridge (`doctor`, `align`, `refresh`, …) |
+| `forge reminders` | Optional Apple Reminders bridge (`list`, `status`, `show`, `refresh`, `doctor`, `align`, `paint-colours`, `paint-priorities`) |
 
 Read-only brief (Python helper, not a `forge` subcommand):
 
@@ -244,6 +245,47 @@ forge omnifocus align --apply  # confirm when prompted
 
 See `packaging/omnifocus/README.md` for the optional Automation plug-in and tag
 conventions (`🔥 Forge:…` by default, legacy `Forge:…` still readable; flat `column_tag_aliases` such as `Watch 🚧` when `flat_column_tags` is true; nested `KanbanStatus/…` / legacy `ForgeColumn/…` for fallback and migration).
+
+---
+
+## forge reminders
+
+Optional Apple Reminders **task backend** via EventKit. Reminder *lists* match
+Forge project folders by title. Requires `reminders.enabled: true` in
+`config.yaml` (or **Forge → Preferences → Reminders**).
+
+Forge.app refreshes `.cache/reminders-snapshot.json` so the CLI can run without
+Reminders permission in Terminal. Pass `--live` to force EventKit. `refresh`
+writes the snapshot, paints list colours, and sets sentinel priority from Finder
+URGENT (requires Reminders permission for the terminal, or use Forge.app →
+Preferences → Reminders → Refresh now). Create missing lists
+with `forge reminders align --apply`.
+
+`forge reminders status` still runs when Reminders is disabled.
+
+`doctor` compares Forge folders with Reminders lists. `align` previews create-list
+(and sentinels when column sync is on); `--apply` requires typing `apply` unless
+`--yes` is passed. List colour follows the Finder column on create, on
+`forge move`, and on **Refresh** / `forge reminders refresh`. Finder `URGENT ⚠️`
+sets high priority on the list’s sentinel (Refresh, `paint-priorities`,
+`forge project-tag`, `forge move`).
+
+When Reminders is enabled and the snapshot is eligible, `forge board --json`
+includes a `reminders` object per matched folder (`incompleteCount`,
+`nextReminder`, `due`, `snapshotAgeSeconds`).
+
+```
+forge reminders [--json] [--list NAME] [--project SUB] [--completed] [--live]
+forge reminders status
+forge reminders show <project> [--json] [--completed] [--live]
+forge reminders doctor [--json] [--live]
+forge reminders align [--json] [--live] [--apply [--yes]]
+forge reminders paint-colours [--live] [--apply [--yes]]
+forge reminders paint-priorities [--live] [--apply [--yes]]
+forge reminders refresh [--apply-finder]
+```
+
+See [Reminders](reminders.md).
 
 ---
 

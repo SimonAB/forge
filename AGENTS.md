@@ -18,7 +18,7 @@ When this workspace is used with a language model, **prefer local inference for 
 
 ## OmniFocus Integration
 
-When OmniFocus.app is running and `omnifocus.enabled` is true, treat OmniFocus as the task-level source. Forge remains project kanban. Tasks may also live in Reminders, Things, or another app:
+When OmniFocus.app is running and `omnifocus.enabled` is true, treat OmniFocus as the task-level source. When `reminders.enabled` is true, use `forge reminders` for Apple Reminders (EventKit; lists match folders by title; `doctor` / `align --apply` for missing lists; list colour follows Finder column; Finder URGENT sets sentinel priority; optional sentinel column sync). Forge remains project kanban. Tasks may also live in Things or another app:
 
 ### Read Commands (always safe)
 
@@ -122,7 +122,20 @@ leftover OF kanban tags on folders it updated. Refresh does **not** push Finder
 columns onto OmniFocus — that happens on `forge move` / board drag with
 `sync_on_move`. With `omnifocus.sync_completed_project_to_shipped` (default true),
 a completed/dropped OF **project** moves the matching Finder folder to Shipped on
-Refresh. (After doctor is clean for ambiguous links.) For live OFML experiments,
+Refresh. (After doctor is clean for ambiguous links.) When `reminders.enabled`,
+use **`forge reminders doctor` / `align` / `show`**. Board **Refresh** and
+`forge reminders refresh` update the snapshot, paint list colours, and set
+sentinel priority from Finder URGENT (they do not create lists). Create missing
+lists with `forge reminders align --apply`. List colour follows the Finder column
+on create, on `forge move`, and on Refresh. Finder `URGENT ⚠️` sets high priority
+on the list’s sentinel (Refresh, `paint-priorities`, `forge project-tag`,
+`forge move`). With
+`reminders.sync_on_move`, `forge move` / board drag also
+update the matched list’s sentinel (`Forge · <Column>`). With
+`reminders.sync_from_reminders`, board **Refresh**, Preferences **Refresh now**, and
+`forge reminders refresh --apply-finder` pull a single-column sentinel onto Finder.
+Refresh applies OmniFocus first when both backends are on. Align defaults to
+dry-run; `--apply` requires confirmation. For live OFML experiments,
 validate simple queries first.
 
 ### OFML Data Schema
@@ -329,6 +342,11 @@ Never invent or hand-write task IDs. IDs are OmniFocus and `forge` assigned and 
 | `forge project-tag add <proj> <tag>` | No       | Add tag                   |
 | `forge project-tag remove <proj> <tag>` | No       | Remove tag              |
 | `forge status`                   | Yes     | Summary dashboard (column counts, URGENT) |
+| `forge reminders`                | Yes     | Optional Reminders list / status / show / doctor |
+| `forge reminders refresh`        | No      | Snapshot + colours + URGENT priority |
+| `forge reminders align --apply`  | No      | Create missing Reminders lists / sentinels |
+| `forge reminders paint-priorities --apply` | No | Finder URGENT → sentinel priority |
+| `forge reminders refresh --apply-finder` | No | Sentinel column → Finder (if `sync_from_reminders`) |
 
 For full specs: `@.cursor/rules/forge-cli.mdc`, `@.cursor/rules/forge-workflows.mdc`, `docs/hermes.md`, `.hermes/skills/forge-board/SKILL.md`. New project README scaffold: `PROJECT_TEMPLATE.md`.
 
@@ -339,3 +357,4 @@ For full specs: `@.cursor/rules/forge-cli.mdc`, `@.cursor/rules/forge-workflows.
 ## Learned Workspace Facts
 
 - Default Forge home is `~/Documents/Software/Forge`; config search still includes legacy `~/Documents/Forge` and `~/Documents/Work/Projects/Forge`.
+- Reminders integration: one EventKit **list** per Forge-tagged folder (title match); EventKit cannot maintain list groups, sections, icons, or hashtags. List colour follows the Finder column (paint only). Optional sentinel reminder (`Forge · <Column>`) for column sync. Finder `URGENT ⚠️` sets sentinel EventKit priority (high / none); there is no Flagged API. Board Refresh / Preferences Refresh now / `forge reminders refresh` snapshot + colour + URGENT priority (never delete unmatched lists; do not create lists). Background snapshot refresh does not paint. Create lists with `align --apply`. Forge does not create or complete ordinary reminder items.

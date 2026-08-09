@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>CLI reference · Forge</title>
-    <meta name="description" content="Forge CLI: project kanban, tags, calendar, and optional OmniFocus." />
+    <meta name="description" content="Forge CLI: project kanban, tags, calendar, and optional OmniFocus / Reminders." />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -136,6 +136,10 @@ Reminders, Things, or similar. Commands read and write local state only.</p>
 <tr>
 <td><code>forge omnifocus</code></td>
 <td>Optional OmniFocus bridge (<code>doctor</code>, <code>align</code>, <code>refresh</code>, …)</td>
+</tr>
+<tr>
+<td><code>forge reminders</code></td>
+<td>Optional Apple Reminders bridge (<code>list</code>, <code>status</code>, <code>show</code>, <code>refresh</code>, <code>doctor</code>, <code>align</code>, <code>paint-colours</code>, <code>paint-priorities</code>)</td>
 </tr>
 </tbody>
 </table>
@@ -370,6 +374,37 @@ forge omnifocus align --apply  # confirm when prompted
 </code></pre>
 <p>See <code>packaging/omnifocus/README.md</code> for the optional Automation plug-in and tag
 conventions (<code>🔥 Forge:…</code> by default, legacy <code>Forge:…</code> still readable; flat <code>column_tag_aliases</code> such as <code>Watch 🚧</code> when <code>flat_column_tags</code> is true; nested <code>KanbanStatus/…</code> / legacy <code>ForgeColumn/…</code> for fallback and migration).</p>
+<hr />
+<h2 id="forge-reminders">forge reminders</h2>
+<p>Optional Apple Reminders <strong>task backend</strong> via EventKit. Reminder <em>lists</em> match
+Forge project folders by title. Requires <code>reminders.enabled: true</code> in
+<code>config.yaml</code> (or <strong>Forge → Preferences → Reminders</strong>).</p>
+<p>Forge.app refreshes <code>.cache/reminders-snapshot.json</code> so the CLI can run without
+Reminders permission in Terminal. Pass <code>--live</code> to force EventKit. <code>refresh</code>
+writes the snapshot, paints list colours, and sets sentinel priority from Finder
+URGENT (requires Reminders permission for the terminal, or use Forge.app →
+Preferences → Reminders → Refresh now). Create missing lists
+with <code>forge reminders align --apply</code>.</p>
+<p><code>forge reminders status</code> still runs when Reminders is disabled.</p>
+<p><code>doctor</code> compares Forge folders with Reminders lists. <code>align</code> previews create-list
+(and sentinels when column sync is on); <code>--apply</code> requires typing <code>apply</code> unless
+<code>--yes</code> is passed. List colour follows the Finder column on create, on
+<code>forge move</code>, and on <strong>Refresh</strong> / <code>forge reminders refresh</code>. Finder <code>URGENT ⚠️</code>
+sets high priority on the list’s sentinel (Refresh, <code>paint-priorities</code>,
+<code>forge project-tag</code>, <code>forge move</code>).</p>
+<p>When Reminders is enabled and the snapshot is eligible, <code>forge board --json</code>
+includes a <code>reminders</code> object per matched folder (<code>incompleteCount</code>,
+<code>nextReminder</code>, <code>due</code>, <code>snapshotAgeSeconds</code>).</p>
+<pre><code>forge reminders [--json] [--list NAME] [--project SUB] [--completed] [--live]
+forge reminders status
+forge reminders show &lt;project&gt; [--json] [--completed] [--live]
+forge reminders doctor [--json] [--live]
+forge reminders align [--json] [--live] [--apply [--yes]]
+forge reminders paint-colours [--live] [--apply [--yes]]
+forge reminders paint-priorities [--live] [--apply [--yes]]
+forge reminders refresh [--apply-finder]
+</code></pre>
+<p>See <a href="reminders.html">Reminders</a>.</p>
 <hr />
 <h2 id="configuration-project-roots">Configuration: project roots</h2>
 <p>Set <strong><code>project_roots</code></strong> to a list of paths. Forge scans each root for project

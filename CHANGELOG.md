@@ -6,7 +6,9 @@ The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 ### Unreleased
 
-- Documentation: Forge as folder-first project kanban; optional task apps (OmniFocus bridge, planned Reminders, Things later).
+- Forge.app: saving Preferences no longer closes the board window (config reloads in place). **Window → Board** (Cmd+B) reopens it; clicking the Dock icon does the same when no windows are visible.
+- Documentation: Forge as folder-first project kanban; optional task apps (OmniFocus bridge, Reminders EventKit backend, Things later).
+- **Reminders (optional task backend):** `forge reminders` / `status` / `show` / `refresh` / `doctor` / `align` / `paint-colours` / `paint-priorities` via EventKit; one list per Forge folder (optional `folder_aliases`); snapshot `.cache/reminders-snapshot.json`; Preferences → Reminders (enable, inbox list, include completed, optional sentinel sync, snapshot status, **Refresh now**); `forge board --json` may include a `reminders` enrichment per folder. Create missing lists with `align --apply` only. Board **Refresh**, Preferences **Refresh now**, and `forge reminders refresh` update the snapshot, paint list colours from Finder columns, and set sentinel priority from Finder `URGENT ⚠️` (background snapshot refresh does not paint). List colour also follows the Finder column on create and on `forge move`. URGENT priority also follows `forge project-tag` / `paint-priorities`. Optional sentinel reminder per list mirrors the column when sync flags are on. Doctor / align may propose Finder Shipped when a list is all-complete (never auto-moved).
 
 ### [0.9.2] – 2026-08-09
 

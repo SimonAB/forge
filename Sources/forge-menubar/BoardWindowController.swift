@@ -12,73 +12,25 @@ final class BoardWindowController: NSObject, NSWindowDelegate {
     private static let frameKey = "ForgeBoardWindowFrame"
 
     private var window: NSWindow?
-    private let viewModel: BoardViewModel
-    private let forgeDir: String?
+    private var viewModel: BoardViewModel
+    private var forgeDir: String?
+
+    var isWindowVisible: Bool { window?.isVisible == true }
 
     init(config: ForgeConfig, forgeDir: String? = nil) {
         self.forgeDir = forgeDir
-        let scanner = WorkspaceScanner(config: config)
-        let tagStore = FinderTagStore()
+        self.viewModel = Self.makeViewModel(config: config, forgeDir: forgeDir)
+        super.init()
+    }
 
-        let fetchProjects: @Sendable () async throws -> [Project] = {
-            try await scanner.scanProjects()
+    /// Rebuild fetch/move/sync closures from a newly saved config without closing the window.
+    func reload(config: ForgeConfig, forgeDir: String?) {
+        self.forgeDir = forgeDir
+        self.viewModel = Self.makeViewModel(config: config, forgeDir: forgeDir)
+        if let window {
+            installRootView(in: window)
         }
-
-        let moveProject: @Sendable (Project, ColumnConfig) async throws -> Void = { project, column in
-            if let existing = project.workflowTag {
-                try tagStore.removeTag(existing, at: project.path)
-            }
-            try tagStore.addTag(column.tag, at: project.path)
-
-            guard config.omnifocus.enabled, config.omnifocus.syncOnMove else { return }
-            guard let resolvedForgeDir = forgeDir else { return }
-            let projects = try await scanner.scanProjects()
-            let outcome = OmniFocusMoveSync.mirrorFinderColumn(
-                config: config,
-                forgeDir: resolvedForgeDir,
-                projects: projects,
-                project: project,
-                column: column.name
-            )
-            if case .skipped(let reason) = outcome, reason.contains("ambiguous") {
-                throw OmniJSBridgeError.evaluationFailed("OmniFocus sync skipped: \(reason)")
-            }
-        }
-
-        let performSync: (@Sendable () async throws -> Void)? = {
-            guard let resolvedForgeDir = forgeDir else {
-                throw OmniJSBridgeError.evaluationFailed(
-                    "Forge directory unknown; cannot sync OmniFocus. Open Preferences and select config.yaml."
-                )
-            }
-            let configPath = (resolvedForgeDir as NSString).appendingPathComponent("config.yaml")
-            let activeConfig = (try? ForgeConfig.load(from: configPath)) ?? config
-            guard activeConfig.omnifocus.enabled else { return }
-            guard activeConfig.omnifocus.syncOnMove
-                || activeConfig.omnifocus.syncFromOmnifocus
-                || activeConfig.omnifocus.syncCompletedProjectToShipped else { return }
-
-            let freshScanner = WorkspaceScanner(config: activeConfig)
-            let projects = try await freshScanner.scanProjects()
-            let outcome = try OmniFocusMoveSync.syncBidirectionalOnRefresh(
-                config: activeConfig,
-                forgeDir: resolvedForgeDir,
-                projects: projects
-            )
-            if !outcome.errors.isEmpty {
-                throw OmniJSBridgeError.evaluationFailed(
-                    "OmniFocus refresh: \(outcome.errors.joined(separator: "; "))"
-                )
-            }
-        }
-
-        self.viewModel = BoardViewModel(
-            config: config,
-            fetchProjects: fetchProjects,
-            moveProject: moveProject,
-            filterMetaTags: BoardFilterPreferences.loadEnabledMetaTags(),
-            performSync: performSync
-        )
+        viewModel.refresh()
     }
 
     func showWindow() {
@@ -88,6 +40,42 @@ final class BoardWindowController: NSObject, NSWindowDelegate {
             return
         }
 
+        let window = NSWindow(contentViewController: NSViewController())
+        window.title = "Forge — Board"
+        window.minSize = NSSize(width: 600, height: 300)
+        window.delegate = self
+        if let saved = UserDefaults.standard.string(forKey: Self.frameKey) {
+            let rect = NSRectFromString(saved)
+            if rect.width >= 600, rect.height >= 300 {
+                window.setFrame(rect, display: false)
+            } else {
+                window.setContentSize(NSSize(width: 900, height: 500))
+                window.center()
+            }
+        } else {
+            window.setContentSize(NSSize(width: 900, height: 500))
+            window.center()
+        }
+
+        installRootView(in: window)
+        self.window = window
+        window.makeKeyAndOrderFront(nil as Any?)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    /// Refreshes the board's project list (e.g. after a sync so new tags/columns appear).
+    func refreshBoardIfNeeded() {
+        viewModel.refresh()
+    }
+
+    /// Close the board window (user dismisses it, or config becomes unavailable).
+    func closeWindow() {
+        saveWindowFrame()
+        window?.close()
+        window = nil
+    }
+
+    private func installRootView(in window: NSWindow) {
         let contextMenuActions: (Project) -> [ProjectContextMenuAction] = { [weak self] project in
             guard let self = self else { return [] }
             let config = self.viewModel.config
@@ -108,8 +96,6 @@ final class BoardWindowController: NSObject, NSWindowDelegate {
             launcher.run(command, workingDirectory: workingDir)
         }
 
-        // No task-file integration in the kanban-only build.
-
         let rootView = BoardView(viewModel: viewModel)
             .environment(\.projectContextMenuActions, contextMenuActions)
             .environment(\.projectRevealAction) { project in
@@ -117,39 +103,117 @@ final class BoardWindowController: NSObject, NSWindowDelegate {
             }
             .environment(\.runForgeInTerminal, runForgeInTerminal)
 
-        let hosting = NSHostingController(rootView: rootView)
-        let window = NSWindow(contentViewController: hosting)
-        window.title = "Forge — Board"
-        window.minSize = NSSize(width: 600, height: 300)
+        window.contentViewController = NSHostingController(rootView: rootView)
         window.delegate = self
-        if let saved = UserDefaults.standard.string(forKey: Self.frameKey) {
-            let rect = NSRectFromString(saved)
-            if rect.width >= 600, rect.height >= 300 {
-                window.setFrame(rect, display: false)
-            } else {
-                window.setContentSize(NSSize(width: 900, height: 500))
-                window.center()
-            }
-        } else {
-            window.setContentSize(NSSize(width: 900, height: 500))
-            window.center()
+    }
+
+    private static func makeViewModel(config: ForgeConfig, forgeDir: String?) -> BoardViewModel {
+        let scanner = WorkspaceScanner(config: config)
+        let tagStore = FinderTagStore()
+
+        let fetchProjects: @Sendable () async throws -> [Project] = {
+            try await scanner.scanProjects()
         }
 
-        self.window = window
-        window.makeKeyAndOrderFront(nil as Any?)
-        NSApp.activate(ignoringOtherApps: true)
-    }
+        let moveProject: @Sendable (Project, ColumnConfig) async throws -> Void = { project, column in
+            if let existing = project.workflowTag {
+                try tagStore.removeTag(existing, at: project.path)
+            }
+            try tagStore.addTag(column.tag, at: project.path)
 
-    /// Refreshes the board's project list (e.g. after a sync so new tags/columns appear).
-    func refreshBoardIfNeeded() {
-        viewModel.refresh()
-    }
+            guard let resolvedForgeDir = forgeDir else { return }
 
-    /// Close the board window (e.g. after Preferences changes OmniFocus settings).
-    func closeWindow() {
-        saveWindowFrame()
-        window?.close()
-        window = nil
+            if config.omnifocus.enabled, config.omnifocus.syncOnMove {
+                let projects = try await scanner.scanProjects()
+                let outcome = OmniFocusMoveSync.mirrorFinderColumn(
+                    config: config,
+                    forgeDir: resolvedForgeDir,
+                    projects: projects,
+                    project: project,
+                    column: column.name
+                )
+                if case .skipped(let reason) = outcome, reason.contains("ambiguous") {
+                    throw OmniJSBridgeError.evaluationFailed("OmniFocus sync skipped: \(reason)")
+                }
+            }
+
+            if config.reminders.enabled {
+                guard let inv = try RemindersService(config: config).loadEligibleSnapshot(forgeDir: resolvedForgeDir) else {
+                    return
+                }
+                _ = await RemindersMoveSync.afterFinderColumnChange(
+                    config: config,
+                    project: project,
+                    column: column.name,
+                    inventory: inv,
+                    writer: RemindersWriter()
+                )
+            }
+        }
+
+        let performSync: (@Sendable () async throws -> Void)? = {
+            guard let resolvedForgeDir = forgeDir else {
+                throw OmniJSBridgeError.evaluationFailed(
+                    "Forge directory unknown; cannot sync. Open Preferences and select config.yaml."
+                )
+            }
+            let configPath = (resolvedForgeDir as NSString).appendingPathComponent("config.yaml")
+            let activeConfig = (try? ForgeConfig.load(from: configPath)) ?? config
+            let ofRefresh = activeConfig.omnifocus.enabled && (
+                activeConfig.omnifocus.syncOnMove
+                    || activeConfig.omnifocus.syncFromOmnifocus
+                    || activeConfig.omnifocus.syncCompletedProjectToShipped
+            )
+            guard ofRefresh || activeConfig.reminders.enabled else { return }
+
+            let freshScanner = WorkspaceScanner(config: activeConfig)
+            let projects = try await freshScanner.scanProjects()
+            var skipFolders: Set<String> = []
+            var errors: [String] = []
+
+            if ofRefresh {
+                let outcome = try OmniFocusMoveSync.syncBidirectionalOnRefresh(
+                    config: activeConfig,
+                    forgeDir: resolvedForgeDir,
+                    projects: projects
+                )
+                skipFolders = Set(outcome.pulledFolders)
+                errors.append(contentsOf: outcome.errors)
+            }
+
+            if activeConfig.reminders.enabled {
+                let remOut = try await RemindersMoveSync.refreshAndPull(
+                    config: activeConfig,
+                    forgeDir: resolvedForgeDir,
+                    projects: projects,
+                    skipFolderNames: skipFolders,
+                    writerName: "forge-menubar",
+                    setColumn: { project, column in
+                        try OmniFocusMoveSync.setFinderWorkflowColumn(
+                            path: project.path,
+                            column: column,
+                            config: activeConfig,
+                            tagStore: FinderTagStore()
+                        )
+                    }
+                )
+                errors.append(contentsOf: remOut.errors)
+            }
+
+            if !errors.isEmpty {
+                throw OmniJSBridgeError.evaluationFailed(
+                    "Refresh: \(errors.joined(separator: "; "))"
+                )
+            }
+        }
+
+        return BoardViewModel(
+            config: config,
+            fetchProjects: fetchProjects,
+            moveProject: moveProject,
+            filterMetaTags: BoardFilterPreferences.loadEnabledMetaTags(),
+            performSync: performSync
+        )
     }
 
     private func saveWindowFrame() {
@@ -170,6 +234,7 @@ final class BoardWindowController: NSObject, NSWindowDelegate {
 
     func windowWillClose(_ notification: Notification) {
         saveWindowFrame()
+        window = nil
     }
 
     /// Opens a file with the user's default editor preference (EditorPreferences). Used for project files on cards.

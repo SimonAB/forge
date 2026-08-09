@@ -7,7 +7,7 @@ alwaysApply: false
 ---
 
 Forge is folder-first **project** kanban (Finder tags). Day-to-day tasks belong in
-OmniFocus (optional project-column bridge), Apple Reminders (planned EventKit
+OmniFocus (optional project-column bridge), Apple Reminders (optional EventKit
 backend), Things, or another app.
 
 The rules below apply only to **legacy** `tasks/**/*.md` files if they still exist.

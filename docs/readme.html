@@ -108,7 +108,7 @@ Project folders · Finder tags · optional task apps · no Forge-hosted servers.
 <hr />
 <p>Forge is a <strong>kanban board</strong> for projects, backed by <strong>Finder tags</strong> on ordinary
 folders. Day-to-day tasks can live in <strong>OmniFocus</strong> (optional bridge),
-<strong>Reminders</strong> (planned EventKit backend), <strong>Things</strong>, or another app. Local-first:
+<strong>Reminders</strong> (optional EventKit backend), <strong>Things</strong>, or another app. Local-first:
 projects stay in your directories.</p>
 <h2 id="who-is-forge-for">Who is Forge for?</h2>
 <p>Forge is for people who think in files and folders first, and who want a
@@ -134,7 +134,7 @@ files.</p>
 <tbody>
 <tr>
 <td><a href="cli.html"><code>forge</code> CLI</a></td>
-<td>Command-line interface for board views, tags, calendar, and optional OmniFocus</td>
+<td>Command-line interface for board views, tags, calendar, and optional OmniFocus / Reminders</td>
 </tr>
 <tr>
 <td><a href="app.html">Forge.app</a></td>
@@ -182,6 +182,10 @@ with <a href="assets/site.css"><code>docs/assets/site.css</code></a> and <a href
 <tr>
 <td><a href="docs/omnifocus.html"><code>docs/omnifocus.html</code></a></td>
 <td><a href="omnifocus.html"><code>docs/omnifocus.md</code></a></td>
+</tr>
+<tr>
+<td><a href="docs/reminders.html"><code>docs/reminders.html</code></a></td>
+<td><a href="reminders.html"><code>docs/reminders.md</code></a></td>
 </tr>
 <tr>
 <td><a href="docs/cli.html"><code>docs/cli.html</code></a></td>
@@ -275,7 +279,7 @@ material: <strong><code>.cursor/rules/</code></strong> (CLI, workflows), <strong
 <strong><code>python3 scripts/forge-brief.py</code></strong> for read-only board briefs without any LLM.</p>
 <h2 id="directory-layout">Directory layout</h2>
 <pre><code>~/Documents/Software/Forge/     Forge home (synced via iCloud Drive; ~/Documents/Forge still works)
-├── AGENTS.md                   Assistant operating manual (kanban + OmniFocus)
+├── AGENTS.md                   Assistant operating manual (kanban + OmniFocus / Reminders)
 ├── config.yaml                 Configuration (board columns, workspace roots, tags)
 ├── build.sh                  Per-Mac build &amp; install script
 ├── generate_icon.py            App icon generator (requires Pillow)

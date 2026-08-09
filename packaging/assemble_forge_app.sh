@@ -104,6 +104,10 @@ cat > "$CONTENTS/Info.plist" << PLIST
     <string>14.0</string>
     <key>NSCalendarsUsageDescription</key>
     <string>Forge can read your Calendar to show upcoming events in the CLI.</string>
+    <key>NSRemindersFullAccessUsageDescription</key>
+    <string>Forge can read Apple Reminders lists matched to your projects, create missing lists, set list colour from the kanban column, and update one optional status reminder per list.</string>
+    <key>NSRemindersUsageDescription</key>
+    <string>Forge can read Apple Reminders lists matched to your projects, create missing lists, set list colour from the kanban column, and update one optional status reminder per list.</string>
     <key>NSAppleEventsUsageDescription</key>
     <string>Forge runs commands in your chosen terminal and shows task notifications.</string>
     <key>SUFeedURL</key>

@@ -161,7 +161,8 @@ public struct CalendarConfig: Codable, Sendable {
 // MARK: - Legacy GTD (kept for compatibility)
 
 /// Legacy task-system configuration, retained to keep older configs and internal modules building.
-/// The kanban-only CLI and UI do not rely on these fields.
+/// `reminders_list` is still read as a fallback for `reminders.list`. The kanban CLI does not
+/// otherwise use these fields.
 public struct GTDConfig: Codable, Sendable {
     public let contexts: [String]
     public let remindersList: String
@@ -195,6 +196,7 @@ public struct ForgeConfig: Codable, Sendable {
     public let board: BoardConfig
     public let calendar: CalendarConfig
     public let omnifocus: OmniFocusConfig
+    public let reminders: RemindersConfig
     public let gtd: GTDConfig
     public let workspaceTags: [String]
     public var projectAreas: [String: [String]]
@@ -218,7 +220,7 @@ public struct ForgeConfig: Codable, Sendable {
 
     enum CodingKeys: String, CodingKey {
         case workspace
-        case board, calendar, omnifocus
+        case board, calendar, omnifocus, reminders
         case gtd
         case projectRoots = "project_roots"
         case workspaceTags = "workspace_tags"
@@ -235,6 +237,7 @@ public struct ForgeConfig: Codable, Sendable {
         try container.encode(board, forKey: .board)
         try container.encode(calendar, forKey: .calendar)
         try container.encode(omnifocus, forKey: .omnifocus)
+        try container.encode(reminders, forKey: .reminders)
         try container.encode(gtd, forKey: .gtd)
         try container.encode(workspaceTags, forKey: .workspaceTags)
         try container.encode(projectAreas, forKey: .projectAreas)
@@ -249,6 +252,7 @@ public struct ForgeConfig: Codable, Sendable {
         board: BoardConfig,
         calendar: CalendarConfig = CalendarConfig(),
         omnifocus: OmniFocusConfig = OmniFocusConfig(),
+        reminders: RemindersConfig = RemindersConfig(),
         gtd: GTDConfig = GTDConfig(),
         workspaceTags: [String] = ["work"],
         projectAreas: [String: [String]] = [:],
@@ -261,6 +265,7 @@ public struct ForgeConfig: Codable, Sendable {
         self.board = board
         self.calendar = calendar
         self.omnifocus = omnifocus
+        self.reminders = reminders
         self.gtd = gtd
         self.workspaceTags = workspaceTags
         self.projectAreas = projectAreas
@@ -308,6 +313,7 @@ extension ForgeConfig {
         var decodedCalendar = (try? container.decode(CalendarConfig.self, forKey: .calendar)) ?? CalendarConfig()
         omnifocus = (try? container.decode(OmniFocusConfig.self, forKey: .omnifocus)) ?? OmniFocusConfig()
         gtd = (try? container.decode(GTDConfig.self, forKey: .gtd)) ?? GTDConfig()
+        reminders = Self.decodeReminders(from: container, gtd: gtd)
         let roots = try container.decodeIfPresent([String].self, forKey: .projectRoots)
         let legacyWorkspace = try container.decodeIfPresent(String.self, forKey: .workspace)
         if let r = roots, !r.isEmpty {
@@ -330,6 +336,28 @@ extension ForgeConfig {
         }
 
         calendar = decodedCalendar
+    }
+
+    /// Decode `reminders:`; migrate `gtd.reminders_list` when `reminders.list` is absent.
+    private static func decodeReminders(
+        from container: KeyedDecodingContainer<CodingKeys>,
+        gtd: GTDConfig
+    ) -> RemindersConfig {
+        let legacy = gtd.remindersList.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard container.contains(.reminders),
+              let decoded = try? container.decode(RemindersConfig.self, forKey: .reminders) else {
+            var fallback = RemindersConfig(listSpecifiedInYAML: false)
+            if !legacy.isEmpty {
+                fallback.list = legacy
+            }
+            return fallback
+        }
+        if !decoded.listSpecifiedInYAML, !legacy.isEmpty {
+            var migrated = decoded
+            migrated.list = legacy
+            return migrated
+        }
+        return decoded
     }
 
     /// Load configuration from a YAML file at the given path.

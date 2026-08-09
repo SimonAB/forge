@@ -25,7 +25,7 @@ Project folders · Finder tags · optional task apps · no Forge-hosted servers.
 
 Forge is a **kanban board** for projects, backed by **Finder tags** on ordinary
 folders. Day-to-day tasks can live in **OmniFocus** (optional bridge),
-**Reminders** (planned EventKit backend), **Things**, or another app. Local-first:
+**Reminders** (optional EventKit backend), **Things**, or another app. Local-first:
 projects stay in your directories.
 
 ## Who is Forge for?
@@ -48,7 +48,7 @@ For a longer tour of concepts and workflows, see the user manual in
 
 | Component | Description |
 |-----------|-------------|
-| [`forge` CLI](docs/cli.md) | Command-line interface for board views, tags, calendar, and optional OmniFocus |
+| [`forge` CLI](docs/cli.md) | Command-line interface for board views, tags, calendar, and optional OmniFocus / Reminders |
 | [Forge.app](docs/app.md) | Menu bar companion and board window |
 | [Hermes + Ollama](docs/hermes.md) | Privacy-first local assistant (`forge-board` skill) |
 | [Neovim plugin](docs/neovim.md) | Keymaps, commands, and dashboard integration via `forge-nvim.lua` |
@@ -68,6 +68,7 @@ The **full documentation** is also published as static HTML next to the landing 
 | [`docs/finder-tags.html`](docs/finder-tags.html) | [`docs/finder-tags.md`](docs/finder-tags.md) |
 | [`docs/cli-and-apps.html`](docs/cli-and-apps.html) | [`docs/cli-and-apps.md`](docs/cli-and-apps.md) |
 | [`docs/omnifocus.html`](docs/omnifocus.html) | [`docs/omnifocus.md`](docs/omnifocus.md) |
+| [`docs/reminders.html`](docs/reminders.html) | [`docs/reminders.md`](docs/reminders.md) |
 | [`docs/cli.html`](docs/cli.html) | [`docs/cli.md`](docs/cli.md) |
 | [`docs/app.html`](docs/app.html) | [`docs/app.md`](docs/app.md) |
 | [`docs/hermes.html`](docs/hermes.html) | [`docs/hermes.md`](docs/hermes.md) |
@@ -151,7 +152,7 @@ material: **`.cursor/rules/`** (CLI, workflows), **`docs/hermes.md`**
 
 ```
 ~/Documents/Software/Forge/     Forge home (synced via iCloud Drive; ~/Documents/Forge still works)
-├── AGENTS.md                   Assistant operating manual (kanban + OmniFocus)
+├── AGENTS.md                   Assistant operating manual (kanban + OmniFocus / Reminders)
 ├── config.yaml                 Configuration (board columns, workspace roots, tags)
 ├── build.sh                  Per-Mac build & install script
 ├── generate_icon.py            App icon generator (requires Pillow)

@@ -15,6 +15,7 @@ struct Forge: AsyncParsableCommand {
             StatusCommand.self,
             CalendarCommand.self,
             OmniFocusCommand.self,
+            RemindersCommand.self,
         ]
     )
 }

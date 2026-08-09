@@ -1,7 +1,7 @@
 import AppKit
 import ForgeCore
 
-/// Preferences window with tabbed panels: General, Board, Brief, Hermes, OmniFocus, Workspace, Shortcuts.
+/// Preferences window with tabbed panels: General, Board, Brief, Hermes, OmniFocus, Reminders, Workspace, Shortcuts.
 final class PreferencesWindowController: NSWindowController {
 
     static let windowTitle = "Preferences"
@@ -83,6 +83,27 @@ final class PreferencesWindowController: NSWindowController {
         )
         tabView.addTabViewItem(omnifocusItem)
 
+        let remindersItem = NSTabViewItem(identifier: "reminders")
+        remindersItem.label = "Reminders"
+        remindersItem.view = PreferencesRemindersView(
+            configPath: configPath,
+            forgeDir: configPath.map { ($0 as NSString).deletingLastPathComponent },
+            config: config,
+            onSave: { [weak self] enabled, list, includeCompleted, syncOnMove, syncFromReminders in
+                self?.saveReminders(
+                    enabled: enabled,
+                    list: list,
+                    includeCompleted: includeCompleted,
+                    syncOnMove: syncOnMove,
+                    syncFromReminders: syncFromReminders
+                ) ?? false
+            },
+            onRefresh: { [weak self] in
+                await self?.refreshRemindersSnapshot() ?? "Could not refresh."
+            }
+        )
+        tabView.addTabViewItem(remindersItem)
+
         let workspaceItem = NSTabViewItem(identifier: "workspace")
         workspaceItem.label = "Workspace"
         workspaceItem.view = PreferencesWorkspaceView(
@@ -127,6 +148,7 @@ final class PreferencesWindowController: NSWindowController {
             board: current.board,
             calendar: current.calendar,
             omnifocus: current.omnifocus,
+            reminders: current.reminders,
             gtd: current.gtd,
             workspaceTags: current.workspaceTags,
             projectAreas: current.projectAreas,
@@ -153,6 +175,7 @@ final class PreferencesWindowController: NSWindowController {
             board: current.board,
             calendar: current.calendar,
             omnifocus: current.omnifocus,
+            reminders: current.reminders,
             gtd: current.gtd,
             workspaceTags: current.workspaceTags,
             projectAreas: current.projectAreas,
@@ -184,6 +207,7 @@ final class PreferencesWindowController: NSWindowController {
             board: current.board,
             calendar: current.calendar,
             omnifocus: of,
+            reminders: current.reminders,
             gtd: current.gtd,
             workspaceTags: current.workspaceTags,
             projectAreas: current.projectAreas,
@@ -199,6 +223,104 @@ final class PreferencesWindowController: NSWindowController {
             return true
         } catch {
             return false
+        }
+    }
+
+    /// Persist Reminders integration flags to config.yaml.
+    fileprivate func saveReminders(
+        enabled: Bool,
+        list: String,
+        includeCompleted: Bool,
+        syncOnMove: Bool,
+        syncFromReminders: Bool
+    ) -> Bool {
+        guard let path = configPath, let current = config else { return false }
+        let rem = current.reminders.updating(
+            enabled: enabled,
+            list: list,
+            includeCompleted: includeCompleted,
+            syncOnMove: syncOnMove,
+            syncFromReminders: syncFromReminders
+        )
+        let updated = ForgeConfig(
+            projectRoots: current.projectRoots,
+            board: current.board,
+            calendar: current.calendar,
+            omnifocus: current.omnifocus,
+            reminders: rem,
+            gtd: current.gtd,
+            workspaceTags: current.workspaceTags,
+            projectAreas: current.projectAreas,
+            terminal: current.terminal,
+            projectTag: current.projectTag,
+            projectScanDepth: current.projectScanDepth,
+            dueConflictPolicy: current.dueConflictPolicy
+        )
+        do {
+            try updated.save(to: path)
+            config = updated
+            NotificationCenter.default.post(name: .forgeConfigDidChange, object: path)
+            return true
+        } catch {
+            return false
+        }
+    }
+
+
+    fileprivate func refreshRemindersSnapshot() async -> String {
+        guard let path = configPath, let current = config else {
+            return "No config.yaml loaded."
+        }
+        guard current.reminders.enabled else {
+            return "Enable Reminders integration first."
+        }
+        let forgeDir = (path as NSString).deletingLastPathComponent
+        do {
+            let scanner = WorkspaceScanner(config: current)
+            let projects = try await scanner.scanProjects()
+            let cfg = current
+            let remOut = try await RemindersMoveSync.refreshAndPull(
+                config: cfg,
+                forgeDir: forgeDir,
+                projects: projects,
+                writerName: "Forge.app",
+                setColumn: { @Sendable project, column in
+                    try OmniFocusMoveSync.setFinderWorkflowColumn(
+                        path: project.path,
+                        column: column,
+                        config: cfg,
+                        tagStore: FinderTagStore()
+                    )
+                }
+            )
+            let summary = RemindersSnapshotStore.statusSummary(forgeDir: forgeDir)
+            var parts = [summary]
+            if !remOut.paintedColours.isEmpty {
+                parts.append("Colours \(remOut.paintedColours.count).")
+            }
+            if !remOut.paintedPriorities.isEmpty {
+                parts.append("URGENT priority \(remOut.paintedPriorities.count).")
+            }
+            if !remOut.updatedFolders.isEmpty {
+                parts.append("Finder columns: \(remOut.updatedFolders.joined(separator: ", ")).")
+            }
+            if !remOut.errors.isEmpty {
+                parts.append(remOut.errors.joined(separator: "; "))
+            }
+            let inventory = try RemindersService(config: current).loadEligibleSnapshot(forgeDir: forgeDir)
+            if let inventory {
+                let forgeOnly = RemindersAlignment.doctor(
+                    projects: projects,
+                    inventory: inventory,
+                    config: current
+                ).items.filter { $0.bucket == .forgeOnly }.count
+                if forgeOnly > 0 {
+                    parts.append("\(forgeOnly) folder(s) have no list — forge reminders align --apply.")
+                }
+            }
+            return parts.joined(separator: " ")
+        } catch {
+            return error.localizedDescription
         }
     }
 
@@ -552,8 +674,6 @@ private extension Array {
     }
 }
 
-// MARK: - Board panel
-
 // MARK: - OmniFocus panel
 
 private final class PreferencesOmniFocusView: NSView {
@@ -688,6 +808,279 @@ private final class PreferencesOmniFocusView: NSView {
             statusLabel.textColor = .secondaryLabelColor
         } else {
             statusLabel.stringValue = "Could not save OmniFocus settings."
+            statusLabel.textColor = .systemRed
+        }
+    }
+}
+
+// MARK: - Reminders panel
+
+private final class PreferencesRemindersView: NSView, NSTextFieldDelegate {
+    private let configPath: String?
+    private let forgeDir: String?
+    private let omnifocusEnabled: Bool
+    private let onSave: (Bool, String, Bool, Bool, Bool) -> Bool
+    private let onRefresh: () async -> String
+    private var enabledCheckbox: NSButton!
+    private var syncOnMoveCheckbox: NSButton!
+    private var syncFromRemindersCheckbox: NSButton!
+    private var includeCompletedCheckbox: NSButton!
+    private var listField: NSTextField!
+    private var snapshotLabel: NSTextField!
+    private var refreshButton: NSButton!
+    private var warningLabel: NSTextField!
+    private var statusLabel: NSTextField!
+
+    override var isFlipped: Bool { true }
+
+    init(
+        configPath: String?,
+        forgeDir: String?,
+        config: ForgeConfig?,
+        onSave: @escaping (Bool, String, Bool, Bool, Bool) -> Bool,
+        onRefresh: @escaping () async -> String
+    ) {
+        self.configPath = configPath
+        self.forgeDir = forgeDir
+        self.omnifocusEnabled = config?.omnifocus.enabled == true
+        self.onSave = onSave
+        self.onRefresh = onRefresh
+        super.init(frame: .zero)
+
+        let title = NSTextField(labelWithString: "Reminders")
+        title.font = .systemFont(ofSize: 13, weight: .semibold)
+        title.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(title)
+
+        let blurb = NSTextField(wrappingLabelWithString: """
+        Optional local EventKit task backend. Each Forge project folder matches a Reminders list by title; capture next actions in Reminders.app. Board Refresh and Refresh now update the snapshot, list colours from Finder columns, and sentinel priority from Finder URGENT. Create missing lists with forge reminders align --apply. An optional sentinel reminder can mirror the column. Ordinary reminder items stay unchanged. Nothing is sent to the cloud.
+        """)
+        blurb.font = .systemFont(ofSize: 12, weight: .regular)
+        blurb.textColor = .secondaryLabelColor
+        blurb.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(blurb)
+
+        let enabled = NSButton(
+            checkboxWithTitle: "Enable Reminders integration",
+            target: self,
+            action: #selector(togglesChanged(_:))
+        )
+        enabled.translatesAutoresizingMaskIntoConstraints = false
+        enabled.state = (config?.reminders.enabled == true) ? .on : .off
+        enabled.isEnabled = configPath != nil
+        addSubview(enabled)
+        enabledCheckbox = enabled
+
+        let sync = NSButton(
+            checkboxWithTitle: "Column mirror: board moves → sentinel reminder",
+            target: self,
+            action: #selector(togglesChanged(_:))
+        )
+        sync.translatesAutoresizingMaskIntoConstraints = false
+        sync.state = (config?.reminders.syncOnMove == true) ? .on : .off
+        sync.isEnabled = configPath != nil && enabled.state == .on
+        addSubview(sync)
+        syncOnMoveCheckbox = sync
+
+        let pull = NSButton(
+            checkboxWithTitle: "Column mirror: sentinel → Finder tags on Refresh",
+            target: self,
+            action: #selector(togglesChanged(_:))
+        )
+        pull.translatesAutoresizingMaskIntoConstraints = false
+        pull.state = (config?.reminders.syncFromReminders == true) ? .on : .off
+        pull.isEnabled = configPath != nil && enabled.state == .on
+        addSubview(pull)
+        syncFromRemindersCheckbox = pull
+
+        let includeCompleted = NSButton(
+            checkboxWithTitle: "Include completed reminders by default",
+            target: self,
+            action: #selector(togglesChanged(_:))
+        )
+        includeCompleted.translatesAutoresizingMaskIntoConstraints = false
+        includeCompleted.state = (config?.reminders.includeCompleted == true) ? .on : .off
+        includeCompleted.isEnabled = configPath != nil && enabled.state == .on
+        addSubview(includeCompleted)
+        includeCompletedCheckbox = includeCompleted
+
+        let listLabel = NSTextField(labelWithString: "Inbox list (optional extra list, not a project unless a folder has this name)")
+        listLabel.font = .systemFont(ofSize: 12, weight: .regular)
+        listLabel.textColor = .secondaryLabelColor
+        listLabel.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(listLabel)
+
+        let list = NSTextField()
+        list.translatesAutoresizingMaskIntoConstraints = false
+        list.placeholderString = RemindersConfig.defaultListName
+        list.stringValue = config?.reminders.list ?? RemindersConfig.defaultListName
+        list.isEnabled = configPath != nil
+        list.delegate = self
+        list.target = self
+        list.action = #selector(listAction(_:))
+        addSubview(list)
+        listField = list
+
+        let snapshot = NSTextField(labelWithString: snapshotText())
+        snapshot.font = .systemFont(ofSize: 11, weight: .regular)
+        snapshot.textColor = .secondaryLabelColor
+        snapshot.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(snapshot)
+        snapshotLabel = snapshot
+
+        let refresh = NSButton(
+            title: "Refresh now",
+            target: self,
+            action: #selector(refreshSnapshot(_:))
+        )
+        refresh.bezelStyle = .rounded
+        refresh.translatesAutoresizingMaskIntoConstraints = false
+        refresh.isEnabled = configPath != nil && enabled.state == .on
+        addSubview(refresh)
+        refreshButton = refresh
+
+        let warning = NSTextField(wrappingLabelWithString: omnifocusEnabled
+            ? "OmniFocus is also enabled. Refresh applies OmniFocus column pull first; Reminders sentinels skip those folders."
+            : "")
+        warning.font = .systemFont(ofSize: 11, weight: .regular)
+        warning.textColor = .systemOrange
+        warning.translatesAutoresizingMaskIntoConstraints = false
+        warning.isHidden = !omnifocusEnabled
+        addSubview(warning)
+        warningLabel = warning
+
+        let note = NSTextField(wrappingLabelWithString: """
+        Requires Reminders permission for Forge.app. Refresh now matches board Refresh: snapshot, list colours, URGENT → sentinel priority, and sentinel → Finder when that toggle is on. Background snapshot refresh does not paint. Create missing lists with forge reminders align --apply. Folder aliases, sentinel_prefix, and source stay in config.yaml. The CLI can use .cache/reminders-snapshot.json, or run forge reminders refresh after granting Terminal access.
+        """)
+        note.font = .systemFont(ofSize: 11, weight: .regular)
+        note.textColor = .tertiaryLabelColor
+        note.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(note)
+
+        let status = NSTextField(labelWithString: "")
+        status.font = .systemFont(ofSize: 11, weight: .regular)
+        status.textColor = .secondaryLabelColor
+        status.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(status)
+        statusLabel = status
+
+        NSLayoutConstraint.activate([
+            title.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            title.topAnchor.constraint(equalTo: topAnchor, constant: 20),
+            title.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
+
+            blurb.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            blurb.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
+            blurb.topAnchor.constraint(equalTo: title.bottomAnchor, constant: 8),
+
+            enabled.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            enabled.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
+            enabled.topAnchor.constraint(equalTo: blurb.bottomAnchor, constant: 16),
+
+            sync.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            sync.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
+            sync.topAnchor.constraint(equalTo: enabled.bottomAnchor, constant: 8),
+
+            pull.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            pull.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
+            pull.topAnchor.constraint(equalTo: sync.bottomAnchor, constant: 8),
+
+            includeCompleted.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            includeCompleted.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
+            includeCompleted.topAnchor.constraint(equalTo: pull.bottomAnchor, constant: 8),
+
+            listLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            listLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
+            listLabel.topAnchor.constraint(equalTo: includeCompleted.bottomAnchor, constant: 14),
+
+            list.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            list.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
+            list.topAnchor.constraint(equalTo: listLabel.bottomAnchor, constant: 4),
+            list.heightAnchor.constraint(equalToConstant: 22),
+
+            snapshot.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            snapshot.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
+            snapshot.topAnchor.constraint(equalTo: list.bottomAnchor, constant: 12),
+
+            refresh.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            refresh.topAnchor.constraint(equalTo: snapshot.bottomAnchor, constant: 8),
+
+            warning.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            warning.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
+            warning.topAnchor.constraint(equalTo: refresh.bottomAnchor, constant: 12),
+
+            note.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            note.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
+            note.topAnchor.constraint(equalTo: warning.bottomAnchor, constant: 12),
+
+            status.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            status.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
+            status.topAnchor.constraint(equalTo: note.bottomAnchor, constant: 12),
+        ])
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    func controlTextDidEndEditing(_ obj: Notification) {
+        persist()
+    }
+
+    @objc private func listAction(_ sender: NSTextField) {
+        persist()
+    }
+
+    @objc private func togglesChanged(_ sender: NSButton) {
+        let enabled = enabledCheckbox.state == .on
+        syncOnMoveCheckbox.isEnabled = configPath != nil && enabled
+        syncFromRemindersCheckbox.isEnabled = configPath != nil && enabled
+        includeCompletedCheckbox.isEnabled = configPath != nil && enabled
+        refreshButton.isEnabled = configPath != nil && enabled
+        if !enabled {
+            syncOnMoveCheckbox.state = .off
+            syncFromRemindersCheckbox.state = .off
+            includeCompletedCheckbox.state = .off
+        }
+        persist()
+    }
+
+    @objc private func refreshSnapshot(_ sender: NSButton) {
+        refreshButton.isEnabled = false
+        Task { @MainActor in
+            let message = await onRefresh()
+            snapshotLabel.stringValue = snapshotText()
+            statusLabel.stringValue = message
+            let lower = message.lowercased()
+            statusLabel.textColor = (lower.contains("denied") || lower.contains("could not") || lower.contains("enable") || lower.contains("no config"))
+                ? .systemRed
+                : .secondaryLabelColor
+            refreshButton.isEnabled = configPath != nil && enabledCheckbox.state == .on
+        }
+    }
+
+    private func snapshotText() -> String {
+        guard let forgeDir else { return "Snapshot: (Forge directory unknown)" }
+        return RemindersSnapshotStore.statusSummary(forgeDir: forgeDir)
+    }
+
+    private func persist() {
+        guard configPath != nil else {
+            statusLabel.stringValue = "No config.yaml loaded."
+            statusLabel.textColor = .systemRed
+            return
+        }
+        let enabled = enabledCheckbox.state == .on
+        let includeCompleted = enabled && includeCompletedCheckbox.state == .on
+        let syncOnMove = enabled && syncOnMoveCheckbox.state == .on
+        let syncFromReminders = enabled && syncFromRemindersCheckbox.state == .on
+        let list = listField.stringValue
+        if onSave(enabled, list, includeCompleted, syncOnMove, syncFromReminders) {
+            statusLabel.stringValue = "Saved to config.yaml."
+            statusLabel.textColor = .secondaryLabelColor
+        } else {
+            statusLabel.stringValue = "Could not save Reminders settings."
             statusLabel.textColor = .systemRed
         }
     }

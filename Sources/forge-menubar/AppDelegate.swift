@@ -36,6 +36,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         // No-op (kept for future hooks).
     }
 
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if !flag {
+            statusBar.showBoardWindow()
+        }
+        return true
+    }
+
     nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification,
@@ -109,6 +116,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         let windowMenuItem = NSMenuItem(title: "Window", action: nil, keyEquivalent: "")
         mainMenu.addItem(windowMenuItem)
         windowMenuItem.submenu = windowMenu
+        let boardSpec = ShortcutPreferences.spec(for: .openBoard)
+        addItem(
+            to: windowMenu,
+            title: "Board",
+            action: #selector(showBoard(_:)),
+            keyEquivalent: boardSpec.keyEquivalent,
+            modifiers: boardSpec.modifierFlags
+        )
+        windowMenu.addItem(NSMenuItem.separator())
         addItem(to: windowMenu, title: "Minimise", action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m", target: .firstResponder)
         addItem(to: windowMenu, title: "Zoom", action: #selector(NSWindow.performZoom(_:)), keyEquivalent: "", target: .firstResponder)
         windowMenu.addItem(NSMenuItem.separator())
@@ -158,6 +174,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             preferencesWindowController = PreferencesWindowController()
         }
         preferencesWindowController?.showWindow()
+    }
+
+    @objc private func showBoard(_ sender: Any?) {
+        statusBar.showBoardWindow()
     }
 
     @objc private func showHelp(_ sender: Any?) {

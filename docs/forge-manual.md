@@ -53,9 +53,11 @@ language models**).
   - `forge board` / `forge board --json` — kanban board (and machine-readable output for scripts).
   - `forge move` — move a project between columns.
   - `forge project-tag` — add/remove/list meta and assignee Finder tags on a project folder.
+  - `forge reminders` — optional Apple Reminders (`list`, `doctor`, `align`, `refresh`, `paint-colours`, `paint-priorities`).
 
 - **Menubar app (Forge.app)**:
   - Shows a small status icon and quick access to board workflows.
+  - **Preferences → Reminders** enables the optional EventKit backend; **Refresh now** updates the snapshot, list colours, and URGENT sentinel priority.
 
 - **Board app (`forge-board`)**:
   - A windowed kanban board for projects, driven by Finder tags.

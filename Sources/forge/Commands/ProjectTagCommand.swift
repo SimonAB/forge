@@ -66,6 +66,21 @@ struct ProjectTagAddCommand: AsyncParsableCommand {
         let tagStore = FinderTagStore()
         try tagStore.addTag(trimmed, at: matched.path)
         print("Added tag \(trimmed) on \(matched.name)")
+
+        var meta = matched.metaTags
+        if !meta.contains(where: { $0.caseInsensitiveCompare(trimmed) == .orderedSame }) {
+            meta.append(trimmed)
+        }
+        let updated = Project(
+            name: matched.name,
+            path: matched.path,
+            tags: matched.tags + [trimmed],
+            workflowTag: matched.workflowTag,
+            column: matched.column,
+            metaTags: meta,
+            assignees: matched.assignees
+        )
+        await syncRemindersUrgentPriority(config: config, project: updated)
     }
 }
 
@@ -125,6 +140,20 @@ struct ProjectTagRemoveCommand: AsyncParsableCommand {
         let tagStore = FinderTagStore()
         try tagStore.removeTag(trimmed, at: matched.path)
         print("Removed tag \(trimmed) from \(matched.name)")
+
+        let meta = matched.metaTags.filter {
+            $0.caseInsensitiveCompare(trimmed) != .orderedSame
+        }
+        let updated = Project(
+            name: matched.name,
+            path: matched.path,
+            tags: matched.tags.filter { $0.caseInsensitiveCompare(trimmed) != .orderedSame },
+            workflowTag: matched.workflowTag,
+            column: matched.column,
+            metaTags: meta,
+            assignees: matched.assignees
+        )
+        await syncRemindersUrgentPriority(config: config, project: updated)
     }
 }
 
@@ -201,6 +230,33 @@ private struct ProjectTagListRow: Encodable {
 }
 
 // MARK: - Shared lookup (same behaviour as MoveCommand)
+
+private func syncRemindersUrgentPriority(config: ForgeConfig, project: Project) async {
+    guard config.reminders.enabled else { return }
+    let forgeDir = ConfigLoader.forgeDirectory(for: config)
+    do {
+        guard let inv = try RemindersService(config: config).loadEligibleSnapshot(forgeDir: forgeDir) else {
+            print("Reminders sentinel priority skipped: no eligible snapshot (run forge reminders refresh).")
+            return
+        }
+        let outcome = await RemindersMoveSync.paintSentinelPriority(
+            config: config,
+            project: project,
+            inventory: inv,
+            writer: RemindersWriter()
+        )
+        switch outcome {
+        case .disabled:
+            break
+        case .skipped(let reason):
+            print("Reminders sentinel priority skipped: \(reason)")
+        case .synced(let listTitle, let label):
+            print("Reminders sentinel priority: \(label) on \(listTitle).")
+        }
+    } catch {
+        print("Reminders sentinel priority skipped: \(error.localizedDescription)")
+    }
+}
 
 private func findProject(named query: String, in projects: [Project]) -> Project? {
     let lower = query.lowercased()

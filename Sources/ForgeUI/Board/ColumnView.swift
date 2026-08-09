@@ -2,19 +2,9 @@ import SwiftUI
 import ForgeCore
 
 /// Maps config column colour index (1–7) to SwiftUI Color for column headers/cards.
-/// 1=Grey, 2=Green, 3=Purple, 4=Blue, 5=Yellow, 6=Orange, 7=Red.
 func columnColor(for colourIndex: Int) -> Color {
-    switch colourIndex {
-    // Catppuccin Mocha palette (sRGB).
-    case 1: return Color(red: 108 / 255, green: 112 / 255, blue: 134 / 255) // Overlay0 #6C7086
-    case 2: return Color(red: 166 / 255, green: 227 / 255, blue: 161 / 255) // Green    #A6E3A1
-    case 3: return Color(red: 203 / 255, green: 166 / 255, blue: 247 / 255) // Mauve    #CBA6F7
-    case 4: return Color(red: 137 / 255, green: 180 / 255, blue: 250 / 255) // Blue     #89B4FA
-    case 5: return Color(red: 249 / 255, green: 226 / 255, blue: 175 / 255) // Yellow   #F9E2AF
-    case 6: return Color(red: 250 / 255, green: 179 / 255, blue: 135 / 255) // Peach    #FAB387
-    case 7: return Color(red: 243 / 255, green: 139 / 255, blue: 168 / 255) // Red      #F38BA8
-    default: return .secondary
-    }
+    guard let rgb = FinderTagColour.sRGB(for: colourIndex) else { return .secondary }
+    return Color(red: rgb.red, green: rgb.green, blue: rgb.blue)
 }
 
 /// A single kanban column: header (name + count, colour) and a list of project cards. Accepts drops to move projects into this column.

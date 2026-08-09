@@ -1,10 +1,11 @@
 # OmniFocus (optional)
 
 Forge tracks **projects** with Finder-tag kanban. Day-to-day **tasks** can live in
-OmniFocus, Reminders (planned EventKit backend), Things, or another app.
+OmniFocus, [Reminders](reminders.md), Things, or another app.
 
 This page is the OmniFocus bridge: it keeps *project* columns in step with
 OmniFocus via Omni Automation (OmniJS). Mutating commands default to **dry-run**.
+Apple Reminders is the other optional task backend ([reminders.md](reminders.md)).
 
 ## Enable
 
@@ -34,7 +35,8 @@ In the menu bar: **OmniFocus Align…** (preview, then Apply).
 
 Refresh does not push Finder columns onto OmniFocus. If doctor reports drift,
 `sync_on_move` skips OF writes unless you allow sync with drift or pass
-`forge move --force`.
+`forge move --force`. When Reminders column pull is also on, Refresh applies
+OmniFocus first; Reminders sentinels skip folders OF already updated.
 
 Link tags default to `🔥 Forge:<name>` (legacy `Forge:` still readable). Flat
 column aliases such as `Watch 🚧` are preferred when `flat_column_tags` is true.

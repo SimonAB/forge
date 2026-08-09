@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en-GB" dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Reminders · Forge</title>
+    <meta name="description" content="Optional Apple Reminders task backend: one list per Forge folder, list colour from the kanban column." />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/site.css?v=4" />
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem("forge-theme-appearance");
+          var mode =
+            stored === "light" || stored === "dark" || stored === "system"
+              ? stored
+              : "system";
+          var root = document.documentElement;
+          if (mode === "light") {
+            root.classList.add("light");
+          } else if (mode === "dark") {
+            root.classList.add("dark");
+          }
+        } catch (err) {
+          /* localStorage unavailable — CSS alone follows prefers-color-scheme */
+        }
+      })();
+    </script>
+
+  </head>
+  <body>
+    <a href="#main" class="visually-hidden">Skip to content</a>
+    <header class="site-nav">
+      <div class="site-nav__inner">
+        <a class="site-nav__brand" href="index.html">Forge</a>
+        <nav class="site-nav__links" aria-label="Main navigation">
+  <a class="site-nav__link" href="index.html">Home</a>
+  <a class="site-nav__link" href="cli.html">CLI</a>
+  <a class="site-nav__link" href="app.html">Forge.app</a>
+  <a class="site-nav__link" href="hermes.html">Hermes</a>
+  <a class="site-nav__link" href="neovim.html">Neovim</a>
+  <a class="site-nav__link" href="manual.html">Manual</a>
+  <a class="site-nav__link" href="privacy.html">Privacy</a>
+  <a class="site-nav__link" href="readme.html">Readme</a>
+  <a class="site-nav__link" href="changelog.html">Changelog</a>
+  <a class="site-nav__link" href="https://github.com/SimonAB/forge" target="_blank" rel="noopener noreferrer">GitHub</a>
+</nav>
+        <div class="site-nav__actions">
+          <button
+            type="button"
+            class="theme-toggle"
+            id="theme-toggle"
+            aria-label="Toggle dark mode"
+            title="Toggle theme"
+          >
+            <span class="theme-toggle__icon theme-toggle__icon--sun" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="4" />
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+              </svg>
+            </span>
+            <span class="theme-toggle__icon theme-toggle__icon--moon" aria-hidden="true" hidden>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+              </svg>
+            </span>
+          </button>
+          <a
+            class="btn btn--alt"
+            href="https://github.com/SimonAB/forge"
+            target="_blank"
+            rel="noopener noreferrer"
+            >View on GitHub</a
+          >
+        </div>
+      </div>
+    </header>
+    <main id="main" class="doc-page">
+      <article class="doc-content">
+<h1 id="reminders-optional">Reminders (optional)</h1>
+<p>Forge tracks <strong>projects</strong> with Finder-tag kanban. Day-to-day <strong>tasks</strong> can live in
+OmniFocus, Apple Reminders, Things, or another app.</p>
+<p>This page is the Reminders <strong>task backend</strong> (same role as OmniFocus): one EventKit
+<em>list</em> per Forge project folder. Capture next actions in Reminders.app. Kanban
+columns stay on Finder tags. List <strong>colour</strong> follows the Finder column. An optional
+<strong>sentinel</strong> reminder can mirror the column if you turn on the sync flags.</p>
+<p>Prefer one task app at a time. If OmniFocus and Reminders are both on, Refresh
+applies OmniFocus column pull first.</p>
+<h2 id="enable">Enable</h2>
+<p>Open <strong>Forge → Preferences → Reminders</strong>, or set <code>reminders.enabled: true</code> in
+<code>config.yaml</code>.</p>
+<p>The Reminders panel offers:</p>
+<ul>
+<li><strong>Enable Reminders integration</strong> — writes <code>reminders.enabled</code>.</li>
+<li><strong>Column mirror: board moves → sentinel reminder</strong> — writes <code>reminders.sync_on_move</code>.</li>
+<li><strong>Column mirror: sentinel → Finder tags on Refresh</strong> — writes
+  <code>reminders.sync_from_reminders</code> (single-column steps only).</li>
+<li><strong>Include completed reminders by default</strong> — writes <code>reminders.include_completed</code>.</li>
+<li><strong>Inbox list</strong> — optional extra list title (<code>reminders.list</code>, default <code>Forge</code>).</li>
+<li>Snapshot status (age, list count, incomplete count).</li>
+<li><strong>Refresh now</strong> — same as board <strong>Refresh</strong>: snapshot, list colours from Finder
+  columns, URGENT → sentinel priority, and sentinel → Finder when that toggle is
+  on (does not create lists).</li>
+</ul>
+<p>macOS will ask for Reminders access for Forge.app (and separately for your
+terminal if you fetch live from the CLI). Data stays on your Mac.</p>
+<p>Folder aliases (<code>reminders.folder_aliases</code>), <code>sentinel_prefix</code>, and <code>source</code>
+stay in <code>config.yaml</code>.</p>
+<h2 id="link-model">Link model</h2>
+<ul>
+<li>A Reminders <strong>list</strong> matches a Forge folder when the titles are equal
+  (case-insensitive). Substring matches do not count: <code>Lab</code> does not match
+  <code>Lab-notebook</code>.</li>
+<li>Ordinary reminders on that list are the project’s next actions. Forge <strong>reads</strong>
+  them; it does not create, complete, or delete them.</li>
+<li>Optional <code>reminders.folder_aliases</code> maps a list title to a folder name. The
+  target folder must exist.</li>
+<li><code>reminders.list</code> (default <code>Forge</code>, also read from legacy <code>gtd.reminders_list</code>)
+  is an extra inbox list: shown, but not treated as a project unless a folder
+  has that name. Align does not create the inbox list.</li>
+<li>EventKit has no list groups, sections, or list <strong>icons</strong>. In Reminders.app you
+  may group project lists and set icons by hand.</li>
+</ul>
+<h2 id="list-colour">List colour</h2>
+<p>When Forge creates a list (<code>align --apply</code>), you <code>forge move</code> / drag a card,
+or you <strong>Refresh</strong> (board, Preferences <strong>Refresh now</strong>, or <code>forge reminders refresh</code>)
+while Reminders is enabled, the list’s colour is set from
+<code>board.columns[].colour</code> (same Catppuccin indices as the Forge board). Forge
+never infers a kanban column from a colour you changed in Reminders.app.
+<code>forge reminders paint-colours --apply</code> is the same paint without a snapshot.</p>
+<h2 id="urgent-sentinel-priority">URGENT → sentinel priority</h2>
+<p>Finder meta tag <code>URGENT ⚠️</code> sets <strong>high priority</strong> (<code>1</code>) on that list’s kanban
+sentinel. Removing URGENT clears it (<code>0</code>). EventKit has no Flagged API; Reminders.app
+shows this as the exclamation / high-priority mark, not the orange flag.</p>
+<p>Forge does not create a sentinel only for URGENT. If the list has no sentinel yet,
+enable column sync and <code>forge reminders align --apply</code>, or wait until <code>sync_on_move</code>
+writes one. <strong>Refresh</strong> and <code>forge reminders paint-priorities --apply</code> update
+existing sentinels. <code>forge project-tag add|remove</code> of URGENT updates the sentinel
+when one exists.</p>
+<h2 id="sentinel-column-optional">Sentinel column (optional)</h2>
+<p>When <code>sync_on_move</code> or <code>sync_from_reminders</code> is on, each matched list may carry
+one sentinel reminder:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Title</td>
+<td><code>{sentinel_prefix}{Column}</code> e.g. <code>Forge · Watch</code></td>
+</tr>
+<tr>
+<td>Notes</td>
+<td><code>forge-kanban: Watch</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>reminders.sentinel_prefix</code> defaults to <code>"Forge · "</code> (middle dot U+00B7).
+Ordinary reminder items are left unchanged.</p>
+<table>
+<thead>
+<tr>
+<th>Direction</th>
+<th>When</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Finder → sentinel</td>
+<td><code>forge move</code> / board drag, if <code>sync_on_move</code> is on</td>
+</tr>
+<tr>
+<td>Sentinel → Finder</td>
+<td>Board <strong>Refresh</strong>, Preferences <strong>Refresh now</strong>, or <code>forge reminders refresh --apply-finder</code>, if <code>sync_from_reminders</code> is on</td>
+</tr>
+<tr>
+<td>Finder → list colour / URGENT priority</td>
+<td>Board <strong>Refresh</strong>, Preferences <strong>Refresh now</strong>, <code>forge reminders refresh</code>, move / drag, <code>project-tag</code> (URGENT)</td>
+</tr>
+</tbody>
+</table>
+<p>Pull applies only a single-column step (or Paused side-column). Doctor drift
+(<code>forge_only</code> / ambiguous) skips sentinel / colour writes for that folder unless
+you pass <code>forge move --force</code>.</p>
+<p>When OmniFocus and Reminders column pull are both on, Refresh applies
+<strong>OmniFocus first</strong>; Reminders sentinels skip folders OF already updated.</p>
+<p>Doctor / align may <strong>propose</strong> Finder Shipped when a list has no incomplete
+tasks left (except the sentinel). That proposal is never applied automatically.</p>
+<h2 id="snapshot">Snapshot</h2>
+<p>Forge.app refreshes <code>.cache/reminders-snapshot.json</code> in the background (snapshot
+only; no colour or priority paint). Board <strong>Refresh</strong>, Preferences <strong>Refresh now</strong>,
+and <code>forge reminders refresh</code> update the snapshot, paint list colours, and set
+sentinel priority from Finder URGENT. They do not create lists. Create missing
+lists with <code>forge reminders align --apply</code>. Unmatched personal lists are left
+alone. Sentinels still follow the sync flags / <code>align --apply</code>.</p>
+<p><code>forge reminders</code> / <code>show</code> / <code>doctor</code> use a fresh snapshot when it is younger
+than <code>reminders.snapshot_max_age_seconds</code> (default 900). Pass <code>--live</code> to force
+EventKit and ignore the snapshot.</p>
+<h2 id="typical-flow">Typical flow</h2>
+<pre><code class="language-bash">forge reminders status
+forge reminders refresh         # snapshot + list colours + URGENT priority
+forge reminders                 # incomplete reminders, grouped by project
+forge reminders doctor          # folders ↔ lists (read-only)
+forge reminders align           # dry-run: create missing lists / sentinels
+forge reminders align --apply   # confirm, then write
+forge reminders paint-colours --apply      # colours only (no snapshot)
+forge reminders paint-priorities --apply   # URGENT priority only
+forge reminders refresh --apply-finder   # also sentinel → Finder, if sync_from_reminders
+</code></pre>
+<p><code>forge board --json</code> includes a <code>reminders</code> object per matched folder when
+Reminders is enabled and the snapshot is eligible: <code>incompleteCount</code>,
+<code>nextReminder</code>, <code>due</code>, <code>snapshotAgeSeconds</code>.</p>
+<h2 id="config-keys">Config keys</h2>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>reminders.enabled</code></td>
+<td>Gate for CLI list/show/refresh/doctor/align (status still runs)</td>
+</tr>
+<tr>
+<td><code>reminders.list</code></td>
+<td>Optional inbox list title (default <code>Forge</code>)</td>
+</tr>
+<tr>
+<td><code>reminders.include_completed</code></td>
+<td>Default listing includes completed items</td>
+</tr>
+<tr>
+<td><code>reminders.snapshot_max_age_seconds</code></td>
+<td>Snapshot freshness window (default 900)</td>
+</tr>
+<tr>
+<td><code>reminders.sync_on_move</code></td>
+<td>Finder column → sentinel after <code>forge move</code> / board drag (default false)</td>
+</tr>
+<tr>
+<td><code>reminders.sync_from_reminders</code></td>
+<td>Sentinel → Finder on Refresh / <code>--apply-finder</code> (default false)</td>
+</tr>
+<tr>
+<td><code>reminders.sentinel_prefix</code></td>
+<td>Sentinel title prefix (default <code>"Forge · "</code>)</td>
+</tr>
+<tr>
+<td><code>reminders.source</code></td>
+<td>EventKit account title when creating lists (optional)</td>
+</tr>
+<tr>
+<td><code>reminders.folder_aliases</code></td>
+<td>List title → Forge folder name</td>
+</tr>
+</tbody>
+</table>
+<p>See <a href="../config.sample.yaml">config.sample.yaml</a>.</p>
+<h2 id="further-reading">Further reading</h2>
+<ul>
+<li><a href="cli.html#forge-reminders">CLI <code>forge reminders</code></a></li>
+<li><a href="app.html#reminders-optional">Forge.app — Reminders</a></li>
+<li><a href="omnifocus.html">OmniFocus bridge</a></li>
+<li><a href="privacy.html">Privacy</a></li>
+</ul>
+      </article>
+    </main>
+    <footer class="site-footer">
+      <p>
+        <a href="index.html">Home</a>
+        · Source markdown in the
+        <a href="https://github.com/SimonAB/forge" target="_blank" rel="noopener noreferrer">repository</a>
+      </p>
+      <p>Released under the Apache License, Version 2.0.</p>
+    </footer>
+    <script src="assets/theme.js?v=4"></script>
+  </body>
+</html>

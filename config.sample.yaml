@@ -44,9 +44,27 @@ calendar:
   #   - Work
   #   - Teaching
 
-# Legacy keys (kept for backwards compatibility; unused by the kanban CLI).
-# Prefer `calendar.include` above. `gtd.reminders_list` is a placeholder for a
-# future Reminders backend (same optional role as `omnifocus`, not a Forge inbox).
+# Optional Apple Reminders task backend (EventKit). Lists match Forge project
+# folders by title. Inbox list is shown but not treated as a project unless a
+# folder has the same name. `gtd.reminders_list` is still read when
+# reminders.list is omitted. align --apply creates missing lists; list colour
+# follows the Finder column on create, move, and Refresh; Finder URGENT sets
+# sentinel priority (Refresh / project-tag / paint-priorities); optional
+# sentinel reminder mirrors the column.
+reminders:
+  enabled: false
+  list: Forge
+  snapshot_max_age_seconds: 900
+  include_completed: false
+  sync_on_move: false
+  sync_from_reminders: false
+  # sentinel_prefix: "Forge · "
+  # source: iCloud
+  # folder_aliases:
+  #   "VHP2 ms": VHP2_manuscript
+
+# Legacy keys (kept for backwards compatibility).
+# Prefer `calendar.include` and `reminders.list` above.
 # These may emit deprecation notes in future releases.
 gtd:
   reminders_list: Forge

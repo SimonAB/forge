@@ -22,7 +22,7 @@ struct MoveCommand: AsyncParsableCommand {
 
     @Flag(
         name: .long,
-        help: "With OmniFocus sync_on_move, proceed even when doctor reports drift."
+        help: "With OmniFocus or Reminders sync_on_move, proceed even when doctor reports drift."
     )
     var force: Bool = false
 
@@ -80,6 +80,49 @@ struct MoveCommand: AsyncParsableCommand {
             if let alias { msg += " alias \(alias)" }
             if !missing.isEmpty { msg += " (missing alias: \(missing.joined(separator: ", ")))" }
             print(msg)
+        }
+
+        if config.reminders.enabled {
+            do {
+                guard let inv = try RemindersService(config: config).loadEligibleSnapshot(forgeDir: forgeDir) else {
+                    print("Reminders sync skipped: no eligible snapshot (run forge reminders refresh).")
+                    return
+                }
+                let rem = await RemindersMoveSync.afterFinderColumnChange(
+                    config: config,
+                    project: matched,
+                    column: targetCol.name,
+                    inventory: inv,
+                    writer: RemindersWriter(),
+                    force: force
+                )
+                switch rem.colour {
+                case .disabled:
+                    break
+                case .skipped(let reason):
+                    print("Reminders list colour skipped: \(reason)")
+                case .synced(let listTitle, let column):
+                    print("Reminders list colour: \(listTitle) → \(column).")
+                }
+                switch rem.sentinel {
+                case .disabled:
+                    break
+                case .skipped(let reason):
+                    print("Reminders sentinel skipped: \(reason)")
+                case .synced(let listTitle, let column):
+                    print("Reminders sentinel: \(column) on \(listTitle).")
+                }
+                switch rem.priority {
+                case .disabled:
+                    break
+                case .skipped(let reason):
+                    print("Reminders sentinel priority skipped: \(reason)")
+                case .synced(let listTitle, let label):
+                    print("Reminders sentinel priority: \(label) on \(listTitle).")
+                }
+            } catch {
+                print("Reminders sync skipped: \(error.localizedDescription)")
+            }
         }
     }
 

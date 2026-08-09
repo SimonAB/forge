@@ -211,9 +211,9 @@
             <h3 class="feature-card__title">Task apps (optional)</h3>
             <p class="feature-card__text">
               Day-to-day tasks: <strong>OmniFocus</strong> (column bridge),
-              <strong>Reminders</strong> (planned EventKit), <strong>Things</strong> or others later.
+              <strong>Reminders</strong> (EventKit), <strong>Things</strong> or others later.
             </p>
-            <span class="feature-card__more">OmniFocus bridge</span>
+            <span class="feature-card__more">OmniFocus &amp; Reminders</span>
           </a>
         </div>
       </section>
@@ -231,7 +231,8 @@ forge board --json          # Machine-readable board
 forge move                  # Move project between columns
 forge status                # Column counts and URGENT
 forge calendar              # Upcoming Calendar events (read-only)
-forge omnifocus doctor      # Optional OmniFocus bridge</code></pre>
+forge omnifocus doctor      # Optional OmniFocus bridge
+forge reminders             # Optional Reminders</code></pre>
         </div>
       </section>
 
@@ -255,6 +256,10 @@ forge omnifocus doctor      # Optional OmniFocus bridge</code></pre>
           <li>
             <strong>OmniFocus</strong> if you want the optional tag bridge
             (<code class="inline-code">forge omnifocus</code>)
+          </li>
+          <li>
+            <strong>Reminders</strong> if you want the optional EventKit backend
+            (<code class="inline-code">forge reminders</code>)
           </li>
           <li>
             <strong>Calendar</strong> access for <code class="inline-code">forge calendar</code>
@@ -408,6 +413,7 @@ zsh ~/Documents/Software/Forge/build.sh</code></pre>
             · <a href="finder-tags.html">Finder tags</a>
             · <a href="cli-and-apps.html">CLI &amp; apps</a>
             · <a href="omnifocus.html">OmniFocus</a>
+            · <a href="reminders.html">Reminders</a>
           </li>
           <li>
             <a href="readme.html">Project readme</a>

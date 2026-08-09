@@ -198,6 +198,7 @@ def _rewrite_internal_links(html: str) -> str:
     html = sub(r'href="docs/finder-tags\.md(#[^"]*)?"', r'href="finder-tags.html\1"', html)
     html = sub(r'href="docs/cli-and-apps\.md(#[^"]*)?"', r'href="cli-and-apps.html\1"', html)
     html = sub(r'href="docs/omnifocus\.md(#[^"]*)?"', r'href="omnifocus.html\1"', html)
+    html = sub(r'href="docs/reminders\.md(#[^"]*)?"', r'href="reminders.html\1"', html)
     html = sub(r'href="docs/index\.html(#[^"]*)?"', r'href="index.html\1"', html)
     html = sub(r'href="PRIVACY\.md(#[^"]*)?"', r'href="privacy.html\1"', html)
     html = sub(r'href="README\.md(#[^"]*)?"', r'href="readme.html\1"', html)
@@ -212,6 +213,7 @@ def _rewrite_internal_links(html: str) -> str:
     html = sub(r'href="finder-tags\.md(#[^"]*)?"', r'href="finder-tags.html\1"', html)
     html = sub(r'href="cli-and-apps\.md(#[^"]*)?"', r'href="cli-and-apps.html\1"', html)
     html = sub(r'href="omnifocus\.md(#[^"]*)?"', r'href="omnifocus.html\1"', html)
+    html = sub(r'href="reminders\.md(#[^"]*)?"', r'href="reminders.html\1"', html)
     html = sub(r'href="\.\./PRIVACY\.md(#[^"]*)?"', r'href="privacy.html\1"', html)
     html = sub(r'href="\.\./README\.md(#[^"]*)?"', r'href="readme.html\1"', html)
     html = sub(r'href="\.\./CHANGELOG\.md(#[^"]*)?"', r'href="changelog.html\1"', html)
@@ -302,17 +304,24 @@ def main() -> None:
         active="",
     )
     build_page(
+        source=DOCS_DIR / "reminders.md",
+        out_name="reminders.html",
+        page_title="Reminders",
+        description="Optional Apple Reminders task backend: one list per Forge folder, list colour from the kanban column.",
+        active="",
+    )
+    build_page(
         source=DOCS_DIR / "cli.md",
         out_name="cli.html",
         page_title="CLI reference",
-        description="Forge CLI: project kanban, tags, calendar, and optional OmniFocus.",
+        description="Forge CLI: project kanban, tags, calendar, and optional OmniFocus / Reminders.",
         active="cli",
     )
     build_page(
         source=DOCS_DIR / "app.md",
         out_name="app.html",
         page_title="Forge.app",
-        description="Menu bar companion: project board, Radar, optional OmniFocus align, and setup.",
+        description="Menu bar companion: project board, Radar, optional OmniFocus and Reminders, and setup.",
         active="app",
     )
     build_page(

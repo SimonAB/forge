@@ -87,17 +87,20 @@
 <p>Forge is three surfaces on the same on-disk model: ordinary folders and Finder
 tags. Pick the surface that fits the moment.</p>
 <h2 id="forge-cli"><code>forge</code> CLI</h2>
-<p>Boards, column moves, meta/assignee tags, read-only Calendar, and the optional
-OmniFocus bridge.</p>
+<p>Boards, column moves, meta/assignee tags, read-only Calendar, and optional
+OmniFocus / Reminders bridges.</p>
 <pre><code class="language-bash">forge board
 forge board --json
 forge move &lt;project&gt; &lt;Column&gt;
 forge status
+forge reminders status
+forge reminders doctor
+forge reminders refresh
 </code></pre>
 <p>Full reference: <a href="cli.html">CLI</a>.</p>
 <h2 id="forgeapp">Forge.app</h2>
-<p>Menu bar companion, native board window, Preferences (Brief, Hermes, OmniFocus),
-and Sparkle updates. Install the CLI onto your <code>$PATH</code> from
+<p>Menu bar companion, native board window, Preferences (Brief, Hermes, OmniFocus,
+Reminders), and Sparkle updates. Install the CLI onto your <code>$PATH</code> from
 <strong>Forge → Preferences… → Install CLI…</strong>.</p>
 <p>Guide: <a href="app.html">Forge.app</a>.</p>
 <h2 id="neovim">Neovim</h2>

@@ -44,10 +44,26 @@ document summarises what data Forge uses, where it lives, and how it moves.
     non-loopback base URL will transmit that summary off-machine.
   - Prefer local models; see **AI assistants and local language models** below.
 
-- **Reminders**
-  - A Reminders backend is planned via EventKit (same optional role as OmniFocus:
-    link tasks to Forge *projects*). Until then, keep day-to-day tasks in Reminders
-    independently.
+- **Reminders (optional)**
+  - When `reminders.enabled` is true (Preferences → Reminders, or config.yaml),
+    Forge may use EventKit to **read** reminder lists and items and match lists to
+    Forge project folders.
+  - With explicit `forge reminders align --apply`, Forge may **create missing lists**
+    (unmatched personal lists are left alone) and (when column sync is on) write one
+    sentinel reminder per list. Ordinary reminder items are not created or completed.
+  - On list create, on `forge move` / board drag, and on board **Refresh** /
+    Preferences **Refresh now** / `forge reminders refresh`, Forge may **set list colour**
+    from the Finder column. List icons are not changed (no EventKit API).
+  - When Finder carries `URGENT ⚠️`, Forge may set **high priority** on that list’s
+    sentinel reminder (EventKit has no Flagged API), including on Refresh.
+    Removing URGENT clears it.
+  - Background snapshot refresh in Forge.app updates `.cache/reminders-snapshot.json`
+    only (no colour or priority paint).
+  - With `sync_on_move` / `sync_from_reminders`, Forge may update the sentinel
+    or pull its column onto Finder (single-column steps).
+  - Forge.app may cache a snapshot under `.cache/reminders-snapshot.json` so the
+    CLI can display reminders without terminal Reminders permission.
+  - Deny Reminders access, or leave `reminders.enabled: false`, to disable.
 
 - **OmniFocus (optional)**
   - When `omnifocus.enabled` is true (Preferences → OmniFocus, or config.yaml), Forge may use macOS Automation to run
@@ -72,6 +88,10 @@ document summarises what data Forge uses, where it lives, and how it moves.
 - **No Calendar access**
   - Avoid `forge calendar`, and/or deny Calendars permission when prompted.
     Other commands are unaffected.
+
+- **No Reminders access**
+  - Leave `reminders.enabled: false`, and/or deny Reminders permission when
+    prompted. Other commands are unaffected.
 
 - **Local-only storage**
   - Place your Forge directory on:

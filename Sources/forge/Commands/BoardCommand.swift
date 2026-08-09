@@ -51,6 +51,15 @@ struct BoardCommand: AsyncParsableCommand {
                ) {
                 enrichment = OmniFocusAlignment.enrichmentByFolder(inventory: inventory, now: now)
             }
+            var reminderEnrichment: [String: RemindersBoardEnrichment] = [:]
+            if config.reminders.enabled,
+               let inventory = try? RemindersSnapshotStore.loadIfEligible(
+                   forgeDir: forgeDir,
+                   maxAge: config.reminders.snapshotMaxAgeSeconds,
+                   now: now
+               ) {
+                reminderEnrichment = inventory.enrichmentByFolder(now: now)
+            }
             let rows: [BoardJSONProjectRow] = projects.map { p in
                 let resolution = KanbanRadar.activityResolution(for: p)
                 return BoardJSONProjectRow(
@@ -65,7 +74,8 @@ struct BoardCommand: AsyncParsableCommand {
                     daysSinceActivity: KanbanRadar.daysSinceActivity(for: p, now: now),
                     activityModificationDate: resolution.modificationDate,
                     activitySource: resolution.source,
-                    omnifocus: enrichment[p.name]
+                    omnifocus: enrichment[p.name],
+                    reminders: reminderEnrichment[p.name]
                 )
             }
             let columnInfos = config.board.columns.map { c in
@@ -136,4 +146,5 @@ private struct BoardJSONProjectRow: Encodable {
     let activityModificationDate: Date
     let activitySource: String
     let omnifocus: OmniFocusBoardEnrichment?
+    let reminders: RemindersBoardEnrichment?
 }

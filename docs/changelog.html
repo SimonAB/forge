@@ -88,7 +88,9 @@
 <p>The format loosely follows <a href="https://keepachangelog.com/en/1.1.0/">Keep a Changelog</a>.</p>
 <h3 id="unreleased">Unreleased</h3>
 <ul>
-<li>Documentation: Forge as folder-first project kanban; optional task apps (OmniFocus bridge, planned Reminders, Things later).</li>
+<li>Forge.app: saving Preferences no longer closes the board window (config reloads in place). <strong>Window → Board</strong> (Cmd+B) reopens it; clicking the Dock icon does the same when no windows are visible.</li>
+<li>Documentation: Forge as folder-first project kanban; optional task apps (OmniFocus bridge, Reminders EventKit backend, Things later).</li>
+<li><strong>Reminders (optional task backend):</strong> <code>forge reminders</code> / <code>status</code> / <code>show</code> / <code>refresh</code> / <code>doctor</code> / <code>align</code> / <code>paint-colours</code> / <code>paint-priorities</code> via EventKit; one list per Forge folder (optional <code>folder_aliases</code>); snapshot <code>.cache/reminders-snapshot.json</code>; Preferences → Reminders (enable, inbox list, include completed, optional sentinel sync, snapshot status, <strong>Refresh now</strong>); <code>forge board --json</code> may include a <code>reminders</code> enrichment per folder. Create missing lists with <code>align --apply</code> only. Board <strong>Refresh</strong>, Preferences <strong>Refresh now</strong>, and <code>forge reminders refresh</code> update the snapshot, paint list colours from Finder columns, and set sentinel priority from Finder <code>URGENT ⚠️</code> (background snapshot refresh does not paint). List colour also follows the Finder column on create and on <code>forge move</code>. URGENT priority also follows <code>forge project-tag</code> / <code>paint-priorities</code>. Optional sentinel reminder per list mirrors the column when sync flags are on. Doctor / align may propose Finder Shipped when a list is all-complete (never auto-moved).</li>
 </ul>
 <h3 id="092-2026-08-09"><a href="https://github.com/SimonAB/forge/releases/tag/v0.9.2">0.9.2</a> – 2026-08-09</h3>
 <p>First GitHub and Sparkle release since <strong>0.9.0</strong>. Ships Hermes + OmniFocus, the

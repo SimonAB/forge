@@ -12,6 +12,7 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     private var forgeDir: String?
     private var boardWindowController: BoardWindowController?
     private var omnifocusAlignWindowController: OmniFocusAlignWindowController?
+    private var remindersRefreshTimer: Timer?
 
     /// We keep a single menu instance and mutate it in-place. Replacing `statusItem.menu`
     /// while the menu is open does not update the visible dropdown (macOS continues showing
@@ -39,6 +40,7 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         if config != nil {
             openBoardWindow()
         }
+        scheduleRemindersSnapshotRefresh()
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(shortcutPreferencesDidChange),
@@ -55,11 +57,18 @@ final class StatusBarController: NSObject, NSMenuDelegate {
 
     @objc private func configDidChange(_ note: Notification) {
         loadConfig()
-        if let board = boardWindowController {
-            board.closeWindow()
+        rebuildMenu()
+        scheduleRemindersSnapshotRefresh()
+        guard let config else {
+            boardWindowController?.closeWindow()
+            boardWindowController = nil
+            return
+        }
+        if let board = boardWindowController, board.isWindowVisible {
+            board.reload(config: config, forgeDir: forgeDir)
+        } else {
             boardWindowController = nil
         }
-        rebuildMenu()
     }
 
     private func requestNotificationPermissionIfNeeded() {
@@ -218,6 +227,38 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         refreshUrgentCount()
     }
 
+    // MARK: - Reminders snapshot
+
+    private func scheduleRemindersSnapshotRefresh() {
+        remindersRefreshTimer?.invalidate()
+        remindersRefreshTimer = nil
+        guard let config, config.reminders.enabled else { return }
+        refreshRemindersSnapshotInBackground()
+        let interval = max(60, config.reminders.snapshotMaxAgeSeconds)
+        remindersRefreshTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                self?.refreshRemindersSnapshotInBackground()
+            }
+        }
+    }
+
+    private func refreshRemindersSnapshotInBackground() {
+        guard let config, let forgeDir, config.reminders.enabled else { return }
+        Task.detached(priority: .utility) {
+            do {
+                let scanner = WorkspaceScanner(config: config)
+                let names = (try? await scanner.scanProjects().map(\.name)) ?? []
+                _ = try await RemindersService(config: config).refreshSnapshot(
+                    forgeDir: forgeDir,
+                    projectNames: names,
+                    writer: "Forge.app"
+                )
+            } catch {
+                // Snapshot refresh must not disturb the menu bar UI.
+            }
+        }
+    }
+
     // MARK: - Actions
 
     private func refreshUrgentCount() {
@@ -261,6 +302,10 @@ final class StatusBarController: NSObject, NSMenuDelegate {
                 }
             }
         }
+    }
+
+    func showBoardWindow() {
+        openBoardWindow()
     }
 
     @objc private func openBoardWindow() {

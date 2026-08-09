@@ -73,7 +73,7 @@ indicates urgent items:
 
 | Item | Shortcut | Description |
 |------|----------|-------------|
-| **Board** | Cmd+B | Opens the native Kanban board window |
+| **Board** | Cmd+B | Opens the native Kanban board window (menu bar icon, or **Window → Board**) |
 | **OmniFocus Align…** | — | When OmniFocus integration is enabled: dry-run alignment plan; **Apply** writes OF/Finder tags after confirmation |
 | **Open Board in Terminal** | — | Runs `forge board` in your terminal |
 | **Quit Forge** | Cmd+Q | Exits Forge.app |
@@ -83,16 +83,39 @@ indicates urgent items:
 
 **Forge → Preferences…** opens a resizable tabbed window (default about 720×560;
 minimum 640×480). Brief and Workspace panels expand when you enlarge the window.
+Saving Preferences reloads the board in place; it does not close the board window.
+Reopen the board with **Window → Board** (Cmd+B), the menu bar **Board** item, or
+the Dock icon when no windows are visible.
 
 ### OmniFocus (optional)
 
 Optional: keep **project** kanban columns in step with OmniFocus. Day-to-day
-tasks stay in the task app. A Reminders backend (same role) is planned; Things
-is a possible later addition.
+tasks stay in the task app. Apple Reminders is the other optional backend
+(EventKit); Things is a possible later addition.
 
 Enable under **Preferences → OmniFocus**. With `sync_on_move`, board column moves mirror onto linked OF tasks. With `sync_from_omnifocus`, board **Refresh** pulls OF column tags onto Finder (and clears stacked leftover OF kanban tags on those folders). Finder→OF is not rewritten from Refresh. With `sync_completed_project_to_shipped`, a completed/dropped OF **project** moves the matching Finder folder to **Shipped** on Refresh.
 
 CLI: `forge omnifocus doctor` → `align` (dry-run) → `align --apply`. See [cli.md](cli.md) and `packaging/omnifocus/README.md`.
+
+### Reminders (optional)
+
+Optional EventKit **task backend**. Lists match Forge project folders by title;
+capture next actions in Reminders.app. Enable under **Preferences → Reminders**.
+The panel writes `reminders.enabled`, `reminders.sync_on_move`,
+`reminders.sync_from_reminders`, `reminders.include_completed`, and
+`reminders.list`; shows snapshot age; and offers **Refresh now** (same as board
+**Refresh**: snapshot, list colours, URGENT → sentinel priority, and sentinel →
+Finder when that toggle is on). Background snapshot refresh does not paint.
+Create missing lists with `forge reminders align --apply`. List colour follows
+the Finder column. Finder `URGENT ⚠️` sets high priority on the list’s sentinel.
+Optional sentinel reminders mirror columns when the sync flags are on. Folder
+aliases stay in `config.yaml`.
+
+With `sync_on_move`, board column moves update the matched list’s sentinel.
+With `sync_from_reminders`, board **Refresh** / Preferences **Refresh now** pull
+a single-column sentinel onto Finder (after OmniFocus, when both are on).
+
+CLI: `forge reminders` / `status` / `show` / `doctor` / `align` / `refresh` / `paint-colours` / `paint-priorities`. See [reminders.md](reminders.md).
 
 ---
 
@@ -106,6 +129,7 @@ Things, or another app.
 On first launch, macOS will prompt for access to:
 
 - **Calendars** — only if you use CLI commands that read Calendar (`forge calendar`). Forge does not modify calendar data.
+- **Reminders** — only if Reminders integration is enabled. Forge may read lists and items, create missing lists (`align --apply`), set list colour from the Finder column, and update one sentinel reminder per list when column sync is on.
 
 Grant access for full functionality. This is declared in the app's
 `Info.plist`.

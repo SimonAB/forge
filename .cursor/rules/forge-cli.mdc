@@ -108,6 +108,29 @@ Restricted (require `--apply` and user confirmation):
 Never invent OmniFocus task IDs. Prefer doctor → align dry-run → align --apply.
 Refresh is OF-authoritative for columns; Finder→OF is `forge move` / board drag when `sync_on_move` is on.
 
+
+## forge reminders
+
+Purpose: Optional Apple Reminders task backend (EventKit). Requires `reminders.enabled: true` (Forge → Preferences → Reminders, or config.yaml). Lists match Forge folders by title. List colour follows the Finder column. Finder URGENT sets sentinel priority. Optional sentinel column sync.
+
+Safe:
+- `forge reminders` / `list` — incomplete reminders grouped by matched project (`--json`, `--list`, `--project`, `--completed`, `--live`)
+- `forge reminders status` — also runs when disabled (prints sync flags)
+- `forge reminders show <project>`
+- `forge reminders doctor` — folders ↔ lists (read-only)
+- `forge reminders align` — dry-run plan (create missing lists / sentinels)
+Restricted (require `--apply` and user confirmation, or explicit user instruction):
+- `forge reminders refresh` — snapshot + list colours + URGENT sentinel priority (prints how many folders lack a list)
+- `forge reminders align --apply` — create missing lists (and sentinels when sync flags are on)
+- `forge reminders paint-colours --apply` — set matched list colours from Finder columns
+- `forge reminders paint-priorities --apply` — Finder URGENT → sentinel EventKit priority
+- `forge reminders refresh --apply-finder` — sentinel → Finder when `sync_from_reminders` is on
+- Finder column changes from Reminders only via Refresh / `--apply-finder` (single-column steps)
+
+`forge board --json` may include a `reminders` object per folder when the snapshot is eligible.
+
+Never invent reminder IDs (EventKit identifiers are opaque). Do not complete or create ordinary reminders. Align does not delete lists.
+
 ## forge calendar / forge events
 
 Purpose: Read upcoming Apple Calendar events (read-only).

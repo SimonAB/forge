@@ -3,19 +3,6 @@ import Foundation
 /// Renders a kanban board to the terminal using ANSI escape codes.
 public struct KanbanRenderer: Sendable {
 
-    /// ANSI colour codes for kanban column headers/cells (index = config column colour).
-    /// Mapped to Catppuccin Mocha palette (truecolour) for a cohesive scheme:
-    /// 1=Grey(Overlay0), 2=Green, 3=Purple(Mauve), 4=Blue, 5=Yellow, 6=Orange(Peach), 7=Red
-    private static let finderColourToANSI: [Int: String] = [
-        1: "\u{1B}[38;2;108;112;134m", // Overlay0  #6C7086
-        2: "\u{1B}[38;2;166;227;161m", // Green     #A6E3A1
-        3: "\u{1B}[38;2;203;166;247m", // Mauve     #CBA6F7
-        4: "\u{1B}[38;2;137;180;250m", // Blue      #89B4FA
-        5: "\u{1B}[38;2;249;226;175m", // Yellow    #F9E2AF
-        6: "\u{1B}[38;2;250;179;135m", // Peach     #FAB387
-        7: "\u{1B}[38;2;243;139;168m", // Red       #F38BA8
-    ]
-
     private static let reset = "\u{1B}[0m"
     private static let bold = "\u{1B}[1m"
     private static let dim = "\u{1B}[2m"
@@ -98,7 +85,7 @@ public struct KanbanRenderer: Sendable {
     }
 
     private func ansiColour(for column: ColumnConfig, config: ForgeConfig) -> String {
-        Self.finderColourToANSI[column.colour] ?? ""
+        FinderTagColour.ansiTrueColour(for: column.colour) ?? ""
     }
 
     private func printHeader(
