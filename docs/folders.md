@@ -1,7 +1,8 @@
 # Folders first
 
 Projects are ordinary directories under your configured **project roots**.
-Forge does not import them into a proprietary store.
+Kanban state is Finder tags on those folders. Day-to-day tasks can live in
+OmniFocus, Reminders, Things, or another app.
 
 ## Project roots
 

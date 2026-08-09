@@ -1,7 +1,7 @@
 ## Forge privacy overview
 
-Forge is designed as a **local-first, privacy-respecting** project manager.
-This document summarises what data Forge uses, where it lives, and how it moves.
+Forge is a **local-first** project manager: folders and Finder tags. This
+document summarises what data Forge uses, where it lives, and how it moves.
 
 ### What Forge stores
 
@@ -43,6 +43,11 @@ This document summarises what data Forge uses, where it lives, and how it moves.
     endpoint (typically local **Ollama** at `http://127.0.0.1:11434`). A
     non-loopback base URL will transmit that summary off-machine.
   - Prefer local models; see **AI assistants and local language models** below.
+
+- **Reminders**
+  - A Reminders backend is planned via EventKit (same optional role as OmniFocus:
+    link tasks to Forge *projects*). Until then, keep day-to-day tasks in Reminders
+    independently.
 
 - **OmniFocus (optional)**
   - When `omnifocus.enabled` is true (Preferences → OmniFocus, or config.yaml), Forge may use macOS Automation to run

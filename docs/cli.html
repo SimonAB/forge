@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>CLI reference · Forge</title>
-    <meta name="description" content="Forge command-line interface: boards, tasks, sync, review, and lint." />
+    <meta name="description" content="Forge CLI: project kanban, tags, calendar, and optional OmniFocus." />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -84,9 +84,9 @@
     <main id="main" class="doc-page">
       <article class="doc-content">
 <h1 id="forge-cli">Forge CLI</h1>
-<p>The <code>forge</code> command-line tool manages your kanban board from the terminal,
-operating directly on your project folders and their <strong>Finder tags</strong>. There are
-no remote services; commands read and write only local state.</p>
+<p>The <code>forge</code> command-line tool manages the <strong>project</strong> kanban board from the
+terminal: folders and <strong>Finder tags</strong>. Day-to-day tasks can live in OmniFocus,
+Reminders, Things, or similar. Commands read and write local state only.</p>
 <h2 id="installing-the-cli">Installing the CLI</h2>
 <p>Forge bundles the <code>forge</code> binary inside <strong>Forge.app</strong> at <code>Contents/Resources/bin/forge</code>.</p>
 <p>To put <code>forge</code> on your <code>$PATH</code>:</p>
@@ -345,7 +345,9 @@ hermes skills list | grep forge-board
 <p>See <strong><code>docs/hermes.md</code></strong>. Forge.app → Preferences → <strong>Hermes</strong> runs the same checks.</p>
 <hr />
 <h2 id="forge-omnifocus">forge omnifocus</h2>
-<p>Optional bridge to <strong>OmniFocus</strong> via Omni Automation (OmniJS). Requires
+<p>Optional OmniFocus bridge via Omni Automation (OmniJS). Mirrors <strong>project</strong>
+column and link tags. Day-to-day tasks stay in OmniFocus (or Reminders, Things,
+or another app). Requires
 <code>omnifocus.enabled: true</code> in <code>config.yaml</code>. Mutating commands <strong>default to
 dry-run</strong>; pass <code>--apply</code> (and confirm, unless <code>--yes</code>) before anything is written
 to OmniFocus or Finder tags. <code>refresh</code> updates the local

@@ -4,9 +4,11 @@ title: Forge user manual
 
 ## Overview
 
-Forge is a local-first project manager that combines:
+Forge is a local-first **project** manager: folders and Finder tags. Day-to-day
+tasks can live in OmniFocus, Apple Reminders, Things, or another app. It
+combines:
 
-- A kanban-style board for visualising work-in-progress.
+- A kanban-style board for visualising **project** work-in-progress.
 - Finder tags on project folders as the canonical “state”.
 - A small menu bar companion and a board window for day-to-day use.
 
@@ -23,7 +25,8 @@ Forge is a good fit if you:
 
 - Prefer plain-text workflows you can search, diff, and version-control with git.
 - Want a kanban view for project flow without a hosted backend.
-- Care about local-first privacy and want to avoid hosted task servers.
+- Care about local-first privacy and want to avoid hosted project boards.
+- Prefer to keep day-to-day tasks in OmniFocus, Reminders, Things, or similar.
 
 ## Optional: AI assistants and privacy
 

@@ -1,14 +1,19 @@
 ---
-description: GTD-style task management rules for assistants in the Forge system.
+description: Legacy markdown task-file rules. Forge is project kanban; day-to-day tasks belong in OmniFocus, Reminders, Things, or similar.
 globs:
    - "tasks/**/*.md"
    - "tasks/*.md"
 alwaysApply: false
 ---
 
-The Forge task system follows a GTD-inspired methodology with structured task
-files, context tags, and idempotent task IDs managed by the `forge` tool.
-Follow these rules when creating, updating, or processing tasks.
+Forge is folder-first **project** kanban (Finder tags). Day-to-day tasks belong in
+OmniFocus (optional project-column bridge), Apple Reminders (planned EventKit
+backend), Things, or another app.
+
+The rules below apply only to **legacy** `tasks/**/*.md` files if they still exist.
+
+The historical Forge task-file format used structured markdown, context tags, and
+opaque IDs. Follow these rules only when the user is still editing those files.
 
 ## Inbox methodology
 

@@ -1,7 +1,8 @@
 # Kanban
 
 Forge’s board is a **Finder-tag kanban**: each project folder carries one workflow
-column tag. Moving a card updates that tag. There is no separate board database.
+column tag. Moving a card updates that tag. Day-to-day tasks can live in
+OmniFocus, Reminders, Things, or another app.
 
 ## Columns
 

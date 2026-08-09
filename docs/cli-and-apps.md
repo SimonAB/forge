@@ -1,7 +1,7 @@
 # CLI & apps
 
 Forge is three surfaces on the same on-disk model: ordinary folders and Finder
-tags. Pick the surface that fits the moment; they do not fork your data.
+tags. Pick the surface that fits the moment.
 
 ## `forge` CLI
 

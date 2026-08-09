@@ -1,6 +1,8 @@
 # Forge — Neovim integration
 
-Forge no longer includes a GTD task system. If you use a Neovim plugin to integrate with Forge, keep it focused on **kanban + Finder-tag project management** commands.
+Forge is folder-first **project** kanban. Day-to-day tasks can live in OmniFocus,
+Reminders, Things, or similar. Keep Neovim integration on kanban and Finder-tag
+commands.
 
 **File:** `~/.config/nvim/lua/plugins/forge-nvim.lua`
 

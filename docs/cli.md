@@ -1,8 +1,8 @@
 # Forge CLI
 
-The `forge` command-line tool manages your kanban board from the terminal,
-operating directly on your project folders and their **Finder tags**. There are
-no remote services; commands read and write only local state.
+The `forge` command-line tool manages the **project** kanban board from the
+terminal: folders and **Finder tags**. Day-to-day tasks can live in OmniFocus,
+Reminders, Things, or similar. Commands read and write local state only.
 
 ## Installing the CLI
 
@@ -213,7 +213,9 @@ See **`docs/hermes.md`**. Forge.app → Preferences → **Hermes** runs the same
 
 ## forge omnifocus
 
-Optional bridge to **OmniFocus** via Omni Automation (OmniJS). Requires
+Optional OmniFocus bridge via Omni Automation (OmniJS). Mirrors **project**
+column and link tags. Day-to-day tasks stay in OmniFocus (or Reminders, Things,
+or another app). Requires
 `omnifocus.enabled: true` in `config.yaml`. Mutating commands **default to
 dry-run**; pass `--apply` (and confirm, unless `--yes`) before anything is written
 to OmniFocus or Finder tags. `refresh` updates the local

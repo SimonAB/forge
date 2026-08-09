@@ -1,8 +1,10 @@
 # OmniFocus (optional)
 
-Forge can optionally keep kanban columns in step with **OmniFocus** via Omni
-Automation (OmniJS). Mutating commands default to **dry-run**; nothing is written
-until you apply a plan.
+Forge tracks **projects** with Finder-tag kanban. Day-to-day **tasks** can live in
+OmniFocus, Reminders (planned EventKit backend), Things, or another app.
+
+This page is the OmniFocus bridge: it keeps *project* columns in step with
+OmniFocus via Omni Automation (OmniJS). Mutating commands default to **dry-run**.
 
 ## Enable
 

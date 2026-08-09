@@ -6,7 +6,7 @@
     <title>Forge</title>
       <meta
       name="description"
-      content="Local project management for macOS — kanban board backed by Finder tags, with flexible assistant workflows (local or cloud LLMs)."
+      content="Local folder-first project kanban for macOS. Finder tags on ordinary directories. Optional OmniFocus, Reminders, or Things for day-to-day tasks."
     />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -95,11 +95,12 @@
         <h1 id="hero-title" class="hero__title">
           <span class="hero__name">Forge</span>
           <span class="hero__subtitle"
-            >Local project and task management for macOS</span
+            >Local folder-first project management for macOS</span
           >
         </h1>
         <p class="hero__tagline">
-          Kanban board backed by Finder tags. No servers; your project folders stay on your Mac.
+          Kanban on ordinary folders and Finder tags.
+          Day-to-day tasks can live in OmniFocus, Reminders, Things, or elsewhere.
           Use any assistant you like: <strong>privacy-first local models</strong> (for example
           <a href="hermes.html">Hermes with Ollama</a>) or more capable
           <strong>cloud</strong> tools — the choice is yours.
@@ -164,7 +165,7 @@
             <div class="feature-card__icon" aria-hidden="true">🔄</div>
             <h3 class="feature-card__title">Finder tags</h3>
             <p class="feature-card__text">
-              Column state and project metadata live in Finder tags, not a hosted database.
+              Column state and project metadata live in Finder tags.
             </p>
             <span class="feature-card__more">Tags guide</span>
           </a>
@@ -172,8 +173,8 @@
             <div class="feature-card__icon" aria-hidden="true">⌨️</div>
             <h3 class="feature-card__title">CLI &amp; apps</h3>
             <p class="feature-card__text">
-              The <code class="inline-code">forge</code> CLI for terminals, a menu bar
-              companion for capture and sync, and a native board window for the big picture.
+              The <code class="inline-code">forge</code> CLI, a menu bar companion, and a
+              native board window — same folders and Finder tags.
             </p>
             <span class="feature-card__more">CLI &amp; apps</span>
           </a>
@@ -200,22 +201,19 @@
             <div class="feature-card__icon" aria-hidden="true">🤖</div>
             <h3 class="feature-card__title">Assistants &amp; LLMs</h3>
             <p class="feature-card__text">
-              Forge does not lock you into one AI stack. Prefer <strong>local inference</strong>
-              (Hermes and Ollama) when task text should stay on your Mac, or use
-              <strong>cloud</strong> models when you need more capability — adapt the pairing to
-              your risk and workflow.
+              Use <strong>local inference</strong> (Hermes and Ollama) or
+              <strong>cloud</strong> models as you prefer.
             </p>
             <span class="feature-card__more">Hermes setup</span>
           </a>
           <a class="feature-card" href="omnifocus.html">
             <div class="feature-card__icon" aria-hidden="true">🔗</div>
-            <h3 class="feature-card__title">OmniFocus (optional)</h3>
+            <h3 class="feature-card__title">Task apps (optional)</h3>
             <p class="feature-card__text">
-              Optional OmniJS bridge: <code class="inline-code">doctor</code>,
-              <code class="inline-code">align</code>, and board <strong>Refresh</strong> keep
-              Finder columns in step with OmniFocus tags when you enable it.
+              Day-to-day tasks: <strong>OmniFocus</strong> (column bridge),
+              <strong>Reminders</strong> (planned EventKit), <strong>Things</strong> or others later.
             </p>
-            <span class="feature-card__more">OmniFocus guide</span>
+            <span class="feature-card__more">OmniFocus bridge</span>
           </a>
         </div>
       </section>

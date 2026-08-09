@@ -19,13 +19,14 @@
 </p>
 
 <p align="center"><strong>Local, Finder-tagged kanban project management for macOS.</strong><br />
-Kanban board · Finder tags · ordinary folders · no Forge-hosted servers.</p>
+Project folders · Finder tags · optional task apps · no Forge-hosted servers.</p>
 
 ---
 
-Forge is a **kanban board** for project tracking built on ordinary folders and
-**Finder tags**. It is local-first: your projects live in your own directories,
-and Forge does not require any hosted service.
+Forge is a **kanban board** for projects, backed by **Finder tags** on ordinary
+folders. Day-to-day tasks can live in **OmniFocus** (optional bridge),
+**Reminders** (planned EventKit backend), **Things**, or another app. Local-first:
+projects stay in your directories.
 
 ## Who is Forge for?
 
@@ -36,8 +37,8 @@ files.
 Forge works well if you:
 
 - Prefer plain-text systems you can search and version-control with git, alongside Finder tags.
-- Want project state driven by Finder tags (including assignees as `#Person` tags).
-- Want a kanban view for projects without a hosted backend.
+- Want **project** state driven by Finder tags (including assignees as `#Person` tags).
+- Want a kanban view for projects, with day-to-day tasks optionally in OmniFocus, Reminders, Things, or similar.
 - Care about local-first privacy: Forge uses no hosted servers.
 
 For a longer tour of concepts and workflows, see the user manual in
@@ -142,7 +143,7 @@ agnostic. See **AI assistants and local language models** in [`PRIVACY.md`](PRIV
 
 If you use a coding assistant with this repo, **`AGENTS.md`** is the operating manual
 (Hephaestus stance, OmniFocus integration, kanban rules, brief format). Supporting
-material: **`.cursor/rules/`** (CLI, workflows, GTD tasks), **`docs/hermes.md`**
+material: **`.cursor/rules/`** (CLI, workflows), **`docs/hermes.md`**
 (Hermes + Ollama setup), **`PROJECT_TEMPLATE.md`** (new project READMEs), and
 **`python3 scripts/forge-brief.py`** for read-only board briefs without any LLM.
 

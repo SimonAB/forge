@@ -1,7 +1,8 @@
 # Forge.app
 
-Forge.app is a macOS **menu bar companion** that runs in the background and
-provides quick access to your board and project workflows.
+Forge.app is a macOS **menu bar companion** for the **project** board (folders
+and Finder tags). Day-to-day tasks can live in OmniFocus, Reminders, Things, or
+another app.
 
 ## Setup
 
@@ -85,6 +86,10 @@ minimum 640×480). Brief and Workspace panels expand when you enlarge the window
 
 ### OmniFocus (optional)
 
+Optional: keep **project** kanban columns in step with OmniFocus. Day-to-day
+tasks stay in the task app. A Reminders backend (same role) is planned; Things
+is a possible later addition.
+
 Enable under **Preferences → OmniFocus**. With `sync_on_move`, board column moves mirror onto linked OF tasks. With `sync_from_omnifocus`, board **Refresh** pulls OF column tags onto Finder (and clears stacked leftover OF kanban tags on those folders). Finder→OF is not rewritten from Refresh. With `sync_completed_project_to_shipped`, a completed/dropped OF **project** moves the matching Finder folder to **Shipped** on Refresh.
 
 CLI: `forge omnifocus doctor` → `align` (dry-run) → `align --apply`. See [cli.md](cli.md) and `packaging/omnifocus/README.md`.
@@ -93,7 +98,8 @@ CLI: `forge omnifocus doctor` → `align` (dry-run) → `align --apply`. See [cl
 
 ## Quick capture
 
-Forge no longer includes a GTD task system, so there is no quick-capture panel.
+There is no capture panel. Day-to-day tasks can live in OmniFocus, Reminders,
+Things, or another app.
 
 ## Permissions
 

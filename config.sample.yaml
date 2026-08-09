@@ -45,7 +45,9 @@ calendar:
   #   - Teaching
 
 # Legacy keys (kept for backwards compatibility; unused by the kanban CLI).
-# Prefer `calendar.include` above. These may emit deprecation notes in future releases.
+# Prefer `calendar.include` above. `gtd.reminders_list` is a placeholder for a
+# future Reminders backend (same optional role as `omnifocus`, not a Forge inbox).
+# These may emit deprecation notes in future releases.
 gtd:
   reminders_list: Forge
 # due_conflict_policy, workspace_tags, and project_areas are similarly legacy.

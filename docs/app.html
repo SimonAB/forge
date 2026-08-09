@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Forge.app · Forge</title>
-    <meta name="description" content="Menu bar companion: sync, quick capture, overdue badges, and setup." />
+    <meta name="description" content="Menu bar companion: project board, Radar, optional OmniFocus align, and setup." />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -84,8 +84,9 @@
     <main id="main" class="doc-page">
       <article class="doc-content">
 <h1 id="forgeapp">Forge.app</h1>
-<p>Forge.app is a macOS <strong>menu bar companion</strong> that runs in the background and
-provides quick access to your board and project workflows.</p>
+<p>Forge.app is a macOS <strong>menu bar companion</strong> for the <strong>project</strong> board (folders
+and Finder tags). Day-to-day tasks can live in OmniFocus, Reminders, Things, or
+another app.</p>
 <h2 id="setup">Setup</h2>
 <h3 id="option-a-github-release-pre-built-app">Option A — GitHub release (pre-built app)</h3>
 <p>Each <a href="https://github.com/SimonAB/forge/releases/latest">GitHub release</a> includes <strong><code>Forge-macos-arm64.app.zip</code></strong>. Unzip it and move <strong><code>Forge.app</code></strong> to <code>/Applications</code>. The zip is built with the same layout as <code>build.sh</code> (release configuration).</p>
@@ -189,11 +190,15 @@ indicates urgent items:</p>
 <p><strong>Forge → Preferences…</strong> opens a resizable tabbed window (default about 720×560;
 minimum 640×480). Brief and Workspace panels expand when you enlarge the window.</p>
 <h3 id="omnifocus-optional">OmniFocus (optional)</h3>
+<p>Optional: keep <strong>project</strong> kanban columns in step with OmniFocus. Day-to-day
+tasks stay in the task app. A Reminders backend (same role) is planned; Things
+is a possible later addition.</p>
 <p>Enable under <strong>Preferences → OmniFocus</strong>. With <code>sync_on_move</code>, board column moves mirror onto linked OF tasks. With <code>sync_from_omnifocus</code>, board <strong>Refresh</strong> pulls OF column tags onto Finder (and clears stacked leftover OF kanban tags on those folders). Finder→OF is not rewritten from Refresh. With <code>sync_completed_project_to_shipped</code>, a completed/dropped OF <strong>project</strong> moves the matching Finder folder to <strong>Shipped</strong> on Refresh.</p>
 <p>CLI: <code>forge omnifocus doctor</code> → <code>align</code> (dry-run) → <code>align --apply</code>. See <a href="cli.html">cli.md</a> and <code>packaging/omnifocus/README.md</code>.</p>
 <hr />
 <h2 id="quick-capture">Quick capture</h2>
-<p>Forge no longer includes a GTD task system, so there is no quick-capture panel.</p>
+<p>There is no capture panel. Day-to-day tasks can live in OmniFocus, Reminders,
+Things, or another app.</p>
 <h2 id="permissions">Permissions</h2>
 <p>On first launch, macOS will prompt for access to:</p>
 <ul>

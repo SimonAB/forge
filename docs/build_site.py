@@ -298,21 +298,21 @@ def main() -> None:
         source=DOCS_DIR / "omnifocus.md",
         out_name="omnifocus.html",
         page_title="OmniFocus",
-        description="Optional OmniFocus bridge: doctor, align, Refresh, and sync directions.",
+        description="Optional OmniFocus bridge for project columns. Tasks can live in OF, Reminders, or Things.",
         active="",
     )
     build_page(
         source=DOCS_DIR / "cli.md",
         out_name="cli.html",
         page_title="CLI reference",
-        description="Forge command-line interface: boards, tasks, sync, review, and lint.",
+        description="Forge CLI: project kanban, tags, calendar, and optional OmniFocus.",
         active="cli",
     )
     build_page(
         source=DOCS_DIR / "app.md",
         out_name="app.html",
         page_title="Forge.app",
-        description="Menu bar companion: sync, quick capture, overdue badges, and setup.",
+        description="Menu bar companion: project board, Radar, optional OmniFocus align, and setup.",
         active="app",
     )
     build_page(
@@ -333,7 +333,7 @@ def main() -> None:
         source=DOCS_DIR / "forge-manual.md",
         out_name="manual.html",
         page_title="Forge manual",
-        description="Longer-form guide to using Forge for project and task management.",
+        description="Longer-form guide to folder-first kanban project management.",
         active="manual",
     )
     build_page(
@@ -347,7 +347,7 @@ def main() -> None:
         source=REPO_ROOT / "README.md",
         out_name="readme.html",
         page_title="Readme",
-        description="Forge overview: kanban, GTD, configuration, task format, and directory layout.",
+        description="Forge overview: folder-first project kanban, configuration, and directory layout.",
         active="readme",
     )
     build_page(

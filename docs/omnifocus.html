@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>OmniFocus · Forge</title>
-    <meta name="description" content="Optional OmniFocus bridge: doctor, align, Refresh, and sync directions." />
+    <meta name="description" content="Optional OmniFocus bridge for project columns. Tasks can live in OF, Reminders, or Things." />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -84,9 +84,10 @@
     <main id="main" class="doc-page">
       <article class="doc-content">
 <h1 id="omnifocus-optional">OmniFocus (optional)</h1>
-<p>Forge can optionally keep kanban columns in step with <strong>OmniFocus</strong> via Omni
-Automation (OmniJS). Mutating commands default to <strong>dry-run</strong>; nothing is written
-until you apply a plan.</p>
+<p>Forge tracks <strong>projects</strong> with Finder-tag kanban. Day-to-day <strong>tasks</strong> can live in
+OmniFocus, Reminders (planned EventKit backend), Things, or another app.</p>
+<p>This page is the OmniFocus bridge: it keeps <em>project</em> columns in step with
+OmniFocus via Omni Automation (OmniJS). Mutating commands default to <strong>dry-run</strong>.</p>
 <h2 id="enable">Enable</h2>
 <p>Set <code>omnifocus.enabled: true</code> in <code>config.yaml</code>, or open
 <strong>Forge → Preferences → OmniFocus</strong>.</p>

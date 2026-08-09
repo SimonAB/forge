@@ -1,6 +1,6 @@
 # Hermes + Forge (local assistant)
 
-Forge recommends **[Hermes Agent](https://hermes-agent.nousresearch.com/)** with **[Ollama](https://ollama.com)** for privacy-first LLM-assisted kanban work. Inference stays on your Mac; Forge does not send board data to any Forge-hosted service.
+Forge recommends **[Hermes Agent](https://hermes-agent.nousresearch.com/)** with **[Ollama](https://ollama.com)** for privacy-first LLM-assisted **project** kanban (folders and Finder tags). Inference stays on your Mac.
 
 ## Privacy first
 

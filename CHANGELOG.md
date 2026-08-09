@@ -6,6 +6,8 @@ The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 ### Unreleased
 
+- Documentation: Forge as folder-first project kanban; optional task apps (OmniFocus bridge, planned Reminders, Things later).
+
 ### [0.9.2] – 2026-08-09
 
 First GitHub and Sparkle release since **0.9.0**. Ships Hermes + OmniFocus, the

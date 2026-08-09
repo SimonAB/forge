@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Readme · Forge</title>
-    <meta name="description" content="Forge overview: kanban, GTD, configuration, task format, and directory layout." />
+    <meta name="description" content="Forge overview: folder-first project kanban, configuration, and directory layout." />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -103,12 +103,13 @@
 </p>
 
 <p align="center"><strong>Local, Finder-tagged kanban project management for macOS.</strong><br />
-Kanban board · Finder tags · ordinary folders · no Forge-hosted servers.</p>
+Project folders · Finder tags · optional task apps · no Forge-hosted servers.</p>
 
 <hr />
-<p>Forge is a <strong>kanban board</strong> for project tracking built on ordinary folders and
-<strong>Finder tags</strong>. It is local-first: your projects live in your own directories,
-and Forge does not require any hosted service.</p>
+<p>Forge is a <strong>kanban board</strong> for projects, backed by <strong>Finder tags</strong> on ordinary
+folders. Day-to-day tasks can live in <strong>OmniFocus</strong> (optional bridge),
+<strong>Reminders</strong> (planned EventKit backend), <strong>Things</strong>, or another app. Local-first:
+projects stay in your directories.</p>
 <h2 id="who-is-forge-for">Who is Forge for?</h2>
 <p>Forge is for people who think in files and folders first, and who want a
 transparent system built on ordinary directories, Finder tags, and markdown
@@ -116,8 +117,8 @@ files.</p>
 <p>Forge works well if you:</p>
 <ul>
 <li>Prefer plain-text systems you can search and version-control with git, alongside Finder tags.</li>
-<li>Want project state driven by Finder tags (including assignees as <code>#Person</code> tags).</li>
-<li>Want a kanban view for projects without a hosted backend.</li>
+<li>Want <strong>project</strong> state driven by Finder tags (including assignees as <code>#Person</code> tags).</li>
+<li>Want a kanban view for projects, with day-to-day tasks optionally in OmniFocus, Reminders, Things, or similar.</li>
 <li>Care about local-first privacy: Forge uses no hosted servers.</li>
 </ul>
 <p>For a longer tour of concepts and workflows, see the user manual in
@@ -269,7 +270,7 @@ agnostic. See <strong>AI assistants and local language models</strong> in <a hre
 <h2 id="ai-assistants-optional">AI assistants (optional)</h2>
 <p>If you use a coding assistant with this repo, <strong><code>AGENTS.md</code></strong> is the operating manual
 (Hephaestus stance, OmniFocus integration, kanban rules, brief format). Supporting
-material: <strong><code>.cursor/rules/</code></strong> (CLI, workflows, GTD tasks), <strong><code>docs/hermes.md</code></strong>
+material: <strong><code>.cursor/rules/</code></strong> (CLI, workflows), <strong><code>docs/hermes.md</code></strong>
 (Hermes + Ollama setup), <strong><code>PROJECT_TEMPLATE.md</code></strong> (new project READMEs), and
 <strong><code>python3 scripts/forge-brief.py</code></strong> for read-only board briefs without any LLM.</p>
 <h2 id="directory-layout">Directory layout</h2>
