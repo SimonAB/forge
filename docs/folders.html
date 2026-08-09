@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Neovim integration · Forge</title>
-    <meta name="description" content="Keymaps, commands, and dashboard integration for Forge in Neovim." />
+    <title>Folders first · Forge</title>
+    <meta name="description" content="Projects as ordinary directories, project roots, and local visibility." />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -44,7 +44,7 @@
   <a class="site-nav__link" href="cli.html">CLI</a>
   <a class="site-nav__link" href="app.html">Forge.app</a>
   <a class="site-nav__link" href="hermes.html">Hermes</a>
-  <a class="site-nav__link is-active" href="neovim.html">Neovim</a>
+  <a class="site-nav__link" href="neovim.html">Neovim</a>
   <a class="site-nav__link" href="manual.html">Manual</a>
   <a class="site-nav__link" href="privacy.html">Privacy</a>
   <a class="site-nav__link" href="readme.html">Readme</a>
@@ -83,125 +83,26 @@
     </header>
     <main id="main" class="doc-page">
       <article class="doc-content">
-<h1 id="forge-neovim-integration">Forge — Neovim integration</h1>
-<p>Forge no longer includes a GTD task system. If you use a Neovim plugin to integrate with Forge, keep it focused on <strong>kanban + Finder-tag project management</strong> commands.</p>
-<p><strong>File:</strong> <code>~/.config/nvim/lua/plugins/forge-nvim.lua</code></p>
-<h2 id="dependencies">Dependencies</h2>
-<table>
-<thead>
-<tr>
-<th>Plugin</th>
-<th>Role</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><a href="https://github.com/akinsho/toggleterm.nvim">toggleterm.nvim</a></td>
-<td>Terminal panes for CLI output</td>
-</tr>
-<tr>
-<td><a href="https://github.com/nvim-telescope/telescope.nvim">telescope.nvim</a></td>
-<td>Fuzzy file browsing and grep within your project roots</td>
-</tr>
-<tr>
-<td><a href="https://github.com/folke/which-key.nvim">which-key.nvim</a></td>
-<td>Displays <code>&lt;leader&gt;F</code> group in the keymap popup</td>
-</tr>
-<tr>
-<td><a href="https://github.com/echasnovski/mini.starter">mini.starter</a></td>
-<td>Dashboard section with Forge shortcuts</td>
-</tr>
-</tbody>
-</table>
-<p>All dependencies should be optional (<code>pcall</code>) so the plugin degrades gracefully.</p>
-<h2 id="suggested-keymaps">Suggested keymaps</h2>
-<p>All keymaps use the <code>&lt;leader&gt;F</code> prefix (normal mode).</p>
-<h3 id="view-commands">View commands</h3>
-<p>Read-only output in a terminal pane. Press <code>q</code> to close.</p>
-<table>
-<thead>
-<tr>
-<th>Key</th>
-<th>Command</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>&lt;leader&gt;Fb</code></td>
-<td><code>forge board --list</code></td>
-<td>Kanban board (list view)</td>
-</tr>
-<tr>
-<td><code>&lt;leader&gt;Ft</code></td>
-<td><code>forge status</code></td>
-<td>Project summary dashboard</td>
-</tr>
-<tr>
-<td><code>&lt;leader&gt;Fc</code></td>
-<td><code>forge calendar</code></td>
-<td>Upcoming Calendar events</td>
-</tr>
-</tbody>
-</table>
-<h3 id="project-maintenance">Project maintenance</h3>
-<table>
-<thead>
-<tr>
-<th>Key</th>
-<th>Command</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>&lt;leader&gt;Fm</code></td>
-<td><code>forge move</code></td>
-<td>Move a project to a column (interactive args in terminal)</td>
-</tr>
-<tr>
-<td><code>&lt;leader&gt;Ftg</code></td>
-<td><code>forge project-tag</code></td>
-<td>Add/remove/list Finder tags on a project folder</td>
-</tr>
-</tbody>
-</table>
-<h2 id="commands">Commands</h2>
-<p>If you expose Neovim commands, these cover the kanban-only surface area:</p>
-<table>
-<thead>
-<tr>
-<th>Command</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>:ForgeBoard</code></td>
-<td>Show kanban board</td>
-</tr>
-<tr>
-<td><code>:ForgeStatus</code></td>
-<td>Show project status dashboard</td>
-</tr>
-<tr>
-<td><code>:ForgeCalendar</code></td>
-<td>Show upcoming events</td>
-</tr>
-<tr>
-<td><code>:ForgeMove</code></td>
-<td>Move a project between columns</td>
-</tr>
-<tr>
-<td><code>:ForgeProjectTag</code></td>
-<td>Add/remove/list project tags</td>
-</tr>
-<tr>
-<td><code>:ForgeSetup</code></td>
-<td>Build and install Forge on this Mac (runs <code>build.sh</code>)</td>
-</tr>
-</tbody>
-</table>
+<h1 id="folders-first">Folders first</h1>
+<p>Projects are ordinary directories under your configured <strong>project roots</strong>.
+Forge does not import them into a proprietary store.</p>
+<h2 id="project-roots">Project roots</h2>
+<p>Set <code>project_roots</code> in <code>config.yaml</code>. By default (<code>project_scan_depth: 1</code>) each
+<strong>direct child</strong> folder is a project. Use <code>project_scan_depth: 2</code> when work lives
+inside grouping folders (for example a manuscript inside a research programme
+directory). Tagged folders are not scanned further.</p>
+<p>If <code>project_tag</code> is set (for example <code>🔥 Forge</code>), only directories with that
+Finder tag count as projects.</p>
+<h2 id="visible-where-you-already-look">Visible where you already look</h2>
+<ul>
+<li><strong>Finder</strong> and <strong>Spotlight</strong> see the same folders and tags.</li>
+<li>Keep the workspace under <strong>git</strong> if you want history; Forge does not require it.</li>
+<li>Place the tree on an encrypted volume or a local-only folder if you prefer not
+  to sync via iCloud or similar.</li>
+</ul>
+<p>See <a href="readme.html#configuration">configuration</a>,
+<a href="cli.html#configuration-project-roots">CLI project roots</a>, and the
+<a href="manual.html#core-concepts">manual</a>.</p>
       </article>
     </main>
     <footer class="site-footer">

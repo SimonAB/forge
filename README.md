@@ -47,8 +47,9 @@ For a longer tour of concepts and workflows, see the user manual in
 
 | Component | Description |
 |-----------|-------------|
-| [`forge` CLI](docs/cli.md) | Command-line interface for board views and project moves/tags |
+| [`forge` CLI](docs/cli.md) | Command-line interface for board views, tags, calendar, and optional OmniFocus |
 | [Forge.app](docs/app.md) | Menu bar companion and board window |
+| [Hermes + Ollama](docs/hermes.md) | Privacy-first local assistant (`forge-board` skill) |
 | [Neovim plugin](docs/neovim.md) | Keymaps, commands, and dashboard integration via `forge-nvim.lua` |
 
 ## Project website
@@ -57,10 +58,15 @@ The public site is <a href="https://simonab.github.io/forge/"><img src="docs/fav
 (fork: `https://<user>.github.io/<repo>/`). Landing page: [`docs/index.html`](docs/index.html)
 with [`docs/assets/site.css`](docs/assets/site.css) and [`docs/favicon.svg`](docs/favicon.svg).
 
-The **full documentation** is also published as static HTML next to the landing page, generated from the same markdown as the repo (`README.md`, `CHANGELOG.md`, `PRIVACY.md`, `docs/cli.md`, `docs/app.md`, `docs/hermes.md`, `docs/neovim.md`, `docs/forge-manual.md`):
+The **full documentation** is also published as static HTML next to the landing page, generated from the same markdown as the repo (`README.md`, `CHANGELOG.md`, `PRIVACY.md`, `docs/cli.md`, `docs/app.md`, `docs/hermes.md`, `docs/neovim.md`, `docs/forge-manual.md`, and the landing-page feature guides):
 
 | Page | Source |
 |------|--------|
+| [`docs/kanban.html`](docs/kanban.html) | [`docs/kanban.md`](docs/kanban.md) |
+| [`docs/folders.html`](docs/folders.html) | [`docs/folders.md`](docs/folders.md) |
+| [`docs/finder-tags.html`](docs/finder-tags.html) | [`docs/finder-tags.md`](docs/finder-tags.md) |
+| [`docs/cli-and-apps.html`](docs/cli-and-apps.html) | [`docs/cli-and-apps.md`](docs/cli-and-apps.md) |
+| [`docs/omnifocus.html`](docs/omnifocus.html) | [`docs/omnifocus.md`](docs/omnifocus.md) |
 | [`docs/cli.html`](docs/cli.html) | [`docs/cli.md`](docs/cli.md) |
 | [`docs/app.html`](docs/app.html) | [`docs/app.md`](docs/app.md) |
 | [`docs/hermes.html`](docs/hermes.html) | [`docs/hermes.md`](docs/hermes.md) |

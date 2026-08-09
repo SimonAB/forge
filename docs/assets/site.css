@@ -518,6 +518,17 @@ html.dark .btn--brand:hover {
     box-shadow 0.18s ease;
 }
 
+a.feature-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+a.feature-card:focus-visible {
+  outline: 2px solid var(--vp-c-brand-1);
+  outline-offset: 2px;
+}
+
 .feature-card:hover {
   border-color: rgba(234, 88, 12, 0.65);
   background: var(--vp-card-hover);
@@ -562,6 +573,14 @@ html.dark .feature-card:hover {
   margin: 0;
   font-size: 0.9375rem;
   color: var(--vp-c-text-2);
+}
+
+.feature-card__more {
+  display: inline-block;
+  margin-top: 12px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--vp-c-brand-1);
 }
 
 /* ——— Content sections ——— */

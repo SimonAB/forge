@@ -8,6 +8,9 @@ The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 - Preferences window is larger by default (720×560), resizable (min 640×480), and Brief/Workspace panels grow with the window.
 - CI: `WorkspaceScanner` tests use an in-memory ``TagReading`` store so they no longer depend on Finder xattrs on GitHub runners.
+- Landing page (`docs/index.html`) — Hermes in nav and docs list; Forge.app download; OmniFocus feature and component; CLI glance includes `status` / `calendar` / `omnifocus`.
+- Landing feature cards link to short guides (`kanban`, `folders`, `finder-tags`, `cli-and-apps`, `omnifocus`) plus existing Privacy and Hermes pages.
+- `docs/build_site.py` — rewrite relative markdown links (`app.md`, `../PRIVACY.md`, …) to site HTML or GitHub; heading IDs via the markdown `toc` extension.
 
 ### 0.9.2
 

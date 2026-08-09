@@ -12,7 +12,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="assets/site.css?v=3" />
+    <link rel="stylesheet" href="assets/site.css?v=4" />
     <script>
       (function () {
         try {
@@ -83,15 +83,19 @@
     </header>
     <main id="main" class="doc-page">
       <article class="doc-content">
-<h2>Changelog</h2>
+<h2 id="changelog">Changelog</h2>
 <p>All notable changes to this project will be documented in this file.</p>
 <p>The format loosely follows <a href="https://keepachangelog.com/en/1.1.0/">Keep a Changelog</a>.</p>
-<h3>Unreleased</h3>
+<h3 id="unreleased">Unreleased</h3>
 <ul>
 <li>Preferences window is larger by default (720×560), resizable (min 640×480), and Brief/Workspace panels grow with the window.</li>
+<li>CI: <code>WorkspaceScanner</code> tests use an in-memory <code>TagReading</code> store so they no longer depend on Finder xattrs on GitHub runners.</li>
+<li>Landing page (<code>docs/index.html</code>) — Hermes in nav and docs list; Forge.app download; OmniFocus feature and component; CLI glance includes <code>status</code> / <code>calendar</code> / <code>omnifocus</code>.</li>
+<li>Landing feature cards link to short guides (<code>kanban</code>, <code>folders</code>, <code>finder-tags</code>, <code>cli-and-apps</code>, <code>omnifocus</code>) plus existing Privacy and Hermes pages.</li>
+<li><code>docs/build_site.py</code> — rewrite relative markdown links (<code>app.md</code>, <code>../PRIVACY.md</code>, …) to site HTML or GitHub; heading IDs via the markdown <code>toc</code> extension.</li>
 </ul>
-<h3>0.9.2</h3>
-<h4>Hermes + local LLM (privacy-first)</h4>
+<h3 id="092">0.9.2</h3>
+<h4 id="hermes-local-llm-privacy-first">Hermes + local LLM (privacy-first)</h4>
 <ul>
 <li><strong><code>docs/hermes.md</code></strong> — canonical Hermes + Ollama setup guide; Hermes recommended over Pi for kanban assistant work.</li>
 <li><strong><code>scripts/setup-hermes-forge.py</code></strong> — idempotent plug-and-play wiring (<code>skills.external_dirs</code>, optional Cursor MCP sample, verification).</li>
@@ -102,7 +106,7 @@
 <li>Documentation sweep: <strong><code>PRIVACY.md</code></strong>, <strong><code>AGENTS.md</code></strong>, <strong><code>README.md</code></strong>, <strong><code>docs/app.md</code></strong>, <strong><code>docs/cli.md</code></strong>, <strong><code>docs/forge-manual.md</code></strong>, <strong><code>docs/index.html</code></strong>, <strong><code>.cursor/rules/morning-brief.mdc</code></strong>.</li>
 <li>Enhanced brief script hardening (<code>scripts/forge-brief--with-full.py</code>) — surface board/calendar load warnings; tighter calendar↔project matching.</li>
 </ul>
-<h4>OmniFocus bridge (optional)</h4>
+<h4 id="omnifocus-bridge-optional">OmniFocus bridge (optional)</h4>
 <ul>
 <li><strong><code>forge omnifocus</code></strong> — Omni Automation (OmniJS via JXA) bridge: <code>doctor</code>,
   <code>align</code> (dry-run by default; <code>--apply</code> to write), <code>refresh</code> (local snapshot),
@@ -145,47 +149,47 @@
 optional Ollama Brief, optional OmniFocus bridge). Older changelog entries that mention Reminders, <code>forge sync</code>,
 or <code>TASKS.md</code> indexing describe historical behaviour.</p>
 </blockquote>
-<h4>Quality / CI</h4>
+<h4 id="quality-ci">Quality / CI</h4>
 <ul>
 <li><strong><code>swift test</code></strong> — CLI installer helpers moved into <strong>ForgeCore</strong> so tests no longer
   link Sparkle via <code>forge-menubar</code> (fixes test-bundle load failures).</li>
 <li><strong>CI</strong> — <code>.github/workflows/ci.yml</code> runs <code>swift build</code>, <code>swift test</code>, and
   <code>python3 -m py_compile scripts/forge-brief.py</code> on PRs and <code>main</code>.</li>
 </ul>
-<h4>CLI</h4>
+<h4 id="cli">CLI</h4>
 <ul>
 <li><strong><code>forge move --strict</code></strong> — optional workflow guards (one-column steps; Shipped stays
   Shipped; Paused as side column). Default move remains permissive.</li>
 <li><strong>URGENT detection</strong> — <code>forge status</code> / menubar badge use URGENT-prefixed meta tags
   (aligned with Radar), not a single hardcoded string.</li>
 </ul>
-<h4>Documentation / privacy</h4>
+<h4 id="documentation-privacy">Documentation / privacy</h4>
 <ul>
 <li><strong>PRIVACY.md</strong> — documents Sparkle updates, Brief→Ollama egress, and <code>calendar.include</code>.</li>
 <li><strong>docs/cli.md</strong> / <strong>docs/app.md</strong> — <code>forge init</code>, <code>scripts/forge-brief.py</code>, Brief prefs,
   External agent stub.</li>
 <li><strong>templates/omnifocus</strong> — clarified as optional assistant tooling (no fictional CLI flags).</li>
 </ul>
-<h4>Scripts</h4>
+<h4 id="scripts">Scripts</h4>
 <ul>
 <li><strong><code>forge-brief.py</code></strong> — <code>--calendar-calendars</code> defaults to empty (all calendars).</li>
 <li><strong><code>build.sh</code></strong> — <code>--no-clean</code> and <code>--no-launch-agent</code> for a faster local loop.</li>
 </ul>
-<h4>Forge.app / packaging</h4>
+<h4 id="forgeapp-packaging">Forge.app / packaging</h4>
 <ul>
 <li><strong>Bundled CLI</strong> — <code>Forge.app</code> now includes the <code>forge</code> binary at <code>Contents/Resources/bin/forge</code>.
   Use <strong>Forge → Preferences… → Install CLI…</strong> to put it on your <code>$PATH</code> (to <code>~/bin</code> or <code>/usr/local/bin</code>).</li>
 <li><strong>Maintainer tooling</strong> — <code>packaging/package_forge_app.sh</code> assembles, Developer ID-signs, and optionally notarises the app zip.</li>
 <li><strong>Privacy</strong> — removed the outdated <code>NSRemindersUsageDescription</code> from the generated app <code>Info.plist</code>.</li>
 </ul>
-<h4>CLI (prior unreleased)</h4>
+<h4 id="cli-prior-unreleased">CLI (prior unreleased)</h4>
 <ul>
 <li><strong><code>project_scan_depth</code></strong> — optional <code>config.yaml</code> setting (default <code>1</code>) controlling how many folder levels under each <code>project_root</code> Forge scans for tagged projects. Use <code>2</code> to discover projects inside untagged grouping folders (for example <code>Projects/MyGroup/VHP2_manuscript</code>). Tagged folders are not scanned further. Preferences saves preserve this value.</li>
 <li><strong><code>forge board --json</code></strong> — machine-readable kanban: <code>board.columns</code>, <code>meta_tags</code>, <code>tag_aliases</code>, and per-project column, tags, assignees, plus <strong>Radar</strong> fields (<code>radarBucket</code>, <code>daysSinceActivity</code>, <code>activityModificationDate</code>, <code>activitySource</code>) aligned with the board UI. <strong><code>KanbanRadar</code></strong> in ForgeCore centralises Radar logic (also used by <strong><code>forge-menubar</code> / <code>ForgeUI</code></strong>).</li>
 <li><strong><code>forge project-tag</code></strong> — <code>add</code>, <code>remove</code>, and <code>list</code> for <strong>meta</strong> and <strong><code>#Person</code></strong> Finder tags on project directories (<code>ProjectFolderTagPolicy</code> validates against <code>board.meta_tags</code>; workflow column tags use <strong><code>forge move</code></strong> only).</li>
 <li><strong><code>forge calendar</code></strong> / <strong><code>forge events</code></strong> — read-only listing of <strong>Apple Calendar</strong> events (EventKit); default window <strong>next 7 days</strong> (<code>ForgeCalendarDefaults.horizonDays</code>), with <code>--days</code>, <code>--start</code> (YYYY-MM-DD), and <code>--json</code>.</li>
 </ul>
-<h4>Documentation (prior unreleased)</h4>
+<h4 id="documentation-prior-unreleased">Documentation (prior unreleased)</h4>
 <ul>
 <li><strong>Assistant operating manual</strong> — expanded <strong><code>AGENTS.md</code></strong> (OmniFocus AppleScript, kanban lifecycle, CLI reference); Cursor rules <strong><code>.cursor/rules/forge-cli.mdc</code></strong>, <strong><code>forge-workflows.mdc</code></strong>, <strong><code>task-gtd.mdc</code></strong>; Hermes skill <strong><code>.hermes/skills/forge-board/SKILL.md</code></strong>; <strong><code>PROJECT_TEMPLATE.md</code></strong> for new project READMEs.</li>
 <li>Recommended <strong>Ollama with Pi</strong> for privacy-conscious LLM-assisted workflows; setup
@@ -194,107 +198,107 @@ or <code>TASKS.md</code> indexing describe historical behaviour.</p>
   <strong><code>.cursor/rules/morning-brief.mdc</code></strong>.</li>
 <li><strong>GitHub Pages</strong> landing page (<strong><code>docs/index.html</code></strong>) — seventh feature card (<strong>Assistants &amp; LLMs</strong>), hero copy, and meta description highlighting flexible <strong>local vs cloud</strong> assistant choice; stable fragment <strong><code>#ai-assistants</code></strong> on the privacy page (<strong><code>PRIVACY.md</code></strong> / <strong><code>docs/privacy.html</code></strong>).</li>
 </ul>
-<h4>Privacy / packaging</h4>
+<h4 id="privacy-packaging">Privacy / packaging</h4>
 <ul>
 <li>Documented Calendar read access in <strong><code>PRIVACY.md</code></strong>; <strong><code>NSCalendarsUsageDescription</code></strong> added to <strong><code>packaging/assemble_forge_app.sh</code></strong> for Forge.app.</li>
 </ul>
-<h3>[0.9.0] – 2026-03-23</h3>
-<h4>Summary</h4>
+<h3 id="090-2026-03-23">[0.9.0] – 2026-03-23</h3>
+<h4 id="summary">Summary</h4>
 <ul>
 <li>Opens the <strong>0.9</strong> release line with <strong>Sparkle 2</strong> in-app updates, <strong><code>Forge-macos-arm64.app.zip</code></strong> on tagged releases, and <strong>CI <code>generate_appcast</code></strong> refreshing <strong><code>docs/appcast.xml</code></strong>—verified green on <strong>v0.8.14</strong>. See <strong>[0.8.13]</strong> and <strong>[0.8.14]</strong> for full notes.</li>
 </ul>
-<h3>[0.8.14] – 2026-03-22</h3>
-<h4>Distribution / CI</h4>
+<h3 id="0814-2026-03-22">[0.8.14] – 2026-03-22</h3>
+<h4 id="distribution-ci">Distribution / CI</h4>
 <ul>
 <li><strong>Sparkle appcast</strong> — release workflow runs <strong><code>generate_appcast</code> twice</strong> so <strong><code>docs/appcast.xml</code></strong> regenerates for ad hoc–signed <strong><code>Forge.app</code></strong> CI builds (Sparkle’s strict code-sign check on first unarchive; see <strong><code>packaging/SPARKLE_SIGNING.md</code></strong>).</li>
 </ul>
-<h3>[0.8.13] – 2026-03-22</h3>
-<h4>Forge.app</h4>
+<h3 id="0813-2026-03-22">[0.8.13] – 2026-03-22</h3>
+<h4 id="forgeapp">Forge.app</h4>
 <ul>
 <li><strong>Sparkle 2</strong> — in-app updates via <strong><code>SUFeedURL</code></strong> (<code>docs/appcast.xml</code> on <code>main</code>), <strong><code>SUPublicEDKey</code></strong>, automatic daily checks (<code>SUScheduledCheckInterval</code>), and <strong>Check for Updates…</strong>. <strong><code>Sparkle.framework</code></strong> is embedded next to the executable (SwiftPM <code>@loader_path</code> layout). See <strong><code>packaging/SPARKLE_SIGNING.md</code></strong> and GitHub secret <strong><code>SPARKLE_EDDSA_PRIVATE_KEY</code></strong> for release signing.</li>
 <li>Removed the earlier custom GitHub REST + <code>ditto</code> updater.</li>
 </ul>
-<h4>Distribution</h4>
+<h4 id="distribution">Distribution</h4>
 <ul>
 <li><strong><code>Forge-macos-arm64.app.zip</code></strong> — release workflow builds <strong><code>forge-menubar</code></strong> (release) and assembles <strong><code>Forge.app</code></strong> via <strong><code>packaging/assemble_forge_app.sh</code></strong>, uploaded next to the CLI zip; when the signing secret is set, <strong><code>generate_appcast</code></strong> refreshes <strong><code>docs/appcast.xml</code></strong> and the workflow commits it to <strong><code>main</code></strong> after publishing the release assets.</li>
 <li><strong><code>build.sh</code></strong> — delegates app bundle assembly to <strong><code>packaging/assemble_forge_app.sh</code></strong>.</li>
 </ul>
-<h3><a href="https://github.com/SimonAB/forge/releases/tag/v0.8.12">0.8.12</a> – 2026-03-21</h3>
-<h4>Forge.app (menubar and board)</h4>
+<h3 id="0812-2026-03-21"><a href="https://github.com/SimonAB/forge/releases/tag/v0.8.12">0.8.12</a> – 2026-03-21</h3>
+<h4 id="forgeapp-menubar-and-board">Forge.app (menubar and board)</h4>
 <ul>
 <li><strong>Default terminal</strong> — preferences can persist a chosen terminal (<code>config.yaml</code> <code>terminal:</code>): Auto, Ghostty, kitty, iTerm, Warp, <strong>cmux</strong>, or Terminal. <code>forge …</code> and editor launches honour this choice.</li>
 <li><strong>Vim in terminal</strong> — editor option renamed to <strong>“Vim (in selected terminal)”</strong>; legacy <strong>“Vim (in default terminal)”</strong> still maps correctly.</li>
 <li><strong>Centralised <code>EditorLauncher</code></strong> — shared open-file/folder logic for the terminal editor and GUI editors.</li>
 </ul>
-<h4>Terminal integration</h4>
+<h4 id="terminal-integration">Terminal integration</h4>
 <ul>
 <li><strong><code>TerminalLauncher</code></strong> — reliable launches per app (Ghostty surface config, kitty remote <code>launch</code>, iTerm/Terminal AppleScript, Warp YAML, cmux <code>new-pane</code> + <code>send</code>, fallbacks).</li>
 <li><strong><code>openNeovim</code></strong> — opens the real file with <strong><code>cd dir &amp;&amp; vim relative-file</code></strong> (bare <code>vim</code> on <code>PATH</code>); kitty still execs the <code>nvim</code> binary with a relative file argument.</li>
 <li><strong>Environment</strong> — resolve <strong><code>HOME</code></strong> from the login record (<code>getpwuid</code>) and set <strong><code>XDG_*</code></strong> / <strong><code>PATH</code></strong> so Neovim plugin managers (e.g. lazy.nvim) use the same data dirs as a normal shell.</li>
 <li><strong>cmux</strong> — warn when socket/automation mode blocks Forge; subprocess env allows automation where needed.</li>
 </ul>
-<h3><a href="https://github.com/SimonAB/forge/releases/tag/v0.8.11">0.8.11</a> – 2026-03-20</h3>
-<h4>Distribution</h4>
+<h3 id="0811-2026-03-20"><a href="https://github.com/SimonAB/forge/releases/tag/v0.8.11">0.8.11</a> – 2026-03-20</h3>
+<h4 id="distribution_1">Distribution</h4>
 <ul>
 <li>Ship the pre-built CLI as <strong>Apple Silicon (arm64) only</strong> — single <code>swift build</code> on <code>macos-15</code>, release asset <strong><code>forge-macos-arm64.zip</code></strong> (Intel: build from source). Update site and README download links accordingly.</li>
 </ul>
-<h3><a href="https://github.com/SimonAB/forge/releases/tag/v0.8.10">0.8.10</a> – 2026-03-20</h3>
-<h4>Distribution</h4>
+<h3 id="0810-2026-03-20"><a href="https://github.com/SimonAB/forge/releases/tag/v0.8.10">0.8.10</a> – 2026-03-20</h3>
+<h4 id="distribution_2">Distribution</h4>
 <ul>
 <li>Run the CLI release workflow on <strong>macos-15</strong> so Swift 6 matches <code>swift-tools-version 6.0</code>; keep universal builds via <code>swift build --triple</code> for both slices.</li>
 </ul>
-<h3><a href="https://github.com/SimonAB/forge/releases/tag/v0.8.9">0.8.9</a> – 2026-03-20</h3>
-<h4>Distribution</h4>
+<h3 id="089-2026-03-20"><a href="https://github.com/SimonAB/forge/releases/tag/v0.8.9">0.8.9</a> – 2026-03-20</h3>
+<h4 id="distribution_3">Distribution</h4>
 <ul>
 <li>Fix the release workflow: use <code>swift build --triple</code> for arm64 and x86_64 (the <code>--arch</code> flag is not accepted on the GitHub Actions Swift toolchain).</li>
 </ul>
-<h3><a href="https://github.com/SimonAB/forge/releases/tag/v0.8.8">0.8.8</a> – 2026-03-20</h3>
-<h4>Distribution</h4>
+<h3 id="088-2026-03-20"><a href="https://github.com/SimonAB/forge/releases/tag/v0.8.8">0.8.8</a> – 2026-03-20</h3>
+<h4 id="distribution_4">Distribution</h4>
 <ul>
 <li>Add a GitHub Actions workflow that builds a <strong>universal</strong> (arm64 + x86_64) <code>forge</code> CLI on each version tag and attaches <strong><code>forge-macos-universal.zip</code></strong> to the release (stable URL: <code>…/releases/latest/download/forge-macos-universal.zip</code>).</li>
 <li>Add <code>packaging/README-BINARY.txt</code> with install and Gatekeeper notes; link the download from the project site hero and the README quick start.</li>
 </ul>
-<h3><a href="https://github.com/SimonAB/forge/releases/tag/v0.8.6">0.8.6</a> – 2026-03-20</h3>
-<h4>Documentation and site</h4>
+<h3 id="086-2026-03-20"><a href="https://github.com/SimonAB/forge/releases/tag/v0.8.6">0.8.6</a> – 2026-03-20</h3>
+<h4 id="documentation-and-site">Documentation and site</h4>
 <ul>
 <li>Publish the main documentation as static HTML on the GitHub Pages site (<code>cli.html</code>, <code>app.html</code>, <code>neovim.html</code>, <code>manual.html</code>, <code>privacy.html</code>, <code>readme.html</code>), generated from markdown via <code>docs/build_site.py</code> and <code>docs/requirements.txt</code> (Python <code>markdown</code>).</li>
 <li>Extend the landing page navigation and cross-links to those pages; add shared <code>assets/theme.js</code> and prose styles in <code>assets/site.css</code>.</li>
 <li>Document regeneration steps and the page ↔ source mapping in the README <strong>Project website</strong> section.</li>
 </ul>
-<h3><a href="https://github.com/SimonAB/forge/releases/tag/v0.8.5">0.8.5</a> – 2026-03-20</h3>
-<h4>Documentation and site</h4>
+<h3 id="085-2026-03-20"><a href="https://github.com/SimonAB/forge/releases/tag/v0.8.5">0.8.5</a> – 2026-03-20</h3>
+<h4 id="documentation-and-site_1">Documentation and site</h4>
 <ul>
 <li>Add a static project landing page under <code>docs/</code> for GitHub Pages: hero, feature grid, forge/fire-themed styling (light/dark), quick start, and links to repository docs.</li>
 <li>Promote the live URL in the README and expand the <strong>Project website</strong> section with source file pointers and Pages setup.</li>
 </ul>
-<h3>[0.8.4] – 2026-03-20</h3>
-<h4>CLI due and review</h4>
+<h3 id="084-2026-03-20">[0.8.4] – 2026-03-20</h3>
+<h4 id="cli-due-and-review">CLI due and review</h4>
 <ul>
 <li><code>forge due --areas</code> now considers due dates in all markdown files under <code>Forge/tasks/</code>, including <code>inbox.md</code> and <code>someday-maybe.md</code>, and skips only the generated <code>due.md</code> summary (avoids feedback loops).</li>
 <li><code>forge review</code> prints task IDs on key list items so you can jump straight to <code>forge done</code> / edits.</li>
 </ul>
-<h3>[0.8.3] – 2026-03-18</h3>
-<h4>Sync correctness future-proofing</h4>
+<h3 id="083-2026-03-18">[0.8.3] – 2026-03-18</h3>
+<h4 id="sync-correctness-future-proofing">Sync correctness future-proofing</h4>
 <ul>
 <li>Prefer a completed duplicate when the same task ID appears multiple times in markdown (so markdown completions propagate correctly).</li>
 <li>Add unit tests around sync input-selection and duplicate handling, plus refactor small decision helpers to be testable.</li>
 <li>Improve future reminder relinking by exposing looser signature helpers for unit testing.</li>
 </ul>
-<h3>[0.8.2] – 2026-03-18</h3>
-<h4>Menubar correctness and freshness</h4>
+<h3 id="082-2026-03-18">[0.8.2] – 2026-03-18</h3>
+<h4 id="menubar-correctness-and-freshness">Menubar correctness and freshness</h4>
 <ul>
 <li>Keep menubar overdue / due-today counts aligned with <code>forge due</code> by avoiding double-counting and refreshing cached results periodically.</li>
 <li>Make task discovery more robust in the menubar app by falling back to a bounded scan of configured project roots when the task index database is unavailable.</li>
 </ul>
-<h3>[0.8.1] – 2026-03-17</h3>
-<h4>Menubar and sync correctness</h4>
+<h3 id="081-2026-03-17">[0.8.1] – 2026-03-17</h3>
+<h4 id="menubar-and-sync-correctness">Menubar and sync correctness</h4>
 <ul>
 <li>Fix the menubar dropdown counts (overdue / due today) not always updating after a sync completes.</li>
 <li>Pull reminder due-date changes from Reminders.app back into markdown during sync.</li>
 <li>Ensure the board app’s toolbar refresh runs an in-process background sync (same as the menubar app) before reloading projects.</li>
 </ul>
-<h3>[0.8.0] – 2026-03-13</h3>
-<h4>Board Radar and delegation polish</h4>
+<h3 id="080-2026-03-13">[0.8.0] – 2026-03-13</h3>
+<h4 id="board-radar-and-delegation-polish">Board Radar and delegation polish</h4>
 <ul>
 <li>Add a <strong>Radar</strong> filter to the kanban board that slices projects into three buckets based on urgency and neglect:</li>
 <li><strong>Calm</strong> – recently-touched, non-urgent projects.</li>
@@ -305,13 +309,13 @@ or <code>TASKS.md</code> indexing describe historical behaviour.</p>
 <li>Replace the generic meta-tag picker with the Radar picker so urgency and neglect are first-class filters.</li>
 <li>Rename the top-level delegation filter label from "All" to "Delegation" while keeping assignee filtering unchanged.</li>
 </ul>
-<h3>[0.7.1] – 2026-03-13</h3>
-<h4>Documentation</h4>
+<h3 id="071-2026-03-13">[0.7.1] – 2026-03-13</h3>
+<h4 id="documentation">Documentation</h4>
 <ul>
 <li>Add a “Who is Forge for?” section to the README and user manual, clarifying that Forge is a files-first, tag-driven system combining kanban-style project flow with GTD-inspired task management.</li>
 </ul>
-<h3>[0.7.0] – 2026-03-12</h3>
-<h4>Linting and task discovery</h4>
+<h3 id="070-2026-03-12">[0.7.0] – 2026-03-12</h3>
+<h4 id="linting-and-task-discovery">Linting and task discovery</h4>
 <ul>
 <li>Preserve <code>## Notes</code> sections in <code>TASKS.md</code> files when <code>forge lint --fix</code> runs and ensure canonical section order is <code>Next Actions</code>, <code>Waiting For</code>, <code>Completed</code>, <code>Notes</code>.</li>
 <li>Tighten heading and list formatting rules:</li>
@@ -324,13 +328,13 @@ or <code>TASKS.md</code> indexing describe historical behaviour.</p>
 <li>Add a <code>forceFullRescan</code> flag on <code>DatabaseTaskIndex</code> and thread it through <code>TaskDiscoveryService</code>.</li>
 <li>Expose <code>--rebuild-index</code> flags on <code>forge sync</code> and <code>forge due</code> to force a fresh recursive scan of project roots and rebuild the task index database.</li>
 </ul>
-<h3>[0.6.2] – 2026-03-10</h3>
-<h4>Menubar and board</h4>
+<h3 id="062-2026-03-10">[0.6.2] – 2026-03-10</h3>
+<h4 id="menubar-and-board">Menubar and board</h4>
 <ul>
 <li>Refresh the kanban board view after each background sync (or “Sync Now”) so that newly applied Finder tags (e.g. column tags) and meta tags appear without reopening the board or restarting the app.</li>
 </ul>
-<h3>[0.6.1] – 2026-03-10</h3>
-<h4>Privacy, licensing, and install UX</h4>
+<h3 id="061-2026-03-10">[0.6.1] – 2026-03-10</h3>
+<h4 id="privacy-licensing-and-install-ux">Privacy, licensing, and install UX</h4>
 <ul>
 <li>Clarify Forge’s <strong>local-first, privacy-respecting</strong> data model in the README and manual, including how markdown files, the task file database, and Reminders/Calendar sync fit together.</li>
 <li>Add a dedicated <code>PRIVACY.md</code> describing what Forge stores, how sync works via macOS frameworks, and how to run in markdown-only or local-only modes.</li>
@@ -338,14 +342,14 @@ or <code>TASKS.md</code> indexing describe historical behaviour.</p>
 <li>Update <code>.gitignore</code> to exclude <code>tasks/</code>, <code>.cache/</code>, and local <code>config.yaml</code> files so private task content, caches, and machine-specific configuration are not committed.</li>
 <li>Replace the tracked <code>config.yaml</code> with a sanitised <code>config.sample.yaml</code> that new users can copy and edit locally.</li>
 </ul>
-<h4>Build script and menubar polish</h4>
+<h4 id="build-script-and-menubar-polish">Build script and menubar polish</h4>
 <ul>
 <li>Harden <code>build.sh</code> with a Swift toolchain check and clearer messaging, and warn when the chosen install directory for <code>forge</code> is not on <code>PATH</code>.</li>
 <li>Improve the Forge.app About panel copy to emphasise that all data stays in your own files.</li>
 <li>Add a small initial-sync window in the menubar app so the first background sync is visible without being modal.</li>
 </ul>
-<h3>[0.6.0] – 2026-03-10</h3>
-<h4>Delegated projects and tasks</h4>
+<h3 id="060-2026-03-10">[0.6.0] – 2026-03-10</h3>
+<h4 id="delegated-projects-and-tasks">Delegated projects and tasks</h4>
 <ul>
 <li>Treat Finder tags starting with <code>#</code> on project folders (for example <code>#PeggySue</code>) as person tags and surface them as <code>assignees</code> on <code>Project</code> values.</li>
 <li>Extend the kanban board UI to show assignees on project cards and add an <strong>Assignee</strong> filter alongside existing column/meta/domain filters.</li>
@@ -353,7 +357,7 @@ or <code>TASKS.md</code> indexing describe historical behaviour.</p>
 <li><code>forge board --assignee Name</code> filters projects by <code>#Name</code>.</li>
 <li>The list view shows both meta tags and <code>@Name</code> assignees.</li>
 </ul>
-<h4>Task-level delegation and CLI filters</h4>
+<h4 id="task-level-delegation-and-cli-filters">Task-level delegation and CLI filters</h4>
 <ul>
 <li>Extend <code>ForgeTask</code> and <code>MarkdownIO</code> to support task-level assignees via an inline <code>@person(#Name)</code> tag, in addition to existing <code>@waiting(Name)</code> semantics.</li>
 <li>Add a shared helper on <code>ForgeTask</code> so CLI commands can match both explicit assignees and <code>waitingOn</code> names consistently.</li>
@@ -362,7 +366,7 @@ or <code>TASKS.md</code> indexing describe historical behaviour.</p>
 <li><code>forge due</code> – filter due and upcoming tasks by assignee and show assignees in the output.</li>
 <li><code>forge waiting</code> – narrow waiting-for items to a specific person.</li>
 </ul>
-<h4>Delegated overview and menubar integration</h4>
+<h4 id="delegated-overview-and-menubar-integration">Delegated overview and menubar integration</h4>
 <ul>
 <li>Add a new <code>forge delegated</code> command that lists all delegated tasks (non-completed, non-deferred with an assignee) grouped by assignee and then by project/area.</li>
 <li>Extend the menubar app with a Delegation submenu (backed by a small list of favourite assignees) which can open:</li>
@@ -370,13 +374,13 @@ or <code>TASKS.md</code> indexing describe historical behaviour.</p>
 <li><code>forge next --assignee Name</code></li>
 <li><code>forge waiting --assignee Name</code></li>
 </ul>
-<h3>[0.5.0] – 2026-03-10</h3>
-<h4>Performance</h4>
+<h3 id="050-2026-03-10">[0.5.0] – 2026-03-10</h3>
+<h4 id="performance">Performance</h4>
 <ul>
 <li>Introduce a SQLite-backed task file database (<code>TaskFileDatabase</code>) to cache project and area task files and their metadata.</li>
 <li>Replace hot-path <code>TaskFileFinder.findAll</code> calls with a database-backed <code>TaskIndex</code> (<code>DatabaseTaskIndex</code>) and a one-off <code>TaskDiscoveryService</code>, substantially reducing repeated filesystem walks on <code>forge sync</code>, <code>forge due</code>, and menubar refresh.</li>
 </ul>
-<h4>Behaviour and architecture</h4>
+<h4 id="behaviour-and-architecture">Behaviour and architecture</h4>
 <ul>
 <li>Wire <code>SyncEngine</code>, the CLI <code>forge sync</code>/<code>forge due</code> commands, and the menubar app to use the database-backed task index for <code>TASKS.md</code> discovery.</li>
 <li>Lay the groundwork for future incremental updates and cached counts (via <code>TaskFileDatabase.filesNeedingParse</code>, <code>updateCounts</code>, and <code>aggregateCounts</code>) without changing user-visible behaviour.</li>
@@ -385,8 +389,8 @@ or <code>TASKS.md</code> indexing describe historical behaviour.</p>
 <li>A high-level Forge user manual describing core concepts, sync behaviour, and typical workflows (<code>docs/forge-manual.md</code>).</li>
 <li>Updated performance benchmarking guidance that explains how and when Forge syncs with Reminders and Calendar.</li>
 </ul>
-<h3><a href="https://github.com/your-org/forge/releases/tag/v0.4.0">0.4.0</a> – 2026-03-10</h3>
-<h4>Performance</h4>
+<h3 id="040-2026-03-10"><a href="https://github.com/your-org/forge/releases/tag/v0.4.0">0.4.0</a> – 2026-03-10</h3>
+<h4 id="performance_1">Performance</h4>
 <ul>
 <li>Cache project <code>TASKS.md</code> discovery via a shared task index to avoid repeated deep filesystem walks (<code>df0da65</code>).</li>
 <li>Improve menubar and CLI performance by refining recursive <code>TASKS.md</code> discovery under project roots (<code>f999cc8</code>, <code>937bed1</code>, <code>c695eec</code>).</li>
@@ -394,7 +398,7 @@ or <code>TASKS.md</code> indexing describe historical behaviour.</p>
 <li>Add several rounds of performance tuning across the CLI and menubar:</li>
 <li>Limit markdown size and Finder tag operations, and make CLI scans more asynchronous (<code>48df623</code>, <code>7dc44f2</code>, <code>501887e</code>, <code>ba6bbda</code>).</li>
 </ul>
-<h4>Behaviour and features</h4>
+<h4 id="behaviour-and-features">Behaviour and features</h4>
 <ul>
 <li>Improve calendar event deduplication to avoid duplicate events for the same task (<code>c654a75</code>, <code>8253020</code>).</li>
 <li>Refine inbox processing flow to better fit GTD-style capture and clarify how items move from inbox into projects and areas (<code>83ae89c</code>).</li>
@@ -411,7 +415,7 @@ or <code>TASKS.md</code> indexing describe historical behaviour.</p>
 <li>Extend CLI commands to use the shared <code>taskFilesRoot</code> for all task-related operations (<code>ee4aaf9</code>, <code>60e8246</code>).</li>
 <li>Add and refine the board UI (<code>6b4fa73</code>, <code>02c1616</code>).</li>
 </ul>
-<h4>Menubar and board app</h4>
+<h4 id="menubar-and-board-app">Menubar and board app</h4>
 <ul>
 <li>Improve the menubar app:</li>
 <li>Use Forge <code>tasks</code> paths consistently for task files.</li>
@@ -419,7 +423,7 @@ or <code>TASKS.md</code> indexing describe historical behaviour.</p>
 <li>Fix menubar overdue count and address Calendar sendability warnings (<code>4a51103</code>).</li>
 <li>Add a dedicated board app (<code>forge-board</code>) backed by the same ForgeCore and ForgeUI components (<code>6b4fa73</code>).</li>
 </ul>
-<h4>Configuration and tooling</h4>
+<h4 id="configuration-and-tooling">Configuration and tooling</h4>
 <ul>
 <li>Tidy configuration:</li>
 <li>Simplify project roots and improve shortcuts preferences layout (<code>250bc69</code>, <code>e7f1f26</code>).</li>
@@ -440,6 +444,6 @@ or <code>TASKS.md</code> indexing describe historical behaviour.</p>
       </p>
       <p>Released under the Apache License, Version 2.0.</p>
     </footer>
-    <script src="assets/theme.js?v=3"></script>
+    <script src="assets/theme.js?v=4"></script>
   </body>
 </html>

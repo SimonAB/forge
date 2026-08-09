@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Neovim integration · Forge</title>
-    <meta name="description" content="Keymaps, commands, and dashboard integration for Forge in Neovim." />
+    <title>OmniFocus · Forge</title>
+    <meta name="description" content="Optional OmniFocus bridge: doctor, align, Refresh, and sync directions." />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -44,7 +44,7 @@
   <a class="site-nav__link" href="cli.html">CLI</a>
   <a class="site-nav__link" href="app.html">Forge.app</a>
   <a class="site-nav__link" href="hermes.html">Hermes</a>
-  <a class="site-nav__link is-active" href="neovim.html">Neovim</a>
+  <a class="site-nav__link" href="neovim.html">Neovim</a>
   <a class="site-nav__link" href="manual.html">Manual</a>
   <a class="site-nav__link" href="privacy.html">Privacy</a>
   <a class="site-nav__link" href="readme.html">Readme</a>
@@ -83,125 +83,56 @@
     </header>
     <main id="main" class="doc-page">
       <article class="doc-content">
-<h1 id="forge-neovim-integration">Forge — Neovim integration</h1>
-<p>Forge no longer includes a GTD task system. If you use a Neovim plugin to integrate with Forge, keep it focused on <strong>kanban + Finder-tag project management</strong> commands.</p>
-<p><strong>File:</strong> <code>~/.config/nvim/lua/plugins/forge-nvim.lua</code></p>
-<h2 id="dependencies">Dependencies</h2>
+<h1 id="omnifocus-optional">OmniFocus (optional)</h1>
+<p>Forge can optionally keep kanban columns in step with <strong>OmniFocus</strong> via Omni
+Automation (OmniJS). Mutating commands default to <strong>dry-run</strong>; nothing is written
+until you apply a plan.</p>
+<h2 id="enable">Enable</h2>
+<p>Set <code>omnifocus.enabled: true</code> in <code>config.yaml</code>, or open
+<strong>Forge → Preferences → OmniFocus</strong>.</p>
+<p>Requires OmniFocus installed and Automation permission for your terminal and/or
+Forge.app. Data stays on your Mac.</p>
+<h2 id="typical-flow">Typical flow</h2>
+<pre><code class="language-bash">forge omnifocus doctor              # check links and drift
+forge omnifocus align               # dry-run plan
+forge omnifocus align --apply       # write after confirmation
+</code></pre>
+<p>In the menu bar: <strong>OmniFocus Align…</strong> (preview, then Apply).</p>
+<h2 id="sync-directions">Sync directions</h2>
 <table>
 <thead>
 <tr>
-<th>Plugin</th>
-<th>Role</th>
+<th>Direction</th>
+<th>When</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><a href="https://github.com/akinsho/toggleterm.nvim">toggleterm.nvim</a></td>
-<td>Terminal panes for CLI output</td>
+<td>Finder → OmniFocus</td>
+<td><code>forge move</code> / board drag, if <code>sync_on_move</code> is on</td>
 </tr>
 <tr>
-<td><a href="https://github.com/nvim-telescope/telescope.nvim">telescope.nvim</a></td>
-<td>Fuzzy file browsing and grep within your project roots</td>
+<td>OmniFocus → Finder</td>
+<td>Board <strong>Refresh</strong>, or <code>forge omnifocus refresh --apply-finder</code>, if <code>sync_from_omnifocus</code> is on</td>
 </tr>
 <tr>
-<td><a href="https://github.com/folke/which-key.nvim">which-key.nvim</a></td>
-<td>Displays <code>&lt;leader&gt;F</code> group in the keymap popup</td>
-</tr>
-<tr>
-<td><a href="https://github.com/echasnovski/mini.starter">mini.starter</a></td>
-<td>Dashboard section with Forge shortcuts</td>
+<td>Completed OF project → Shipped</td>
+<td>Refresh, if <code>sync_completed_project_to_shipped</code> is on</td>
 </tr>
 </tbody>
 </table>
-<p>All dependencies should be optional (<code>pcall</code>) so the plugin degrades gracefully.</p>
-<h2 id="suggested-keymaps">Suggested keymaps</h2>
-<p>All keymaps use the <code>&lt;leader&gt;F</code> prefix (normal mode).</p>
-<h3 id="view-commands">View commands</h3>
-<p>Read-only output in a terminal pane. Press <code>q</code> to close.</p>
-<table>
-<thead>
-<tr>
-<th>Key</th>
-<th>Command</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>&lt;leader&gt;Fb</code></td>
-<td><code>forge board --list</code></td>
-<td>Kanban board (list view)</td>
-</tr>
-<tr>
-<td><code>&lt;leader&gt;Ft</code></td>
-<td><code>forge status</code></td>
-<td>Project summary dashboard</td>
-</tr>
-<tr>
-<td><code>&lt;leader&gt;Fc</code></td>
-<td><code>forge calendar</code></td>
-<td>Upcoming Calendar events</td>
-</tr>
-</tbody>
-</table>
-<h3 id="project-maintenance">Project maintenance</h3>
-<table>
-<thead>
-<tr>
-<th>Key</th>
-<th>Command</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>&lt;leader&gt;Fm</code></td>
-<td><code>forge move</code></td>
-<td>Move a project to a column (interactive args in terminal)</td>
-</tr>
-<tr>
-<td><code>&lt;leader&gt;Ftg</code></td>
-<td><code>forge project-tag</code></td>
-<td>Add/remove/list Finder tags on a project folder</td>
-</tr>
-</tbody>
-</table>
-<h2 id="commands">Commands</h2>
-<p>If you expose Neovim commands, these cover the kanban-only surface area:</p>
-<table>
-<thead>
-<tr>
-<th>Command</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>:ForgeBoard</code></td>
-<td>Show kanban board</td>
-</tr>
-<tr>
-<td><code>:ForgeStatus</code></td>
-<td>Show project status dashboard</td>
-</tr>
-<tr>
-<td><code>:ForgeCalendar</code></td>
-<td>Show upcoming events</td>
-</tr>
-<tr>
-<td><code>:ForgeMove</code></td>
-<td>Move a project between columns</td>
-</tr>
-<tr>
-<td><code>:ForgeProjectTag</code></td>
-<td>Add/remove/list project tags</td>
-</tr>
-<tr>
-<td><code>:ForgeSetup</code></td>
-<td>Build and install Forge on this Mac (runs <code>build.sh</code>)</td>
-</tr>
-</tbody>
-</table>
+<p>Refresh does not push Finder columns onto OmniFocus. If doctor reports drift,
+<code>sync_on_move</code> skips OF writes unless you allow sync with drift or pass
+<code>forge move --force</code>.</p>
+<p>Link tags default to <code>🔥 Forge:&lt;name&gt;</code> (legacy <code>Forge:</code> still readable). Flat
+column aliases such as <code>Watch 🚧</code> are preferred when <code>flat_column_tags</code> is true.</p>
+<h2 id="further-reading">Further reading</h2>
+<ul>
+<li><a href="cli.html#forge-omnifocus">CLI <code>forge omnifocus</code></a></li>
+<li><a href="app.html#omnifocus-optional">Forge.app — OmniFocus</a></li>
+<li><a href="privacy.html">Privacy</a></li>
+<li><a href="https://github.com/SimonAB/forge/blob/main/packaging/omnifocus/README.md">Automation plug-in notes</a></li>
+</ul>
       </article>
     </main>
     <footer class="site-footer">

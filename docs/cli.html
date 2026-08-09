@@ -12,7 +12,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="assets/site.css?v=3" />
+    <link rel="stylesheet" href="assets/site.css?v=4" />
     <script>
       (function () {
         try {
@@ -83,11 +83,11 @@
     </header>
     <main id="main" class="doc-page">
       <article class="doc-content">
-<h1>Forge CLI</h1>
+<h1 id="forge-cli">Forge CLI</h1>
 <p>The <code>forge</code> command-line tool manages your kanban board from the terminal,
 operating directly on your project folders and their <strong>Finder tags</strong>. There are
 no remote services; commands read and write only local state.</p>
-<h2>Installing the CLI</h2>
+<h2 id="installing-the-cli">Installing the CLI</h2>
 <p>Forge bundles the <code>forge</code> binary inside <strong>Forge.app</strong> at <code>Contents/Resources/bin/forge</code>.</p>
 <p>To put <code>forge</code> on your <code>$PATH</code>:</p>
 <ol>
@@ -100,7 +100,7 @@ no remote services; commands read and write only local state.</p>
 <p>To remove it later, use <strong>Uninstall CLI…</strong> in the same Preferences section.</p>
 <pre><code>forge &lt;command&gt; [options]
 </code></pre>
-<h2>Commands at a glance</h2>
+<h2 id="commands-at-a-glance">Commands at a glance</h2>
 <table>
 <thead>
 <tr>
@@ -133,20 +133,24 @@ no remote services; commands read and write only local state.</p>
 <td><code>forge calendar</code> / <code>forge events</code></td>
 <td>List upcoming Calendar events (read-only; same command)</td>
 </tr>
+<tr>
+<td><code>forge omnifocus</code></td>
+<td>Optional OmniFocus bridge (<code>doctor</code>, <code>align</code>, <code>refresh</code>, …)</td>
+</tr>
 </tbody>
 </table>
 <p>Read-only brief (Python helper, not a <code>forge</code> subcommand):</p>
 <pre><code class="language-bash">python3 scripts/forge-brief.py
 </code></pre>
 <hr />
-<h2>forge init</h2>
+<h2 id="forge-init">forge init</h2>
 <p>Create a new Forge workspace directory with a starter <code>config.yaml</code>.
 If <code>config.yaml</code> already exists, the command reports that Forge is initialised
 and runs tag cleanup instead of overwriting the config.</p>
 <pre><code>forge init [--workspace &lt;path&gt;]
 </code></pre>
 <hr />
-<h2>forge board</h2>
+<h2 id="forge-board">forge board</h2>
 <p>Display the kanban board showing projects grouped by column.</p>
 <pre><code>forge board [--list] [--json] [--column &lt;name&gt;] [--assignee &lt;person&gt;]
 </code></pre>
@@ -188,7 +192,7 @@ forge board --json
 forge board --json -c Write
 </code></pre>
 <hr />
-<h2>forge move</h2>
+<h2 id="forge-move">forge move</h2>
 <p>Move a project to a different kanban column by changing its Finder tag.</p>
 <pre><code>forge move &lt;project&gt; &lt;column&gt; [--strict]
 </code></pre>
@@ -221,7 +225,7 @@ unblocked). Use <code>--strict</code> when you want the documented kanban transi
 forge move manuscript Write --strict
 </code></pre>
 <hr />
-<h2>forge project-tag</h2>
+<h2 id="forge-project-tag">forge project-tag</h2>
 <p>Add, remove, or list <strong>Finder tags</strong> on a project directory for <strong>meta</strong> (<code>board.meta_tags</code>) and <strong>assignee</strong> (<code>#Name</code>) labels. <strong>Kanban column</strong> (workflow) tags are only changed with <strong><code>forge move</code></strong> — this command refuses workflow tags so column state stays consistent.</p>
 <pre><code>forge project-tag add &lt;project&gt; &lt;tag&gt; [--force]
 forge project-tag remove &lt;project&gt; &lt;tag&gt; [--force]
@@ -278,7 +282,7 @@ forge project-tag remove Apodemus-DTV_Vaccines &quot;URGENT ⚠️&quot;
 forge project-tag list SomeProject --json
 </code></pre>
 <hr />
-<h2>forge calendar / forge events</h2>
+<h2 id="forge-calendar-forge-events">forge calendar / forge events</h2>
 <p>List upcoming events from <strong>Apple Calendar</strong> (read-only). <strong><code>forge events</code></strong> is an alias for <strong><code>forge calendar</code></strong> — use whichever you prefer. By default the window is the <strong>next 7 days</strong> from the start of today (local timezone).</p>
 <p>Uses EventKit on your Mac; nothing is written to Calendar. Optional <code>calendar.include</code> in
 <code>config.yaml</code> restricts which calendar <strong>titles</strong> are read (exact match); if
@@ -315,13 +319,13 @@ forge calendar --days 14 --start 2026-04-14
 forge calendar --json       # Structured output for assistants
 </code></pre>
 <hr />
-<h2>forge status</h2>
+<h2 id="forge-status">forge status</h2>
 <p>Print a compact histogram of projects per column, total/active counts, and how
 many projects carry an <strong>URGENT</strong>-prefixed meta tag.</p>
 <pre><code>forge status
 </code></pre>
 <hr />
-<h2>scripts/forge-brief.py</h2>
+<h2 id="scriptsforge-briefpy">scripts/forge-brief.py</h2>
 <p>Read-only operational brief built from <code>forge board --json</code> (and optionally
 <code>forge calendar --json</code>). Surfaces URGENT items, neglected projects, stuck
 in-flight work, column load, and hygiene notes.</p>
@@ -333,14 +337,14 @@ python3 scripts/forge-brief.py --calendar-calendars &quot;Work,Teaching&quot;
 <code>forge calendar</code> are included. Restrict titles with a comma-separated list when needed.</p>
 <p>This is <strong>not</strong> a <code>forge</code> subcommand; it requires <code>forge</code> on your <code>$PATH</code>.</p>
 <hr />
-<h2>Hermes + Ollama (local assistant)</h2>
+<h2 id="hermes-ollama-local-assistant">Hermes + Ollama (local assistant)</h2>
 <p>Privacy-first interactive kanban assistant. Plug-and-play setup from your Forge directory:</p>
 <pre><code class="language-bash">python3 scripts/setup-hermes-forge.py
 hermes skills list | grep forge-board
 </code></pre>
 <p>See <strong><code>docs/hermes.md</code></strong>. Forge.app → Preferences → <strong>Hermes</strong> runs the same checks.</p>
 <hr />
-<h2>forge omnifocus</h2>
+<h2 id="forge-omnifocus">forge omnifocus</h2>
 <p>Optional bridge to <strong>OmniFocus</strong> via Omni Automation (OmniJS). Requires
 <code>omnifocus.enabled: true</code> in <code>config.yaml</code>. Mutating commands <strong>default to
 dry-run</strong>; pass <code>--apply</code> (and confirm, unless <code>--yes</code>) before anything is written
@@ -365,7 +369,7 @@ forge omnifocus align --apply  # confirm when prompted
 <p>See <code>packaging/omnifocus/README.md</code> for the optional Automation plug-in and tag
 conventions (<code>🔥 Forge:…</code> by default, legacy <code>Forge:…</code> still readable; flat <code>column_tag_aliases</code> such as <code>Watch 🚧</code> when <code>flat_column_tags</code> is true; nested <code>KanbanStatus/…</code> / legacy <code>ForgeColumn/…</code> for fallback and migration).</p>
 <hr />
-<h2>Configuration: project roots</h2>
+<h2 id="configuration-project-roots">Configuration: project roots</h2>
 <p>Set <strong><code>project_roots</code></strong> to a list of paths. Forge scans each root for project
 folders up to <strong><code>project_scan_depth</code></strong> levels (default <code>1</code> = direct children only).
 The first path is used as the primary workspace (e.g. for resolving the Forge
@@ -398,6 +402,6 @@ are still read; Forge treats it as <code>project_roots: [&lt;path&gt;]</code>.</
       </p>
       <p>Released under the Apache License, Version 2.0.</p>
     </footer>
-    <script src="assets/theme.js?v=3"></script>
+    <script src="assets/theme.js?v=4"></script>
   </body>
 </html>

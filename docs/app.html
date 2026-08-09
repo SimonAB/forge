@@ -12,7 +12,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="assets/site.css?v=3" />
+    <link rel="stylesheet" href="assets/site.css?v=4" />
     <script>
       (function () {
         try {
@@ -83,14 +83,14 @@
     </header>
     <main id="main" class="doc-page">
       <article class="doc-content">
-<h1>Forge.app</h1>
+<h1 id="forgeapp">Forge.app</h1>
 <p>Forge.app is a macOS <strong>menu bar companion</strong> that runs in the background and
 provides quick access to your board and project workflows.</p>
-<h2>Setup</h2>
-<h3>Option A — GitHub release (pre-built app)</h3>
+<h2 id="setup">Setup</h2>
+<h3 id="option-a-github-release-pre-built-app">Option A — GitHub release (pre-built app)</h3>
 <p>Each <a href="https://github.com/SimonAB/forge/releases/latest">GitHub release</a> includes <strong><code>Forge-macos-arm64.app.zip</code></strong>. Unzip it and move <strong><code>Forge.app</code></strong> to <code>/Applications</code>. The zip is built with the same layout as <code>build.sh</code> (release configuration).</p>
 <p><strong>In-app updates (<a href="https://sparkle-project.org/">Sparkle</a>):</strong> once Forge is running from a proper <strong><code>Forge.app</code></strong> bundle (release install or <code>build.sh</code>), <strong>Forge → Check for Updates…</strong> and <strong>automatic checks</strong> (about once per day) use the appcast at <a href="https://raw.githubusercontent.com/SimonAB/forge/main/docs/appcast.xml"><code>docs/appcast.xml</code></a> on <code>main</code>. Sparkle downloads a signed <strong><code>Forge-macos-arm64.app.zip</code></strong> from <a href="https://github.com/SimonAB/forge/releases">GitHub Releases</a> and installs it using the standard Sparkle flow (including <strong>Install on quit</strong> when offered). Maintainer signing setup: <strong><code>packaging/SPARKLE_SIGNING.md</code></strong>.</p>
-<h3>Option B — <code>build.sh</code> (from source)</h3>
+<h3 id="option-b-buildsh-from-source">Option B — <code>build.sh</code> (from source)</h3>
 <p>Run the setup script on each Mac:</p>
 <pre><code class="language-bash">zsh ~/Documents/Forge/build.sh
 </code></pre>
@@ -111,18 +111,18 @@ provides quick access to your board and project workflows.</p>
    - <code>~/bin/forge</code> (recommended; no admin)
    - <code>/usr/local/bin/forge</code> (admin)</li>
 </ol>
-<h3>Icon generation</h3>
+<h3 id="icon-generation">Icon generation</h3>
 <p>The setup script calls <code>generate_icon.py</code> to create a themed app icon. This
 requires Python 3 with <a href="https://pypi.org/project/Pillow/">Pillow</a>:</p>
 <pre><code class="language-bash">pip3 install Pillow
 </code></pre>
 <p>If Pillow is not installed, the icon step is skipped and a default icon is used.</p>
-<h3>Launching from Spotlight</h3>
+<h3 id="launching-from-spotlight">Launching from Spotlight</h3>
 <p>Forge.app is installed in <code>/Applications</code>, so it is discoverable via Spotlight
 (Cmd+Space, type "Forge"). It appears in the Dock and in the application
 switcher (Cmd+Tab), and also shows a menu bar icon.</p>
 <hr />
-<h2>Menu bar icon</h2>
+<h2 id="menu-bar-icon">Menu bar icon</h2>
 <p>The status bar displays a hammer icon (SF Symbol <code>hammer.fill</code>). A badge
 indicates urgent items:</p>
 <table>
@@ -148,7 +148,7 @@ indicates urgent items:</p>
 </tbody>
 </table>
 <hr />
-<h2>Menu items</h2>
+<h2 id="menu-items">Menu items</h2>
 <table>
 <thead>
 <tr>
@@ -185,23 +185,23 @@ indicates urgent items:</p>
 </tr>
 </tbody>
 </table>
-<h3>Preferences</h3>
+<h3 id="preferences">Preferences</h3>
 <p><strong>Forge → Preferences…</strong> opens a resizable tabbed window (default about 720×560;
 minimum 640×480). Brief and Workspace panels expand when you enlarge the window.</p>
-<h3>OmniFocus (optional)</h3>
+<h3 id="omnifocus-optional">OmniFocus (optional)</h3>
 <p>Enable under <strong>Preferences → OmniFocus</strong>. With <code>sync_on_move</code>, board column moves mirror onto linked OF tasks. With <code>sync_from_omnifocus</code>, board <strong>Refresh</strong> pulls OF column tags onto Finder (and clears stacked leftover OF kanban tags on those folders). Finder→OF is not rewritten from Refresh. With <code>sync_completed_project_to_shipped</code>, a completed/dropped OF <strong>project</strong> moves the matching Finder folder to <strong>Shipped</strong> on Refresh.</p>
-<p>CLI: <code>forge omnifocus doctor</code> → <code>align</code> (dry-run) → <code>align --apply</code>. See <a href="cli.md">cli.md</a> and <code>packaging/omnifocus/README.md</code>.</p>
+<p>CLI: <code>forge omnifocus doctor</code> → <code>align</code> (dry-run) → <code>align --apply</code>. See <a href="cli.html">cli.md</a> and <code>packaging/omnifocus/README.md</code>.</p>
 <hr />
-<h2>Quick capture</h2>
+<h2 id="quick-capture">Quick capture</h2>
 <p>Forge no longer includes a GTD task system, so there is no quick-capture panel.</p>
-<h2>Permissions</h2>
+<h2 id="permissions">Permissions</h2>
 <p>On first launch, macOS will prompt for access to:</p>
 <ul>
 <li><strong>Calendars</strong> — only if you use CLI commands that read Calendar (<code>forge calendar</code>). Forge does not modify calendar data.</li>
 </ul>
 <p>Grant access for full functionality. This is declared in the app's
 <code>Info.plist</code>.</p>
-<h3>Privacy and data flow</h3>
+<h3 id="privacy-and-data-flow">Privacy and data flow</h3>
 <ul>
 <li>Forge.app reads and writes only the Forge directory on your disk
   (configuration and caches), plus Finder tags on your project folders.</li>
@@ -218,7 +218,7 @@ minimum 640×480). Brief and Workspace panels expand when you enlarge the window
   inference; see <strong><code>docs/hermes.md</code></strong> and <strong><code>PRIVACY.md</code></strong> (<strong>AI assistants and local language models</strong>).</li>
 </ul>
 <hr />
-<h2>Brief (Preferences)</h2>
+<h2 id="brief-preferences">Brief (Preferences)</h2>
 <p>Open <strong>Forge → Preferences… → Brief</strong> to generate an LLM-assisted board summary via <strong>local Ollama</strong>.</p>
 <ul>
 <li>Default base URL: <code>http://127.0.0.1:11434/v1</code></li>
@@ -227,7 +227,7 @@ minimum 640×480). Brief and Workspace panels expand when you enlarge the window
 </ul>
 <p>For the full local kanban assistant (skills, terminal, tools), use <strong>Preferences → Hermes</strong>.</p>
 <hr />
-<h2>Hermes (Preferences)</h2>
+<h2 id="hermes-preferences">Hermes (Preferences)</h2>
 <p>Open <strong>Forge → Preferences… → Hermes</strong> for privacy-first local assistant setup.</p>
 <ul>
 <li><strong>Check setup</strong> — Ollama, Hermes, <code>forge</code> CLI, and <code>forge-board</code> skill status</li>
@@ -240,7 +240,7 @@ when Forge.app is launched from Finder (which otherwise sees a minimal GUI
 <code>PATH</code>). The same layout is applied when Forge opens a Terminal window.</p>
 <p>See <strong><code>docs/hermes.md</code></strong> for full instructions.</p>
 <hr />
-<h2>Configuration resolution</h2>
+<h2 id="configuration-resolution">Configuration resolution</h2>
 <p>Forge.app searches for <code>config.yaml</code> in this order:</p>
 <ol>
 <li>The most recently selected path via <strong>Forge → Preferences… → Choose config…</strong>.</li>
@@ -250,7 +250,7 @@ when Forge.app is launched from Finder (which otherwise sees a minimal GUI
 <p>The first match is used, and its parent directory becomes the Forge home
 directory.</p>
 <hr />
-<h2>Multi-Mac sync</h2>
+<h2 id="multi-mac-sync">Multi-Mac sync</h2>
 <p>The Forge source directory (<code>~/Documents/Forge/</code>) syncs via iCloud Drive. On
 each new Mac:</p>
 <ol>
@@ -269,6 +269,6 @@ each new Mac:</p>
       </p>
       <p>Released under the Apache License, Version 2.0.</p>
     </footer>
-    <script src="assets/theme.js?v=3"></script>
+    <script src="assets/theme.js?v=4"></script>
   </body>
 </html>

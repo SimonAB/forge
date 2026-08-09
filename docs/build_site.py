@@ -26,7 +26,7 @@ DOCS_DIR = Path(__file__).resolve().parent
 REPO_ROOT = DOCS_DIR.parent
 
 # Bust GitHub Pages CDN/browser caches when CSS/JS behaviour changes.
-DOCS_ASSET_VER = "3"
+DOCS_ASSET_VER = "4"
 
 GITHUB_BLOB = "https://github.com/SimonAB/forge/blob/main"
 
@@ -45,6 +45,7 @@ NAV_ITEMS: tuple[tuple[str, str, str], ...] = (
 MD_EXTENSIONS = (
     "markdown.extensions.extra",
     "markdown.extensions.sane_lists",
+    "markdown.extensions.toc",
 )
 
 # Inline before first paint: pinned light/dark only. "system" leaves classes off so
@@ -166,9 +167,19 @@ def _escape_meta(text: str) -> str:
     return text.replace("&", "&amp;").replace('"', "&quot;")
 
 
+def _strip_front_matter(text: str) -> str:
+    """Drop a leading YAML front-matter block (``---`` … ``---``)."""
+    if not text.startswith("---"):
+        return text
+    end = text.find("\n---", 3)
+    if end == -1:
+        return text
+    return text[end + 4 :].lstrip("\n")
+
+
 def _convert_markdown(text: str) -> str:
     md = markdown.Markdown(extensions=list(MD_EXTENSIONS))
-    return md.convert(text)
+    return md.convert(_strip_front_matter(text))
 
 
 def _rewrite_internal_links(html: str) -> str:
@@ -180,11 +191,30 @@ def _rewrite_internal_links(html: str) -> str:
     html = sub(r'href="docs/forge-manual\.md(#[^"]*)?"', r'href="manual.html\1"', html)
     html = sub(r'href="docs/cli\.md(#[^"]*)?"', r'href="cli.html\1"', html)
     html = sub(r'href="docs/app\.md(#[^"]*)?"', r'href="app.html\1"', html)
+    html = sub(r'href="docs/hermes\.md(#[^"]*)?"', r'href="hermes.html\1"', html)
     html = sub(r'href="docs/neovim\.md(#[^"]*)?"', r'href="neovim.html\1"', html)
+    html = sub(r'href="docs/kanban\.md(#[^"]*)?"', r'href="kanban.html\1"', html)
+    html = sub(r'href="docs/folders\.md(#[^"]*)?"', r'href="folders.html\1"', html)
+    html = sub(r'href="docs/finder-tags\.md(#[^"]*)?"', r'href="finder-tags.html\1"', html)
+    html = sub(r'href="docs/cli-and-apps\.md(#[^"]*)?"', r'href="cli-and-apps.html\1"', html)
+    html = sub(r'href="docs/omnifocus\.md(#[^"]*)?"', r'href="omnifocus.html\1"', html)
     html = sub(r'href="docs/index\.html(#[^"]*)?"', r'href="index.html\1"', html)
     html = sub(r'href="PRIVACY\.md(#[^"]*)?"', r'href="privacy.html\1"', html)
     html = sub(r'href="README\.md(#[^"]*)?"', r'href="readme.html\1"', html)
     html = sub(r'href="CHANGELOG\.md(#[^"]*)?"', r'href="changelog.html\1"', html)
+    html = sub(r'href="forge-manual\.md(#[^"]*)?"', r'href="manual.html\1"', html)
+    html = sub(r'href="cli\.md(#[^"]*)?"', r'href="cli.html\1"', html)
+    html = sub(r'href="app\.md(#[^"]*)?"', r'href="app.html\1"', html)
+    html = sub(r'href="hermes\.md(#[^"]*)?"', r'href="hermes.html\1"', html)
+    html = sub(r'href="neovim\.md(#[^"]*)?"', r'href="neovim.html\1"', html)
+    html = sub(r'href="kanban\.md(#[^"]*)?"', r'href="kanban.html\1"', html)
+    html = sub(r'href="folders\.md(#[^"]*)?"', r'href="folders.html\1"', html)
+    html = sub(r'href="finder-tags\.md(#[^"]*)?"', r'href="finder-tags.html\1"', html)
+    html = sub(r'href="cli-and-apps\.md(#[^"]*)?"', r'href="cli-and-apps.html\1"', html)
+    html = sub(r'href="omnifocus\.md(#[^"]*)?"', r'href="omnifocus.html\1"', html)
+    html = sub(r'href="\.\./PRIVACY\.md(#[^"]*)?"', r'href="privacy.html\1"', html)
+    html = sub(r'href="\.\./README\.md(#[^"]*)?"', r'href="readme.html\1"', html)
+    html = sub(r'href="\.\./CHANGELOG\.md(#[^"]*)?"', r'href="changelog.html\1"', html)
     html = sub(r'href="docs/assets/', 'href="assets/', html)
     html = sub(r'src="docs/favicon\.svg"', 'src="favicon.svg"', html)
     html = sub(r'href="docs/favicon\.svg"', 'href="favicon.svg"', html)
@@ -192,6 +222,21 @@ def _rewrite_internal_links(html: str) -> str:
     html = sub(
         r'href="config\.sample\.yaml(#[^"]*)?"',
         rf'href="{GITHUB_BLOB}/config.sample.yaml"',
+        html,
+    )
+    html = sub(
+        r'href="packaging/omnifocus/README\.md(#[^"]*)?"',
+        rf'href="{GITHUB_BLOB}/packaging/omnifocus/README.md\1"',
+        html,
+    )
+    html = sub(
+        r'href="\.\./AGENTS\.md(#[^"]*)?"',
+        rf'href="{GITHUB_BLOB}/AGENTS.md\1"',
+        html,
+    )
+    html = sub(
+        r'href="\.\./\.hermes/skills/forge-board/SKILL\.md(#[^"]*)?"',
+        rf'href="{GITHUB_BLOB}/.hermes/skills/forge-board/SKILL.md\1"',
         html,
     )
 
@@ -221,6 +266,41 @@ def build_page(
 
 
 def main() -> None:
+    build_page(
+        source=DOCS_DIR / "kanban.md",
+        out_name="kanban.html",
+        page_title="Kanban",
+        description="Finder-tag kanban columns, Radar, and where to work the board.",
+        active="",
+    )
+    build_page(
+        source=DOCS_DIR / "folders.md",
+        out_name="folders.html",
+        page_title="Folders first",
+        description="Projects as ordinary directories, project roots, and local visibility.",
+        active="",
+    )
+    build_page(
+        source=DOCS_DIR / "finder-tags.md",
+        out_name="finder-tags.html",
+        page_title="Finder tags",
+        description="Workflow columns, meta tags, assignees, and Finder/Spotlight visibility.",
+        active="",
+    )
+    build_page(
+        source=DOCS_DIR / "cli-and-apps.md",
+        out_name="cli-and-apps.html",
+        page_title="CLI & apps",
+        description="Forge CLI, Forge.app, and Neovim on the same folders-and-tags model.",
+        active="",
+    )
+    build_page(
+        source=DOCS_DIR / "omnifocus.md",
+        out_name="omnifocus.html",
+        page_title="OmniFocus",
+        description="Optional OmniFocus bridge: doctor, align, Refresh, and sync directions.",
+        active="",
+    )
     build_page(
         source=DOCS_DIR / "cli.md",
         out_name="cli.html",

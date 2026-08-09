@@ -15,7 +15,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="assets/site.css?v=3" />
+    <link rel="stylesheet" href="assets/site.css?v=4" />
     <script>
       (function () {
         try {
@@ -45,6 +45,7 @@
           <a class="site-nav__link is-active" href="index.html">Home</a>
           <a class="site-nav__link" href="cli.html">CLI</a>
           <a class="site-nav__link" href="app.html">Forge.app</a>
+          <a class="site-nav__link" href="hermes.html">Hermes</a>
           <a class="site-nav__link" href="neovim.html">Neovim</a>
           <a class="site-nav__link" href="manual.html">Manual</a>
           <a class="site-nav__link" href="privacy.html">Privacy</a>
@@ -110,6 +111,11 @@
             href="https://github.com/SimonAB/forge/releases/latest/download/forge-macos-arm64.zip"
             >Download CLI</a
           >
+          <a
+            class="btn btn--alt"
+            href="https://github.com/SimonAB/forge/releases/latest/download/Forge-macos-arm64.app.zip"
+            >Download Forge.app</a
+          >
           <a class="btn btn--alt" href="readme.html">Full readme</a>
           <a
             class="btn btn--alt"
@@ -120,53 +126,58 @@
           >
         </div>
         <p class="hero__download-note">
-          Pre-built <code class="inline-code">forge</code> (zip) for macOS 14+ on <strong>Apple Silicon</strong>.
-          Intel: build from source.
+          Pre-built <code class="inline-code">forge</code> CLI and <code class="inline-code">Forge.app</code>
+          (zips) for macOS 14+ on <strong>Apple Silicon</strong>. Intel: build from source.
+          In-app updates use <strong>Sparkle</strong>.
           <a
             href="https://github.com/SimonAB/forge/releases"
             target="_blank"
             rel="noopener noreferrer"
             >All releases</a
           >
-          · Unsigned; see <code class="inline-code">README-BINARY.txt</code> in the zip if Gatekeeper complains.
+          · Unsigned CLI zip; see <code class="inline-code">README-BINARY.txt</code> if Gatekeeper complains.
         </p>
       </section>
 
       <section class="features" aria-labelledby="features-heading">
         <h2 id="features-heading" class="visually-hidden">Features</h2>
         <div class="features__grid">
-          <article class="feature-card">
+          <a class="feature-card" href="kanban.html">
             <div class="feature-card__icon" aria-hidden="true">📋</div>
             <h3 class="feature-card__title">Kanban</h3>
             <p class="feature-card__text">
               Project columns driven by Finder tags, with quick filtering and a
               Radar view to surface stale or urgent work.
             </p>
-          </article>
-          <article class="feature-card">
+            <span class="feature-card__more">Kanban guide</span>
+          </a>
+          <a class="feature-card" href="folders.html">
             <div class="feature-card__icon" aria-hidden="true">📄</div>
             <h3 class="feature-card__title">Folders first</h3>
             <p class="feature-card__text">
               Projects are normal folders. State is visible in Finder, searchable via Spotlight,
               and version-controllable if you keep your workspace under git.
             </p>
-          </article>
-          <article class="feature-card">
+            <span class="feature-card__more">Folders guide</span>
+          </a>
+          <a class="feature-card" href="finder-tags.html">
             <div class="feature-card__icon" aria-hidden="true">🔄</div>
             <h3 class="feature-card__title">Finder tags</h3>
             <p class="feature-card__text">
               Column state and project metadata live in Finder tags, not a hosted database.
             </p>
-          </article>
-          <article class="feature-card">
+            <span class="feature-card__more">Tags guide</span>
+          </a>
+          <a class="feature-card" href="cli-and-apps.html">
             <div class="feature-card__icon" aria-hidden="true">⌨️</div>
             <h3 class="feature-card__title">CLI &amp; apps</h3>
             <p class="feature-card__text">
               The <code class="inline-code">forge</code> CLI for terminals, a menu bar
               companion for capture and sync, and a native board window for the big picture.
             </p>
-          </article>
-          <article class="feature-card">
+            <span class="feature-card__more">CLI &amp; apps</span>
+          </a>
+          <a class="feature-card" href="finder-tags.html#visible-outside-forge">
             <div class="feature-card__icon" aria-hidden="true">🏷️</div>
             <h3 class="feature-card__title">Finder integration</h3>
             <p class="feature-card__text">
@@ -174,25 +185,38 @@
               <code class="inline-code">#Alice</code> support assignees and metadata you
               can see outside Forge.
             </p>
-          </article>
-          <article class="feature-card">
+            <span class="feature-card__more">Finder visibility</span>
+          </a>
+          <a class="feature-card" href="privacy.html">
             <div class="feature-card__icon" aria-hidden="true">🔒</div>
             <h3 class="feature-card__title">Local-first privacy</h3>
             <p class="feature-card__text">
               No Forge cloud. A small local cache holds paths and timestamps — not your
-              task bodies. See the <a href="privacy.html">privacy overview</a> for detail.
+              task bodies.
             </p>
-          </article>
-          <article class="feature-card">
+            <span class="feature-card__more">Privacy overview</span>
+          </a>
+          <a class="feature-card" href="hermes.html">
             <div class="feature-card__icon" aria-hidden="true">🤖</div>
             <h3 class="feature-card__title">Assistants &amp; LLMs</h3>
             <p class="feature-card__text">
               Forge does not lock you into one AI stack. Prefer <strong>local inference</strong>
               (Hermes and Ollama) when task text should stay on your Mac, or use
               <strong>cloud</strong> models when you need more capability — adapt the pairing to
-              your risk and workflow. <a href="hermes.html">Hermes setup guide</a>.
+              your risk and workflow.
             </p>
-          </article>
+            <span class="feature-card__more">Hermes setup</span>
+          </a>
+          <a class="feature-card" href="omnifocus.html">
+            <div class="feature-card__icon" aria-hidden="true">🔗</div>
+            <h3 class="feature-card__title">OmniFocus (optional)</h3>
+            <p class="feature-card__text">
+              Optional OmniJS bridge: <code class="inline-code">doctor</code>,
+              <code class="inline-code">align</code>, and board <strong>Refresh</strong> keep
+              Finder columns in step with OmniFocus tags when you enable it.
+            </p>
+            <span class="feature-card__more">OmniFocus guide</span>
+          </a>
         </div>
       </section>
 
@@ -207,8 +231,9 @@
           <pre><code>forge board                 # Kanban overview
 forge board --json          # Machine-readable board
 forge move                  # Move project between columns
-forge project-tag list      # Inspect Finder tags
-forge project-tag add       # Add meta/assignee tags</code></pre>
+forge status                # Column counts and URGENT
+forge calendar              # Upcoming Calendar events (read-only)
+forge omnifocus doctor      # Optional OmniFocus bridge</code></pre>
         </div>
       </section>
 
@@ -225,26 +250,45 @@ forge project-tag add       # Add meta/assignee tags</code></pre>
             <strong>Python 3</strong> with Pillow (<code class="inline-code">pip3 install Pillow</code>)
             if you want the generated app icon
           </li>
+          <li>
+            <strong>Hermes Agent</strong> and <strong>Ollama</strong> for a privacy-first local
+            kanban assistant — <a href="hermes.html">setup guide</a>
+          </li>
+          <li>
+            <strong>OmniFocus</strong> if you want the optional tag bridge
+            (<code class="inline-code">forge omnifocus</code>)
+          </li>
+          <li>
+            <strong>Calendar</strong> access for <code class="inline-code">forge calendar</code>
+            and briefs (read-only)
+          </li>
         </ul>
       </section>
 
       <section class="section" id="quick-start" aria-labelledby="quick-start-title">
         <h2 id="quick-start-title" class="section__title">Quick start</h2>
         <p class="section__lead">
-          For the <strong>CLI only</strong> on Apple Silicon, you can
+          On Apple Silicon, download the pre-built
           <a
             href="https://github.com/SimonAB/forge/releases/latest/download/forge-macos-arm64.zip"
-            >download the latest arm64 zip</a
+            >CLI zip</a
           >
-          (no Xcode required to run the pre-built binary). For
-          <code class="inline-code">Forge.app</code>, the board, and a full local install, use
-          the build script below.
+          and/or
+          <a
+            href="https://github.com/SimonAB/forge/releases/latest/download/Forge-macos-arm64.app.zip"
+            ><code class="inline-code">Forge.app</code> zip</a
+          >
+          (no Xcode required). Unzip the app and drag it into
+          <strong>Applications</strong>; updates use Sparkle
+          (<strong>Check for Updates…</strong>).
         </p>
         <p class="section__lead">
-          After cloning or syncing the repository to your Mac, run the build script once
-          per machine. It compiles the Swift package, installs the binary, creates
+          To build from source (Intel, or after syncing the repository), run the script
+          once per machine. It compiles the Swift package, creates
           <code class="inline-code">Forge.app</code>, and registers a launch agent for the
-          menu bar app.
+          menu bar app. Put <code class="inline-code">forge</code> on your
+          <code class="inline-code">$PATH</code> via
+          <strong>Forge → Preferences… → Install CLI…</strong>.
         </p>
         <div class="code-block">
           <span class="code-block__label">bash</span>
@@ -286,7 +330,7 @@ zsh ~/Documents/Forge/build.sh</code></pre>
                   >source</a
                 >
               </td>
-              <td>Boards and project tagging from the terminal.</td>
+              <td>Boards, tags, calendar, and optional OmniFocus bridge from the terminal.</td>
             </tr>
             <tr>
               <td>
@@ -300,6 +344,19 @@ zsh ~/Documents/Forge/build.sh</code></pre>
                 >
               </td>
               <td>Menu bar companion and board window.</td>
+            </tr>
+            <tr>
+              <td>
+                <a href="hermes.html">Hermes + Ollama</a>
+                ·
+                <a
+                  href="https://github.com/SimonAB/forge/blob/main/docs/hermes.md"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >source</a
+                >
+              </td>
+              <td>Privacy-first local assistant; plug-and-play <code class="inline-code">forge-board</code> skill.</td>
             </tr>
             <tr>
               <td>
@@ -342,11 +399,18 @@ zsh ~/Documents/Forge/build.sh</code></pre>
       <section class="section" id="documentation" aria-labelledby="documentation-title">
         <h2 id="documentation-title" class="section__title">Documentation</h2>
         <p class="section__lead">
-          Full guides and the changelog are published as pages below (generated from the same
-          markdown as the repository). Each page links to its <strong>source</strong> file on
-          GitHub for edits.
+          Feature cards above open short guides. Full reference and the changelog are
+          published as pages below (generated from the same markdown as the repository).
+          Each page links to its <strong>source</strong> file on GitHub for edits.
         </p>
         <ol class="doc-list">
+          <li>
+            <a href="kanban.html">Kanban</a>
+            · <a href="folders.html">Folders first</a>
+            · <a href="finder-tags.html">Finder tags</a>
+            · <a href="cli-and-apps.html">CLI &amp; apps</a>
+            · <a href="omnifocus.html">OmniFocus</a>
+          </li>
           <li>
             <a href="readme.html">Project readme</a>
             (<a
@@ -373,6 +437,15 @@ zsh ~/Documents/Forge/build.sh</code></pre>
               rel="noopener noreferrer"
               >source</a
             >) — menu bar app setup and behaviour
+          </li>
+          <li>
+            <a href="hermes.html">Hermes + Ollama</a>
+            (<a
+              href="https://github.com/SimonAB/forge/blob/main/docs/hermes.md"
+              target="_blank"
+              rel="noopener noreferrer"
+              >source</a
+            >) — local assistant setup
           </li>
           <li>
             <a href="neovim.html">Neovim integration</a>
@@ -419,6 +492,6 @@ zsh ~/Documents/Forge/build.sh</code></pre>
       <p>Forge</p>
     </footer>
 
-    <script src="assets/theme.js?v=3"></script>
+    <script src="assets/theme.js?v=4"></script>
   </body>
 </html>

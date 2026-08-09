@@ -12,7 +12,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="assets/site.css?v=3" />
+    <link rel="stylesheet" href="assets/site.css?v=4" />
     <script>
       (function () {
         try {
@@ -83,9 +83,7 @@
     </header>
     <main id="main" class="doc-page">
       <article class="doc-content">
-<hr />
-<h2>title: Forge user manual</h2>
-<h2>Overview</h2>
+<h2 id="overview">Overview</h2>
 <p>Forge is a local-first project manager that combines:</p>
 <ul>
 <li>A kanban-style board for visualising work-in-progress.</li>
@@ -93,7 +91,7 @@
 <li>A small menu bar companion and a board window for day-to-day use.</li>
 </ul>
 <p>This document explains how Forge fits together and how to use it day-to-day.</p>
-<h2>Who is Forge for?</h2>
+<h2 id="who-is-forge-for">Who is Forge for?</h2>
 <p>Forge is for people who want a transparent, files-first system:</p>
 <ul>
 <li>Projects are normal folders.</li>
@@ -105,13 +103,13 @@
 <li>Want a kanban view for project flow without a hosted backend.</li>
 <li>Care about local-first privacy and want to avoid hosted task servers.</li>
 </ul>
-<h2>Optional: AI assistants and privacy</h2>
+<h2 id="optional-ai-assistants-and-privacy">Optional: AI assistants and privacy</h2>
 <p>Some people paste <code>forge board --json</code> output or project paths into a coding assistant. For
 <strong>privacy</strong>, this project recommends <strong>Hermes Agent</strong> with <strong>Ollama</strong>
 (install Ollama, install Hermes, run <code>python3 scripts/setup-hermes-forge.py</code> —
 see <strong><code>docs/hermes.md</code></strong> and <strong><code>PRIVACY.md</code></strong>, section <strong>AI assistants and local
 language models</strong>).</p>
-<h2>Core concepts</h2>
+<h2 id="core-concepts">Core concepts</h2>
 <ul>
 <li><strong>Forge directory</strong>: A folder (often <code>~/Documents/Forge</code>) containing:</li>
 <li><code>config.yaml</code> – Forge configuration.</li>
@@ -122,7 +120,7 @@ language models</strong>).</p>
 <li><strong>Privacy</strong>:</li>
 <li>There are no Forge-hosted services: your project data stays on disk as ordinary folders and Finder tags.</li>
 </ul>
-<h2>Components</h2>
+<h2 id="components">Components</h2>
 <ul>
 <li><strong>CLI (<code>forge</code> command)</strong>:</li>
 <li><code>forge board</code> / <code>forge board --json</code> — kanban board (and machine-readable output for scripts).</li>
@@ -141,8 +139,8 @@ language models</strong>).</p>
 </li>
 <li>A windowed kanban board for projects, driven by Finder tags.</li>
 </ul>
-<h2>Typical workflows</h2>
-<h3>Delegated work and assignees</h3>
+<h2 id="typical-workflows">Typical workflows</h2>
+<h3 id="delegated-work-and-assignees">Delegated work and assignees</h3>
 <ul>
 <li>Use <strong>Finder tags starting with <code>#</code></strong> on project folders (for example <code>#PeggySue</code>) to mark who a project is delegated to.</li>
 <li>In the <strong>board app</strong>:</li>
@@ -151,12 +149,12 @@ language models</strong>).</p>
 <li>In the <strong>CLI</strong>:</li>
 <li><code>forge board --assignee PeggySue</code> shows only projects tagged with <code>#PeggySue</code>.</li>
 </ul>
-<h3>3. Working from the board</h3>
+<h3 id="3-working-from-the-board">3. Working from the board</h3>
 <ul>
 <li>Use <code>forge board</code> in the terminal or the Forge board app to see your work laid out in columns.</li>
 <li>Moving projects between columns updates Finder tags on the project folders.</li>
 </ul>
-<h3>3.1 Radar view for projects</h3>
+<h3 id="31-radar-view-for-projects">3.1 Radar view for projects</h3>
 <ul>
 <li>The board toolbar includes a <strong>Radar</strong> picker that slices projects into three buckets:</li>
 <li><strong>Calm</strong> – recently-touched, non-urgent projects.</li>
@@ -164,7 +162,7 @@ language models</strong>).</p>
 <li><strong>Heat</strong> – explicitly urgent projects (tagged with an <code>URGENT…</code> meta tag such as <code>URGENT ⚠️</code>), or projects that have been neglected for several weeks.</li>
 <li>Radar combines these signals so you can quickly surface projects that are both <strong>time-sensitive</strong> and <strong>at risk of being forgotten</strong>, without changing any underlying tags or files.</li>
 </ul>
-<h2>Where to look when something seems off</h2>
+<h2 id="where-to-look-when-something-seems-off">Where to look when something seems off</h2>
 <ul>
 <li><strong>Projects missing from the board</strong>:</li>
 <li>Check <code>config.yaml</code> to ensure your <code>project_roots</code> point at the correct workspace directories.</li>
@@ -188,6 +186,6 @@ language models</strong>).</p>
       </p>
       <p>Released under the Apache License, Version 2.0.</p>
     </footer>
-    <script src="assets/theme.js?v=3"></script>
+    <script src="assets/theme.js?v=4"></script>
   </body>
 </html>

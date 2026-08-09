@@ -32,6 +32,7 @@ forge <command> [options]
 | `forge project-tag` | Add, remove, or list meta / assignee Finder tags on a project folder |
 | `forge status` | Summary dashboard of all projects (column counts, active, URGENT) |
 | `forge calendar` / `forge events` | List upcoming Calendar events (read-only; same command) |
+| `forge omnifocus` | Optional OmniFocus bridge (`doctor`, `align`, `refresh`, …) |
 
 Read-only brief (Python helper, not a `forge` subcommand):
 

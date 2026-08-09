@@ -12,7 +12,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="assets/site.css?v=3" />
+    <link rel="stylesheet" href="assets/site.css?v=4" />
     <script>
       (function () {
         try {
@@ -83,9 +83,9 @@
     </header>
     <main id="main" class="doc-page">
       <article class="doc-content">
-<h1>Hermes + Forge (local assistant)</h1>
+<h1 id="hermes-forge-local-assistant">Hermes + Forge (local assistant)</h1>
 <p>Forge recommends <strong><a href="https://hermes-agent.nousresearch.com/">Hermes Agent</a></strong> with <strong><a href="https://ollama.com">Ollama</a></strong> for privacy-first LLM-assisted kanban work. Inference stays on your Mac; Forge does not send board data to any Forge-hosted service.</p>
-<h2>Privacy first</h2>
+<h2 id="privacy-first">Privacy first</h2>
 <table>
 <thead>
 <tr>
@@ -120,7 +120,7 @@
 <li>Brief base URL → <code>http://127.0.0.1:11434/v1</code> (or leave default).</li>
 </ol>
 <p>Forge has <strong>no telemetry</strong>. LLM egress is entirely under your control.</p>
-<h2>Requirements</h2>
+<h2 id="requirements">Requirements</h2>
 <ul>
 <li>macOS 14+</li>
 <li><a href="https://ollama.com">Ollama</a> running (menu bar app or <code>ollama serve</code>)</li>
@@ -128,7 +128,7 @@
 <li><code>forge</code> on <code>$PATH</code> (Forge → Preferences → Install CLI…)</li>
 <li>A tool-capable local model sized to your RAM (e.g. <code>qwen3-coder</code>, <code>qwen3.6</code> coding variants)</li>
 </ul>
-<h2>Quick setup (plug-and-play)</h2>
+<h2 id="quick-setup-plug-and-play">Quick setup (plug-and-play)</h2>
 <p>From your Forge directory:</p>
 <pre><code class="language-bash">python3 scripts/setup-hermes-forge.py
 </code></pre>
@@ -140,7 +140,7 @@
 </ul>
 <p>Flags: <code>--dry-run</code>, <code>--forge-home PATH</code>, <code>--skip-cursor-mcp</code>, <code>--verify-only</code>.</p>
 <p><strong>Forge.app:</strong> Preferences → <strong>Hermes</strong> tab → <strong>Check setup</strong> / <strong>Run setup in Terminal</strong>.</p>
-<h2>Verify</h2>
+<h2 id="verify">Verify</h2>
 <pre><code class="language-bash">python3 scripts/setup-hermes-forge.py --verify-only
 hermes skills list | grep forge-board
 forge status
@@ -152,7 +152,7 @@ hermes
 /skill:forge-board
 </code></pre>
 <p>Ask for a read-only brief first; approve any column or tag changes explicitly.</p>
-<h2>Daily use</h2>
+<h2 id="daily-use">Daily use</h2>
 <table>
 <thead>
 <tr>
@@ -180,7 +180,7 @@ hermes
 </tbody>
 </table>
 <p>Hermes follows the same approval gates as <code>AGENTS.md</code>: reads are safe; <code>forge move</code> and <code>forge project-tag</code> need your confirmation.</p>
-<h2>Cursor complement</h2>
+<h2 id="cursor-complement">Cursor complement</h2>
 <p>Cursor excels at in-repo coding. Hermes handles sensitive board context locally.</p>
 <p>Optional MCP bridge (after setup):</p>
 <pre><code class="language-json">{
@@ -193,7 +193,7 @@ hermes
 }
 </code></pre>
 <p>See <code>packaging/hermes/cursor-mcp.sample.json</code>. Restart Cursor after adding <code>~/.cursor/mcp.json</code>.</p>
-<h2>Troubleshooting</h2>
+<h2 id="troubleshooting">Troubleshooting</h2>
 <table>
 <thead>
 <tr>
@@ -228,13 +228,13 @@ hermes
 </tr>
 </tbody>
 </table>
-<h2>Lighter alternative: Pi</h2>
-<p>For a minimal terminal coding agent (no full Hermes stack), see <strong>Ollama with <a href="https://github.com/badlogic/pi-mono">Pi</a></strong> in <a href="../PRIVACY.md#ai-assistants"><code>PRIVACY.md</code></a>. Forge remains agnostic; Hermes is recommended for kanban skills and autonomous board workflows.</p>
-<h2>See also</h2>
+<h2 id="lighter-alternative-pi">Lighter alternative: Pi</h2>
+<p>For a minimal terminal coding agent (no full Hermes stack), see <strong>Ollama with <a href="https://github.com/badlogic/pi-mono">Pi</a></strong> in <a href="privacy.html#ai-assistants"><code>PRIVACY.md</code></a>. Forge remains agnostic; Hermes is recommended for kanban skills and autonomous board workflows.</p>
+<h2 id="see-also">See also</h2>
 <ul>
-<li><a href="../AGENTS.md"><code>AGENTS.md</code></a> — assistant operating manual</li>
-<li><a href="../.hermes/skills/forge-board/SKILL.md"><code>.hermes/skills/forge-board/SKILL.md</code></a> — skill reference</li>
-<li><a href="app.md"><code>docs/app.md</code></a> — Brief and Hermes preferences tabs</li>
+<li><a href="https://github.com/SimonAB/forge/blob/main/AGENTS.md"><code>AGENTS.md</code></a> — assistant operating manual</li>
+<li><a href="https://github.com/SimonAB/forge/blob/main/.hermes/skills/forge-board/SKILL.md"><code>.hermes/skills/forge-board/SKILL.md</code></a> — skill reference</li>
+<li><a href="app.html"><code>docs/app.md</code></a> — Brief and Hermes preferences tabs</li>
 </ul>
       </article>
     </main>
@@ -246,6 +246,6 @@ hermes
       </p>
       <p>Released under the Apache License, Version 2.0.</p>
     </footer>
-    <script src="assets/theme.js?v=3"></script>
+    <script src="assets/theme.js?v=4"></script>
   </body>
 </html>

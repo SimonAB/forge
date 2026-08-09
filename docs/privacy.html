@@ -12,7 +12,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="assets/site.css?v=3" />
+    <link rel="stylesheet" href="assets/site.css?v=4" />
     <script>
       (function () {
         try {
@@ -83,10 +83,10 @@
     </header>
     <main id="main" class="doc-page">
       <article class="doc-content">
-<h2>Forge privacy overview</h2>
+<h2 id="forge-privacy-overview">Forge privacy overview</h2>
 <p>Forge is designed as a <strong>local-first, privacy-respecting</strong> project manager.
 This document summarises what data Forge uses, where it lives, and how it moves.</p>
-<h3>What Forge stores</h3>
+<h3 id="what-forge-stores">What Forge stores</h3>
 <ul>
 <li><strong>Projects</strong></li>
 <li>Stored as ordinary directories under your configured <code>project_roots</code>.</li>
@@ -108,7 +108,7 @@ This document summarises what data Forge uses, where it lives, and how it moves.
     in standard macOS preferences.</li>
 <li>The current focus tag is stored in a <code>.focus</code> file in the Forge directory.</li>
 </ul>
-<h3>What Forge talks to</h3>
+<h3 id="what-forge-talks-to">What Forge talks to</h3>
 <ul>
 <li><strong>Apple Calendar (optional, read-only)</strong></li>
 <li>When you run <code>forge calendar</code>, Forge uses macOS EventKit to <strong>read</strong> events
@@ -163,7 +163,7 @@ This document summarises what data Forge uses, where it lives, and how it moves.
     you configure, and optional local OmniFocus Automation, network traffic is
     solely whatever macOS and your accounts already perform via the system.</li>
 </ul>
-<h3>Running Forge in more private modes</h3>
+<h3 id="running-forge-in-more-private-modes">Running Forge in more private modes</h3>
 <ul>
 <li><strong>No Calendar access</strong></li>
 <li>
@@ -181,7 +181,7 @@ This document summarises what data Forge uses, where it lives, and how it moves.
 <li>The code and config do not care where the directory lives; only your
     <code>config.yaml</code> needs to point at the right <code>project_roots</code>.</li>
 </ul>
-<h3>Sharing logs and traces</h3>
+<h3 id="sharing-logs-and-traces">Sharing logs and traces</h3>
 <ul>
 <li><strong>CLI logs</strong></li>
 <li>Verbose commands may include:<ul>
@@ -247,7 +247,7 @@ coding agent via <code>ollama launch pi</code>; see Ollama’s
 pointing at <code>http://127.0.0.1:11434/v1</code> with a placeholder API key, so chat can
 use Ollama locally; refer to your editor’s settings for “Ollama” or “local LLM”.
 Use Hermes for sensitive board work; Cursor for code when you accept cloud models.</p>
-<h3>Your responsibilities</h3>
+<h3 id="your-responsibilities">Your responsibilities</h3>
 <p>Forge keeps all data local and under your control, but you remain responsible
 for:</p>
 <ul>
@@ -267,6 +267,6 @@ for:</p>
       </p>
       <p>Released under the Apache License, Version 2.0.</p>
     </footer>
-    <script src="assets/theme.js?v=3"></script>
+    <script src="assets/theme.js?v=4"></script>
   </body>
 </html>
