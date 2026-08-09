@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import Sequence
 
 
-DEFAULT_FORGE_HOME = Path.home() / "Documents" / "Forge"
+DEFAULT_FORGE_HOME = Path.home() / "Documents" / "Software" / "Forge"
 HERMES_CONFIG = Path.home() / ".hermes" / "config.yaml"
 CURSOR_MCP = Path.home() / ".cursor" / "mcp.json"
 OLLAMA_TAGS_URL = "http://127.0.0.1:11434/api/tags"

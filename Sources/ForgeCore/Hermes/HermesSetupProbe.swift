@@ -3,9 +3,7 @@ import Foundation
 /// Paths used when wiring Forge into Hermes.
 public enum HermesPaths: Sendable {
     /// Default Forge home when not otherwise configured.
-    public static let defaultForgeHome: String = {
-        (NSHomeDirectory() as NSString).appendingPathComponent("Documents/Forge")
-    }()
+    public static let defaultForgeHome: String = ForgePaths.defaultHomeDirectory
 
     /// Hermes user config file.
     public static let hermesConfigPath: String = {

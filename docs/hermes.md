@@ -58,7 +58,7 @@ python3 scripts/forge-brief.py | head
 Start Hermes in your Forge directory:
 
 ```bash
-cd ~/Documents/Forge   # or your Forge home
+cd ~/Documents/Software/Forge   # or your Forge home
 hermes
 /skill:forge-board
 ```

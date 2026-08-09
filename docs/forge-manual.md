@@ -35,7 +35,7 @@ language models**).
 
 ## Core concepts
 
-- **Forge directory**: A folder (often `~/Documents/Forge`) containing:
+- **Forge directory**: A folder (often `~/Documents/Software/Forge`, with `~/Documents/Forge` still recognised) containing:
   - `config.yaml` – Forge configuration.
 - **Project roots**:
   - One or more directories (configured in `config.yaml`) under which Forge looks for project folders.

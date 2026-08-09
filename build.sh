@@ -43,6 +43,17 @@ if [ ! -d "$BUILD_DIR" ]; then
     echo "✓ Created build directory at $BUILD_DIR"
 fi
 
+# Reset stale cache when Forge was moved (workspace-state still references the old tree).
+if [ -f "$BUILD_DIR/workspace-state.json" ] && grep -q '"path"' "$BUILD_DIR/workspace-state.json" 2>/dev/null; then
+    if grep -q "$BUILD_DIR" "$BUILD_DIR/workspace-state.json" 2>/dev/null; then
+        : # cache paths already point at the local build directory
+    elif grep -q 'Documents/Forge/.build' "$BUILD_DIR/workspace-state.json" 2>/dev/null \
+        || ! grep -q "$FORGE_DIR" "$BUILD_DIR/workspace-state.json" 2>/dev/null; then
+        echo "Resetting stale build cache after Forge directory move..."
+        rm -rf "$BUILD_DIR"/*
+    fi
+fi
+
 # Ensure .build symlink points to local directory
 if [ -d "$FORGE_DIR/.build" ] && [ ! -L "$FORGE_DIR/.build" ]; then
     echo "Moving existing .build out of iCloud Drive..."

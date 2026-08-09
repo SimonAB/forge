@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Any, Iterable
 
-FORGE_DIR = os.environ.get("FORGE_DIR", str(os.path.expanduser("~/Documents/Forge")))
+FORGE_DIR = os.environ.get("FORGE_DIR", str(os.path.expanduser("~/Documents/Software/Forge")))
 FORGE_BIN = os.environ.get("FORGE_BIN", str(os.path.expanduser("~/bin/forge")))
 SNAPSHOT_PATH = os.path.join(FORGE_DIR, ".cache", "omnifocus-snapshot.json")
 

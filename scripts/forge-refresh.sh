@@ -7,7 +7,7 @@
 
 set -euo pipefail
 
-forge_dir="${FORGE_DIR:-$HOME/Documents/Forge}"
+forge_dir="${FORGE_DIR:-$HOME/Documents/Software/Forge}"
 cache_dir="$forge_dir/.cache"
 log="$cache_dir/forge-refresh.log"
 

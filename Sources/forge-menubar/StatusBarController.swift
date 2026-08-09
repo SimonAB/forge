@@ -85,10 +85,7 @@ final class StatusBarController: NSObject, NSMenuDelegate {
             forgeDir = (preferred as NSString).deletingLastPathComponent
             return
         }
-        let candidates = [
-            (home as NSString).appendingPathComponent("Documents/Forge/config.yaml"),
-            (home as NSString).appendingPathComponent("Documents/Work/Projects/Forge/config.yaml"),
-        ]
+        let candidates = ForgePaths.configCandidatePaths(home: home)
         for candidate in candidates {
             if FileManager.default.fileExists(atPath: candidate) {
                 config = try? ForgeConfig.load(from: candidate)
@@ -140,7 +137,7 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         menu.removeAllItems()
 
         if config == nil {
-            let item = NSMenuItem(title: "No config loaded — create config.yaml in ~/Documents/Forge", action: nil, keyEquivalent: "")
+            let item = NSMenuItem(title: "No config loaded — create config.yaml in ~/Documents/Software/Forge", action: nil, keyEquivalent: "")
             item.isEnabled = false
             menu.addItem(item)
             menu.addItem(NSMenuItem.separator())

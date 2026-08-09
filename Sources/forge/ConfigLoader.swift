@@ -9,15 +9,14 @@ enum ConfigLoader {
 
 
     /// Search upward from the current directory for a Forge/config.yaml file.
-    /// Falls back to ~/Documents/Forge/ if not found.
+    /// Falls back to ~/Documents/Software/Forge/ if not found.
     static func load() throws -> ForgeConfig {
         if let path = findConfigPath() {
             resolvedForgeDir = (path as NSString).deletingLastPathComponent
             return try ForgeConfig.load(from: path)
         }
 
-        let fallback = (NSHomeDirectory() as NSString)
-            .appendingPathComponent("Documents/Forge/config.yaml")
+        let fallback = ForgePaths.defaultConfigPath()
         if FileManager.default.fileExists(atPath: fallback) {
             resolvedForgeDir = (fallback as NSString).deletingLastPathComponent
             return try ForgeConfig.load(from: fallback)

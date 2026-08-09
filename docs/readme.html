@@ -232,7 +232,7 @@ python3 docs/build_site.py
 <p>See <a href="https://github.com/SimonAB/forge/releases">all releases</a>. Intel Macs: build from
 source with <code>build.sh</code>. Developers syncing source via iCloud typically still use <code>build.sh</code> below so the CLI and app stay in sync with local changes.</p>
 <pre><code class="language-bash"># On a fresh Mac where Forge source has synced via iCloud Drive:
-zsh ~/Documents/Forge/build.sh
+zsh ~/Documents/Software/Forge/build.sh
 </code></pre>
 <p>This builds the Swift project, creates <code>/Applications/Forge.app</code>, and registers
 a Launch Agent so the menu bar app starts at login. To put <code>forge</code> on your
@@ -273,7 +273,7 @@ material: <strong><code>.cursor/rules/</code></strong> (CLI, workflows, GTD task
 (Hermes + Ollama setup), <strong><code>PROJECT_TEMPLATE.md</code></strong> (new project READMEs), and
 <strong><code>python3 scripts/forge-brief.py</code></strong> for read-only board briefs without any LLM.</p>
 <h2 id="directory-layout">Directory layout</h2>
-<pre><code>~/Documents/Forge/              Forge home (synced via iCloud Drive)
+<pre><code>~/Documents/Software/Forge/     Forge home (synced via iCloud Drive; ~/Documents/Forge still works)
 ├── AGENTS.md                   Assistant operating manual (kanban + OmniFocus)
 ├── config.yaml                 Configuration (board columns, workspace roots, tags)
 ├── build.sh                  Per-Mac build &amp; install script

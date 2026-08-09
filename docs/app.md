@@ -16,7 +16,7 @@ Each [GitHub release](https://github.com/SimonAB/forge/releases/latest) includes
 Run the setup script on each Mac:
 
 ```bash
-zsh ~/Documents/Forge/build.sh
+zsh ~/Documents/Software/Forge/build.sh
 ```
 
 This performs the following steps:
@@ -156,8 +156,9 @@ See **`docs/hermes.md`** for full instructions.
 Forge.app searches for `config.yaml` in this order:
 
 1. The most recently selected path via **Forge → Preferences… → Choose config…**.
-2. `~/Documents/Forge/config.yaml`
-3. `~/Documents/Work/Projects/Forge/config.yaml`
+2. `~/Documents/Software/Forge/config.yaml`
+3. `~/Documents/Forge/config.yaml`
+4. `~/Documents/Work/Projects/Forge/config.yaml`
 
 The first match is used, and its parent directory becomes the Forge home
 directory.
@@ -166,11 +167,11 @@ directory.
 
 ## Multi-Mac sync
 
-The Forge source directory (`~/Documents/Forge/`) syncs via iCloud Drive. On
-each new Mac:
+The Forge source directory (`~/Documents/Software/Forge/`, or an older
+`~/Documents/Forge/` checkout) syncs via iCloud Drive. On each new Mac:
 
 1. Wait for iCloud to finish downloading.
-2. Run `zsh ~/Documents/Forge/build.sh`.
+2. Run `zsh ~/Documents/Software/Forge/build.sh` (or `zsh ~/Documents/Forge/build.sh`).
 3. The build happens locally; markdown files and configuration are shared.
 
 The Launch Agent ensures Forge.app starts at every login.

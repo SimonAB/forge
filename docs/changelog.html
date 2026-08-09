@@ -87,6 +87,17 @@
 <p>All notable changes to this project will be documented in this file.</p>
 <p>The format loosely follows <a href="https://keepachangelog.com/en/1.1.0/">Keep a Changelog</a>.</p>
 <h3 id="unreleased">Unreleased</h3>
+<h3 id="092-2026-08-09"><a href="https://github.com/SimonAB/forge/releases/tag/v0.9.2">0.9.2</a> – 2026-08-09</h3>
+<p>First GitHub and Sparkle release since <strong>0.9.0</strong>. Ships Hermes + OmniFocus, the
+updated website, and the default Forge-home move.</p>
+<h4 id="default-forge-home">Default Forge home</h4>
+<ul>
+<li>Primary home / <code>config.yaml</code> is <strong><code>~/Documents/Software/Forge</code></strong>. <code>~/Documents/Forge</code> and <code>~/Documents/Work/Projects/Forge</code> remain fallbacks.</li>
+<li><strong><code>ForgePaths</code></strong> centralises those candidates for the CLI, Forge.app, and the board.</li>
+<li><strong><code>build.sh</code></strong> resets a stale <code>~/.forge-build</code> cache after the directory move.</li>
+<li>Helper scripts (<code>forge-refresh.sh</code>, <code>forge-brief--with-full.py</code>, <code>setup-hermes-forge.py</code>) default to the new home.</li>
+</ul>
+<h4 id="preferences-ci-website">Preferences / CI / website</h4>
 <ul>
 <li>Preferences window is larger by default (720×560), resizable (min 640×480), and Brief/Workspace panels grow with the window.</li>
 <li>CI: <code>WorkspaceScanner</code> tests use an in-memory <code>TagReading</code> store so they no longer depend on Finder xattrs on GitHub runners.</li>
@@ -94,7 +105,10 @@
 <li>Landing feature cards link to short guides (<code>kanban</code>, <code>folders</code>, <code>finder-tags</code>, <code>cli-and-apps</code>, <code>omnifocus</code>) plus existing Privacy and Hermes pages.</li>
 <li><code>docs/build_site.py</code> — rewrite relative markdown links (<code>app.md</code>, <code>../PRIVACY.md</code>, …) to site HTML or GitHub; heading IDs via the markdown <code>toc</code> extension.</li>
 </ul>
-<h3 id="092">0.9.2</h3>
+<h4 id="packaging">Packaging</h4>
+<ul>
+<li>Drop the explicit <strong>swift-testing</strong> package pin; tests use the toolchain <code>Testing</code> module.</li>
+</ul>
 <h4 id="hermes-local-llm-privacy-first">Hermes + local LLM (privacy-first)</h4>
 <ul>
 <li><strong><code>docs/hermes.md</code></strong> — canonical Hermes + Ollama setup guide; Hermes recommended over Pi for kanban assistant work.</li>
@@ -202,7 +216,7 @@ or <code>TASKS.md</code> indexing describe historical behaviour.</p>
 <ul>
 <li>Documented Calendar read access in <strong><code>PRIVACY.md</code></strong>; <strong><code>NSCalendarsUsageDescription</code></strong> added to <strong><code>packaging/assemble_forge_app.sh</code></strong> for Forge.app.</li>
 </ul>
-<h3 id="090-2026-03-23">[0.9.0] – 2026-03-23</h3>
+<h3 id="090-2026-03-23"><a href="https://github.com/SimonAB/forge/releases/tag/v0.9.0">0.9.0</a> – 2026-03-23</h3>
 <h4 id="summary">Summary</h4>
 <ul>
 <li>Opens the <strong>0.9</strong> release line with <strong>Sparkle 2</strong> in-app updates, <strong><code>Forge-macos-arm64.app.zip</code></strong> on tagged releases, and <strong>CI <code>generate_appcast</code></strong> refreshing <strong><code>docs/appcast.xml</code></strong>—verified green on <strong>v0.8.14</strong>. See <strong>[0.8.13]</strong> and <strong>[0.8.14]</strong> for full notes.</li>

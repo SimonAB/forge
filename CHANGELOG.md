@@ -6,13 +6,29 @@ The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 ### Unreleased
 
+### [0.9.2] – 2026-08-09
+
+First GitHub and Sparkle release since **0.9.0**. Ships Hermes + OmniFocus, the
+updated website, and the default Forge-home move.
+
+#### Default Forge home
+
+- Primary home / `config.yaml` is **`~/Documents/Software/Forge`**. `~/Documents/Forge` and `~/Documents/Work/Projects/Forge` remain fallbacks.
+- **`ForgePaths`** centralises those candidates for the CLI, Forge.app, and the board.
+- **`build.sh`** resets a stale `~/.forge-build` cache after the directory move.
+- Helper scripts (`forge-refresh.sh`, `forge-brief--with-full.py`, `setup-hermes-forge.py`) default to the new home.
+
+#### Preferences / CI / website
+
 - Preferences window is larger by default (720×560), resizable (min 640×480), and Brief/Workspace panels grow with the window.
 - CI: `WorkspaceScanner` tests use an in-memory ``TagReading`` store so they no longer depend on Finder xattrs on GitHub runners.
 - Landing page (`docs/index.html`) — Hermes in nav and docs list; Forge.app download; OmniFocus feature and component; CLI glance includes `status` / `calendar` / `omnifocus`.
 - Landing feature cards link to short guides (`kanban`, `folders`, `finder-tags`, `cli-and-apps`, `omnifocus`) plus existing Privacy and Hermes pages.
 - `docs/build_site.py` — rewrite relative markdown links (`app.md`, `../PRIVACY.md`, …) to site HTML or GitHub; heading IDs via the markdown `toc` extension.
 
-### 0.9.2
+#### Packaging
+
+- Drop the explicit **swift-testing** package pin; tests use the toolchain `Testing` module.
 
 #### Hermes + local LLM (privacy-first)
 
@@ -374,6 +390,8 @@ The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.
   - Provide a help URL and AppleScript usage description.
   - Update the `generate_icon` script (`7767ca9`, `d0b87fa`, `23db3b1`, `a4742ff`).
 
+[0.9.2]: https://github.com/SimonAB/forge/releases/tag/v0.9.2
+[0.9.0]: https://github.com/SimonAB/forge/releases/tag/v0.9.0
 [0.8.12]: https://github.com/SimonAB/forge/releases/tag/v0.8.12
 [0.8.11]: https://github.com/SimonAB/forge/releases/tag/v0.8.11
 [0.8.10]: https://github.com/SimonAB/forge/releases/tag/v0.8.10

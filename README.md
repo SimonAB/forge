@@ -99,7 +99,7 @@ source with `build.sh`. Developers syncing source via iCloud typically still use
 
 ```bash
 # On a fresh Mac where Forge source has synced via iCloud Drive:
-zsh ~/Documents/Forge/build.sh
+zsh ~/Documents/Software/Forge/build.sh
 ```
 
 This builds the Swift project, creates `/Applications/Forge.app`, and registers
@@ -149,7 +149,7 @@ material: **`.cursor/rules/`** (CLI, workflows, GTD tasks), **`docs/hermes.md`**
 ## Directory layout
 
 ```
-~/Documents/Forge/              Forge home (synced via iCloud Drive)
+~/Documents/Software/Forge/     Forge home (synced via iCloud Drive; ~/Documents/Forge still works)
 ├── AGENTS.md                   Assistant operating manual (kanban + OmniFocus)
 ├── config.yaml                 Configuration (board columns, workspace roots, tags)
 ├── build.sh                  Per-Mac build & install script

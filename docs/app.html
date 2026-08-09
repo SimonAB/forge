@@ -92,7 +92,7 @@ provides quick access to your board and project workflows.</p>
 <p><strong>In-app updates (<a href="https://sparkle-project.org/">Sparkle</a>):</strong> once Forge is running from a proper <strong><code>Forge.app</code></strong> bundle (release install or <code>build.sh</code>), <strong>Forge → Check for Updates…</strong> and <strong>automatic checks</strong> (about once per day) use the appcast at <a href="https://raw.githubusercontent.com/SimonAB/forge/main/docs/appcast.xml"><code>docs/appcast.xml</code></a> on <code>main</code>. Sparkle downloads a signed <strong><code>Forge-macos-arm64.app.zip</code></strong> from <a href="https://github.com/SimonAB/forge/releases">GitHub Releases</a> and installs it using the standard Sparkle flow (including <strong>Install on quit</strong> when offered). Maintainer signing setup: <strong><code>packaging/SPARKLE_SIGNING.md</code></strong>.</p>
 <h3 id="option-b-buildsh-from-source">Option B — <code>build.sh</code> (from source)</h3>
 <p>Run the setup script on each Mac:</p>
-<pre><code class="language-bash">zsh ~/Documents/Forge/build.sh
+<pre><code class="language-bash">zsh ~/Documents/Software/Forge/build.sh
 </code></pre>
 <p>This performs the following steps:</p>
 <ol>
@@ -244,6 +244,7 @@ when Forge.app is launched from Finder (which otherwise sees a minimal GUI
 <p>Forge.app searches for <code>config.yaml</code> in this order:</p>
 <ol>
 <li>The most recently selected path via <strong>Forge → Preferences… → Choose config…</strong>.</li>
+<li><code>~/Documents/Software/Forge/config.yaml</code></li>
 <li><code>~/Documents/Forge/config.yaml</code></li>
 <li><code>~/Documents/Work/Projects/Forge/config.yaml</code></li>
 </ol>
@@ -251,11 +252,11 @@ when Forge.app is launched from Finder (which otherwise sees a minimal GUI
 directory.</p>
 <hr />
 <h2 id="multi-mac-sync">Multi-Mac sync</h2>
-<p>The Forge source directory (<code>~/Documents/Forge/</code>) syncs via iCloud Drive. On
-each new Mac:</p>
+<p>The Forge source directory (<code>~/Documents/Software/Forge/</code>, or an older
+<code>~/Documents/Forge/</code> checkout) syncs via iCloud Drive. On each new Mac:</p>
 <ol>
 <li>Wait for iCloud to finish downloading.</li>
-<li>Run <code>zsh ~/Documents/Forge/build.sh</code>.</li>
+<li>Run <code>zsh ~/Documents/Software/Forge/build.sh</code> (or <code>zsh ~/Documents/Forge/build.sh</code>).</li>
 <li>The build happens locally; markdown files and configuration are shared.</li>
 </ol>
 <p>The Launch Agent ensures Forge.app starts at every login.</p>

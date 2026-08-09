@@ -61,10 +61,7 @@ struct ForgeBoardApp: App {
     private static func loadConfig() async -> (config: ForgeConfig, forgeDir: String)? {
         return await Task.detached(priority: .userInitiated) {
             let home = FileManager.default.homeDirectoryForCurrentUser.path
-            let candidates = [
-                (home as NSString).appendingPathComponent("Documents/Forge/config.yaml"),
-                (home as NSString).appendingPathComponent("Documents/Work/Projects/Forge/config.yaml"),
-            ]
+            let candidates = ForgePaths.configCandidatePaths(home: home)
             for path in candidates {
                 if FileManager.default.fileExists(atPath: path), let config = try? ForgeConfig.load(from: path) {
                     let forgeDir = (path as NSString).deletingLastPathComponent
@@ -216,6 +213,7 @@ private struct NoConfigView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
             VStack(alignment: .leading, spacing: 4) {
+                Text("• ~/Documents/Software/Forge/config.yaml")
                 Text("• ~/Documents/Forge/config.yaml")
                 Text("• ~/Documents/Work/Projects/Forge/config.yaml")
             }

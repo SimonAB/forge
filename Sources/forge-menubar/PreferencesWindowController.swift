@@ -8,13 +8,7 @@ final class PreferencesWindowController: NSWindowController {
     private static let defaultContentSize = NSSize(width: 720, height: 560)
     private static let minimumContentSize = NSSize(width: 640, height: 480)
     private static let userDefaultsConfigPathKey = "forge.config.path"
-    private static let configCandidates: [String] = {
-        let home = NSHomeDirectory()
-        return [
-            (home as NSString).appendingPathComponent("Documents/Forge/config.yaml"),
-            (home as NSString).appendingPathComponent("Documents/Work/Projects/Forge/config.yaml"),
-        ]
-    }()
+    private static let configCandidates: [String] = ForgePaths.configCandidatePaths()
 
     private var configPath: String?
     private var config: ForgeConfig?
