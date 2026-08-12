@@ -5,6 +5,15 @@
         <description>Forge menu bar app updates.</description>
         <language>en</language>
         <item>
+            <title>0.9.3</title>
+            <pubDate>Wed, 12 Aug 2026 13:01:01 +0000</pubDate>
+            <sparkle:version>0.9.3</sparkle:version>
+            <sparkle:shortVersionString>0.9.3</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
+            <enclosure url="https://github.com/SimonAB/forge/releases/download/v0.9.3/Forge-macos-arm64.app.zip" length="4037316" type="application/octet-stream" sparkle:edSignature="wp9qDBRyBnVF/7ZXdVHUZi1MK2GuL7be8uu8nj/x10Jdp8Gka6htRjzxubvH/2tE3wAKtMw4QzCzuqypjUMIAQ=="/>
+        </item>
+        <item>
             <title>0.9.2</title>
             <pubDate>Sun, 09 Aug 2026 10:02:16 +0000</pubDate>
             <sparkle:version>0.9.2</sparkle:version>
@@ -21,15 +30,6 @@
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
             <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
             <enclosure url="https://github.com/SimonAB/forge/releases/download/v0.9.0/Forge-macos-arm64.app.zip" length="1958708" type="application/octet-stream" sparkle:edSignature="Y4x/+HaO3b7B37wVfTO6+FqPKdsQwsZkrYsqXfEkKL27fXphIxGny8+UEwEE065+7YGr5xrG71PLFaPZ2WLRAQ=="/>
-        </item>
-        <item>
-            <title>0.8.14</title>
-            <pubDate>Sun, 22 Mar 2026 18:10:24 +0000</pubDate>
-            <sparkle:version>0.8.14</sparkle:version>
-            <sparkle:shortVersionString>0.8.14</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
-            <enclosure url="https://github.com/SimonAB/forge/releases/download/v0.8.14/Forge-macos-arm64.app.zip" length="1958725" type="application/octet-stream" sparkle:edSignature="2YwrRY6kGhvc4quHBThYObGt7PRIk7++6OPlR5uynlaHASbA6Y7QXgXkJL8fvgoQQw7qp6MTnvyxP99VHJJPDQ=="/>
         </item>
     </channel>
 </rss>
