@@ -19,17 +19,31 @@ public struct BoardConfig: Codable, Sendable {
     public let columns: [ColumnConfig]
     public let metaTags: [String]
     public let tagAliases: [String: String]
+    /// Whole days in Shipped before adding the `Completed…` meta tag. `nil` → 7.
+    public let archiveAfterShippedDays: Int?
 
     enum CodingKeys: String, CodingKey {
         case columns
         case metaTags = "meta_tags"
         case tagAliases = "tag_aliases"
+        case archiveAfterShippedDays = "archive_after_shipped_days"
     }
 
-    public init(columns: [ColumnConfig], metaTags: [String], tagAliases: [String: String]) {
+    public init(
+        columns: [ColumnConfig],
+        metaTags: [String],
+        tagAliases: [String: String],
+        archiveAfterShippedDays: Int? = 7
+    ) {
         self.columns = columns
         self.metaTags = metaTags
         self.tagAliases = tagAliases
+        self.archiveAfterShippedDays = archiveAfterShippedDays
+    }
+
+    /// Effective delay before Completed (at least 0). Default 7 when unset.
+    public var resolvedArchiveAfterShippedDays: Int {
+        max(0, archiveAfterShippedDays ?? 7)
     }
 }
 
@@ -390,7 +404,7 @@ extension ForgeConfig {
                     ColumnConfig(name: "Shipped", tag: "Shipped 🚀", colour: 3), // Purple
                     ColumnConfig(name: "Paused", tag: "Paused ⏸️", colour: 1),  // Grey
                 ],
-                metaTags: ["URGENT ⚠️", "Collab 🤝", "Student 🎓"],
+                metaTags: ["URGENT ⚠️", "Collab 🤝", "Student 🎓", "Completed ✔️"],
                 tagAliases: [
                     "Active": "Watch 👁️",
                     "active 🚧": "Watch 👁️",
@@ -405,7 +419,8 @@ extension ForgeConfig {
                     "Analyse 🔍": "Coding 🤖",
                     "3. Analyse 🔍": "Coding 🤖",
                     "4. Write ✒️": "Write ✒️",
-                ]
+                ],
+                archiveAfterShippedDays: 7
             ),
             calendar: CalendarConfig(include: []),
             terminal: "auto",

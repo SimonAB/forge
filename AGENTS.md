@@ -122,7 +122,10 @@ leftover OF kanban tags on folders it updated. Refresh does **not** push Finder
 columns onto OmniFocus — that happens on `forge move` / board drag with
 `sync_on_move`. With `omnifocus.sync_completed_project_to_shipped` (default true),
 a completed/dropped OF **project** moves the matching Finder folder to Shipped on
-Refresh. (After doctor is clean for ambiguous links.) When `reminders.enabled`,
+Refresh (unless the user has since left Shipped — that override is remembered).
+With `sync_on_move`, leaving Shipped reopens the OF project
+(`reopen_of_project_when_leaving_shipped`, default true) and entering Shipped marks
+it Done (`complete_of_project_when_entering_shipped`, default true). (After doctor is clean for ambiguous links.) When `reminders.enabled`,
 use **`forge reminders doctor` / `align` / `show`**. Board **Refresh** and
 `forge reminders refresh` update the snapshot, paint list colours, and set
 sentinel priority from Finder URGENT (they do not create lists). Create missing
@@ -185,6 +188,7 @@ Forge's kanban model is backed by **Finder tags** on project directories. Kanban
 | `URGENT ⚠️`     | Flag immediate attention required        |
 | `Collab 🤝`     | Collaborative project work               |
 | `Student 🎓`    | Student project (supervision, mentoring) |
+| `Completed ✔️`   | Applied ~7 days after Shipped (Refresh / `forge archive`) |
 
 Finder tag conventions: Kanban state via `forge move`; meta tags via `forge project-tag`. `forge project-tag` never changes workflow column tags. Avoid inventing tag strings; validate against `config.yaml`.
 
@@ -369,8 +373,11 @@ For full specs: `@.cursor/rules/forge-cli.mdc`, `@.cursor/rules/forge-workflows.
 
 - Documentation tone: direct and matter-of-fact (Julia-package style); avoid contrastive “X is not Y, X is Z” constructions.
 - Do not append kanban or meta tags to Reminders list titles; titles stay as folder names.
+- Forge Watch means “monitor this project” (`Watch 👁️`); never map personal video-queue tags (e.g. `Watch Later…`) onto kanban columns.
+- Prefer `Completed ✔️` (not `Archived…`) as the post-Shipped meta tag.
 
 ## Learned Workspace Facts
 
 - Default Forge home is `~/Documents/Software/Forge`; config search still includes legacy `~/Documents/Forge` and `~/Documents/Work/Projects/Forge`.
 - Reminders is the OmniFocus-alternative task inbox: one EventKit **list** per Forge-tagged folder (title match); kanban stays on Finder (not column-lists or list tags). EventKit cannot maintain list groups, sections, icons, or hashtags; user-created Reminders.app groups are layout-only and do not affect Forge visibility. List colour follows the Finder column (paint only). Optional sentinel reminder (`Forge · <Column>`) for column sync. Finder `URGENT ⚠️` sets sentinel EventKit priority (high / none); there is no Flagged API. Board Refresh / Preferences Refresh now / `forge reminders refresh` snapshot + colour + URGENT priority (never delete unmatched lists; do not create lists). Background snapshot refresh does not paint. Create lists with `align --apply`. Forge does not create or complete ordinary reminder items.
+- `Completed ✔️` is applied after `board.archive_after_shipped_days` (default 7) via board Refresh / `forge archive`; ship dates live in `.cache/shipped-at.json`; Shipped cards may show a complete countdown; legacy Shipped folders use activity age; legacy `Archived…` tags migrate to Completed.

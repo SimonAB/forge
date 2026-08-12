@@ -54,7 +54,10 @@ struct ColumnView: View {
         ScrollView(.vertical, showsIndicators: true) {
             LazyVStack(alignment: .leading, spacing: 6) {
                 ForEach(projects, id: \.path) { project in
-                    ProjectCardView(project: project)
+                    ProjectCardView(
+                        project: project,
+                        archiveCountdownLabel: viewModel.archiveCountdownLabel(for: project)
+                    )
                 }
             }
         }

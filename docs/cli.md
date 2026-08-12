@@ -30,6 +30,7 @@ forge <command> [options]
 | `forge board` | Display the kanban board |
 | `forge move` | Move a project between columns |
 | `forge project-tag` | Add, remove, or list meta / assignee Finder tags on a project folder |
+| `forge archive` | Apply due `Completed` meta tags on Shipped projects (after the delay) |
 | `forge status` | Summary dashboard of all projects (column counts, active, URGENT) |
 | `forge calendar` / `forge events` | List upcoming Calendar events (read-only; same command) |
 | `forge omnifocus` | Optional OmniFocus bridge (`doctor`, `align`, `refresh`, …) |
@@ -66,7 +67,7 @@ forge board [--list] [--json] [--column <name>] [--assignee <person>]
 | Option | Short | Description |
 |--------|-------|-------------|
 | `--list` | `-l` | Compact single-column list instead of the full board |
-| `--json` | | Print JSON: `board.columns` (names and Finder tags), `meta_tags`, `tag_aliases`, and each project’s column, tags, assignees, plus **Radar** fields (`radarBucket`, `daysSinceActivity`, `activityModificationDate`, `activitySource`) |
+| `--json` | | Print JSON: `board.columns` (names and Finder tags), `meta_tags`, `tag_aliases`, `archiveAfterShippedDays`, `completedMetaTag`, and each project’s column, tags, assignees, plus **Radar** fields and optional **completion** fields (`archiveStatus`, `daysUntilArchive`, `shippedAt`) |
 | `--column` | `-c` | Filter to a specific column (e.g. `Active`, `Write`) |
 | `--assignee` | `-a` | Filter to projects with this assignee (matches `#Person` Finder tags) |
 
@@ -103,6 +104,35 @@ unblocked). Use `--strict` when you want the documented kanban transition rules.
 ```bash
 forge move manuscript Review
 forge move manuscript Write --strict
+```
+
+---
+
+## forge archive
+
+Apply the delayed **Completed** meta tag on **Shipped** projects once
+`board.archive_after_shipped_days` (default 7) have elapsed. Board **Refresh**
+runs the same sweep. Requires a `Completed…` entry in `board.meta_tags`.
+Legacy `Archived…` tags on Shipped folders are migrated to Completed.
+
+```
+forge archive
+forge archive --dry-run
+```
+
+| Option | Description |
+|--------|-------------|
+| `--dry-run` | List Shipped projects with countdown / due / already-completed status; do not write Finder tags |
+
+Ship dates live in `.cache/shipped-at.json`. Legacy Shipped folders without a
+cache entry use folder activity age; if already older than the delay, they are
+tagged on the next sweep.
+
+**Examples:**
+
+```bash
+forge archive --dry-run
+forge archive
 ```
 
 ---

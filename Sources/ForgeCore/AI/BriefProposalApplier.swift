@@ -9,10 +9,12 @@ public struct BriefProposalApplier: Sendable {
 
     private let config: ForgeConfig
     private let tagStore: FinderTagStore
+    private let forgeDir: String
 
-    public init(config: ForgeConfig, tagStore: FinderTagStore = FinderTagStore()) {
+    public init(config: ForgeConfig, tagStore: FinderTagStore = FinderTagStore(), forgeDir: String? = nil) {
         self.config = config
         self.tagStore = tagStore
+        self.forgeDir = forgeDir ?? ForgePaths.defaultHomeDirectory
     }
 
     /// Validate proposals and apply them to the filesystem (Finder tags), returning a log of changes.
@@ -117,11 +119,16 @@ public struct BriefProposalApplier: Sendable {
     }
 
     private func moveProject(at path: String, to column: ColumnConfig) throws {
-        let tags = try tagStore.readTags(at: path)
-        if let existingWorkflow = tags.first(where: { config.column(forTag: $0) != nil }) {
-            try tagStore.removeTag(existingWorkflow, at: path)
-        }
-        try tagStore.addTag(column.tag, at: path)
+        let previous = try currentColumnName(at: path)
+        try OmniFocusMoveSync.setFinderWorkflowColumn(
+            path: path,
+            column: column.name,
+            config: config,
+            tagStore: tagStore,
+            forgeDir: forgeDir,
+            folderName: lastPathComponent(path),
+            previousColumn: previous
+        )
     }
 
     private func lastPathComponent(_ path: String) -> String {

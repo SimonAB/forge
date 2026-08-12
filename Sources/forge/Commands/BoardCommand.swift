@@ -62,6 +62,29 @@ struct BoardCommand: AsyncParsableCommand {
             }
             let rows: [BoardJSONProjectRow] = projects.map { p in
                 let resolution = KanbanRadar.activityResolution(for: p)
+                let shippedAt = (try? ShippedArchiveStore.shippedAt(forgeDir: forgeDir, folderName: p.name))
+                let archiveStatus = KanbanArchivePolicy.status(
+                    project: p,
+                    config: config,
+                    shippedAt: shippedAt,
+                    now: now
+                )
+                let archiveStatusRaw: String?
+                let daysUntilArchive: Int?
+                switch archiveStatus {
+                case .notApplicable:
+                    archiveStatusRaw = nil
+                    daysUntilArchive = nil
+                case .completed:
+                    archiveStatusRaw = "completed"
+                    daysUntilArchive = nil
+                case .readyToComplete:
+                    archiveStatusRaw = "ready"
+                    daysUntilArchive = 0
+                case .countdown(let days):
+                    archiveStatusRaw = "countdown"
+                    daysUntilArchive = days
+                }
                 return BoardJSONProjectRow(
                     name: p.name,
                     path: p.path,
@@ -74,6 +97,9 @@ struct BoardCommand: AsyncParsableCommand {
                     daysSinceActivity: KanbanRadar.daysSinceActivity(for: p, now: now),
                     activityModificationDate: resolution.modificationDate,
                     activitySource: resolution.source,
+                    archiveStatus: archiveStatusRaw,
+                    daysUntilArchive: daysUntilArchive,
+                    shippedAt: shippedAt,
                     omnifocus: enrichment[p.name],
                     reminders: reminderEnrichment[p.name]
                 )
@@ -86,7 +112,9 @@ struct BoardCommand: AsyncParsableCommand {
             let boardInfo = BoardJSONConfigSnapshot(
                 columns: columnInfos,
                 metaTags: config.board.metaTags,
-                tagAliases: tagAliases
+                tagAliases: tagAliases,
+                archiveAfterShippedDays: config.board.resolvedArchiveAfterShippedDays,
+                completedMetaTag: KanbanArchivePolicy.completedTag(in: config.board)
             )
             let payload = BoardJSONPayload(board: boardInfo, projects: rows)
             let encoder = JSONEncoder()
@@ -120,6 +148,8 @@ private struct BoardJSONConfigSnapshot: Encodable {
     let columns: [BoardJSONColumn]
     let metaTags: [String]
     let tagAliases: [BoardJSONTagAlias]
+    let archiveAfterShippedDays: Int
+    let completedMetaTag: String?
 }
 
 private struct BoardJSONColumn: Encodable {
@@ -145,6 +175,9 @@ private struct BoardJSONProjectRow: Encodable {
     let daysSinceActivity: Double
     let activityModificationDate: Date
     let activitySource: String
+    let archiveStatus: String?
+    let daysUntilArchive: Int?
+    let shippedAt: Date?
     let omnifocus: OmniFocusBoardEnrichment?
     let reminders: RemindersBoardEnrichment?
 }

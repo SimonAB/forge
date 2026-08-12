@@ -311,7 +311,10 @@ private struct BoardListView: View {
             ForEach(Array(viewModel.groupedColumns.enumerated()), id: \.offset) { _, group in
                 Section {
                     ForEach(group.projects, id: \.path) { project in
-                        ProjectCardView(project: project)
+                        ProjectCardView(
+                            project: project,
+                            archiveCountdownLabel: viewModel.archiveCountdownLabel(for: project)
+                        )
                             .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12))
                             .listRowBackground(EmptyView())
                             .listRowSeparator(.hidden)

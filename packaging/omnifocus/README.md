@@ -37,6 +37,9 @@ Column mirroring prefers **flat OmniFocus status tags** via `column_tag_aliases`
 
 When an OmniFocus **project** (same name as the Finder folder) is Done or Dropped,
 board Refresh can move that folder to **Shipped** (`sync_completed_project_to_shipped`).
+With `sync_on_move`, leaving **Shipped** on the board reopens that OF project
+(`reopen_of_project_when_leaving_shipped`); entering **Shipped** marks it Done
+(`complete_of_project_when_entering_shipped`).
 
 Menubar: **OmniFocus Align…** shows a dry-run plan; **Apply** confirms writes.
 

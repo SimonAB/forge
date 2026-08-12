@@ -93,7 +93,9 @@ Optional: keep **project** kanban columns in step with OmniFocus. Day-to-day
 tasks stay in the task app. Apple Reminders is the other optional backend
 (EventKit); Things is a possible later addition.
 
-Enable under **Preferences → OmniFocus**. With `sync_on_move`, board column moves mirror onto linked OF tasks. With `sync_from_omnifocus`, board **Refresh** pulls OF column tags onto Finder (and clears stacked leftover OF kanban tags on those folders). Finder→OF is not rewritten from Refresh. With `sync_completed_project_to_shipped`, a completed/dropped OF **project** moves the matching Finder folder to **Shipped** on Refresh.
+Enable under **Preferences → OmniFocus**. With `sync_on_move`, board column moves mirror onto linked OF tasks. With `sync_from_omnifocus`, board **Refresh** pulls OF column tags onto Finder (and clears stacked leftover OF kanban tags on those folders). Finder→OF is not rewritten from Refresh. With `sync_completed_project_to_shipped`, a completed/dropped OF **project** can move the matching Finder folder to **Shipped** on Refresh (unless you have since left Shipped — that override is remembered). With `sync_on_move`, leaving **Shipped** reopens the OF project (`reopen_of_project_when_leaving_shipped`, default true); entering **Shipped** marks it Done (`complete_of_project_when_entering_shipped`, default true).
+
+After **7 days** in Shipped (configurable), Forge adds the **`Completed ✔️`** meta tag via board **Refresh** or `forge archive`; Shipped cards show a **complete in Nd** countdown. See [kanban.md](kanban.md) and [cli.md](cli.md#forge-archive).
 
 CLI: `forge omnifocus doctor` → `align` (dry-run) → `align --apply`. See [cli.md](cli.md) and `packaging/omnifocus/README.md`.
 

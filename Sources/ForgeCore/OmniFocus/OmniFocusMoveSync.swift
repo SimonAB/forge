@@ -6,7 +6,12 @@ public enum OmniFocusMoveSync {
     public enum Outcome: Sendable, Equatable {
         case disabled
         case skipped(String)
-        case synced(updatedCount: Int, alias: String?, missingAlias: [String])
+        case synced(
+            updatedCount: Int,
+            alias: String?,
+            missingAlias: [String],
+            projectStatusNote: String?
+        )
     }
 
     /// Result of pulling OmniFocus columns onto Finder workflow tags.
@@ -54,21 +59,48 @@ public enum OmniFocusMoveSync {
     }
 
     /// Set the Finder workflow tag for a project directory to `column`.
+    ///
+    /// When `forgeDir` and `folderName` are provided and a `Completed…` meta tag is configured,
+    /// records or clears the ship-date cache and strips Completed (and legacy Archived) on leave-Shipped.
     public static func setFinderWorkflowColumn(
         path: String,
         column: String,
         config: ForgeConfig,
-        tagStore: FinderTagStore = FinderTagStore()
+        tagStore: FinderTagStore = FinderTagStore(),
+        forgeDir: String? = nil,
+        folderName: String? = nil,
+        previousColumn: String? = nil
     ) throws {
         guard let colConfig = config.board.columns.first(where: { $0.name == column }) else {
             throw OmniJSBridgeError.evaluationFailed("Unknown board column \(column)")
         }
+        var inferredPrevious = previousColumn
         if let values = try? tagStore.readTags(at: path) {
+            if inferredPrevious == nil {
+                for tag in values {
+                    if let col = config.column(forTag: tag) {
+                        inferredPrevious = col.name
+                        break
+                    }
+                }
+            }
             for tag in values where config.column(forTag: tag) != nil {
                 try tagStore.removeTag(tag, at: path)
             }
         }
         try tagStore.addTag(colConfig.tag, at: path)
+
+        if let forgeDir, let folderName {
+            try KanbanArchivePolicy.noteColumnTransition(
+                folderName: folderName,
+                path: path,
+                previousColumn: inferredPrevious,
+                newColumn: column,
+                config: config,
+                forgeDir: forgeDir,
+                tagStore: tagStore
+            )
+        }
     }
 
     /// Mirror a Finder workflow column onto linked OmniFocus tasks (flat aliases or nested root).
@@ -115,21 +147,67 @@ public enum OmniFocusMoveSync {
         }
 
         let taskIds = inventory.tasks.filter { $0.projectFolderName == project.name }.map(\.id)
-        guard !taskIds.isEmpty else {
-            return .skipped("no linked tasks for \(project.name)")
-        }
+        let previousColumn = project.column
+        let leavingShipped = previousColumn == "Shipped" && column != "Shipped"
+        let enteringShipped = previousColumn != "Shipped" && column == "Shipped"
+
+        var projectStatusNote: String?
 
         do {
+            // Reopen Done/Dropped before tagging so incomplete tasks are writable again.
+            if leavingShipped, of.reopenOfProjectWhenLeavingShipped {
+                let status = try service.applyOfProjectStatus(folderName: project.name, status: "Active")
+                if status.updated {
+                    projectStatusNote = "OF project \(status.projectName ?? project.name): \(status.before ?? "?") → Active"
+                } else if status.reason == "no_matching_project" {
+                    projectStatusNote = "OF project status: no matching project named \(project.name)"
+                }
+            }
+
+            if taskIds.isEmpty {
+                // Still allow project-status-only feedback when there are no linked tasks.
+                if enteringShipped, of.completeOfProjectWhenEnteringShipped {
+                    let status = try service.applyOfProjectStatus(folderName: project.name, status: "Done")
+                    if status.updated {
+                        projectStatusNote = "OF project \(status.projectName ?? project.name): \(status.before ?? "?") → Done"
+                    } else if status.reason == "no_matching_project" {
+                        projectStatusNote = "OF project status: no matching project named \(project.name)"
+                    }
+                }
+                _ = try? service.refreshSnapshot(forgeDir: forgeDir)
+                if projectStatusNote != nil {
+                    return .synced(
+                        updatedCount: 0,
+                        alias: of.columnAlias(for: column),
+                        missingAlias: [],
+                        projectStatusNote: projectStatusNote
+                    )
+                }
+                return .skipped("no linked tasks for \(project.name)")
+            }
+
             let result = try service.applyForgeColumn(
                 folderName: project.name,
                 column: column,
                 taskIds: taskIds
             )
+
+            if enteringShipped, of.completeOfProjectWhenEnteringShipped {
+                let status = try service.applyOfProjectStatus(folderName: project.name, status: "Done")
+                if status.updated {
+                    let note = "OF project \(status.projectName ?? project.name): \(status.before ?? "?") → Done"
+                    projectStatusNote = projectStatusNote.map { "\($0); \(note)" } ?? note
+                } else if status.reason == "no_matching_project", projectStatusNote == nil {
+                    projectStatusNote = "OF project status: no matching project named \(project.name)"
+                }
+            }
+
             _ = try? service.refreshSnapshot(forgeDir: forgeDir)
             return .synced(
                 updatedCount: result.updated.count,
                 alias: of.columnAlias(for: column),
-                missingAlias: result.missingAlias
+                missingAlias: result.missingAlias,
+                projectStatusNote: projectStatusNote
             )
         } catch {
             return .skipped(error.localizedDescription)
@@ -190,12 +268,24 @@ public enum OmniFocusMoveSync {
                 continue
             }
 
+            // Do not re-force Shipped after the user left it (board / Finder override).
+            if ofColumn == "Shipped",
+               (try? ShippedArchiveStore.isCompletedShipSuppressed(
+                   forgeDir: forgeDir,
+                   folderName: project.name
+               )) == true {
+                continue
+            }
+
             do {
                 try setFinderWorkflowColumn(
                     path: project.path,
                     column: ofColumn,
                     config: config,
-                    tagStore: tagStore
+                    tagStore: tagStore,
+                    forgeDir: forgeDir,
+                    folderName: project.name,
+                    previousColumn: project.column
                 )
                 updated.append(project.name)
             } catch {
@@ -276,6 +366,21 @@ public enum OmniFocusMoveSync {
         return (updates.count, outcome.updated.count, errors)
     }
 
+    /// Whether Refresh should force Finder to Shipped for a completed OF project.
+    ///
+    /// Returns false when Finder is already Shipped, the user suppressed re-ship,
+    /// or a ship date exists while Finder is elsewhere (Finder override after ship).
+    public static func shouldForceCompletedToShipped(
+        finderColumn: String?,
+        shippedAt: Date?,
+        suppressed: Bool
+    ) -> Bool {
+        guard finderColumn != "Shipped" else { return false }
+        if suppressed { return false }
+        if shippedAt != nil { return false }
+        return true
+    }
+
     /// Move Finder folders to Shipped when the matching OF project is Done/Dropped.
     public static func applyCompletedProjectsToShipped(
         config: ForgeConfig,
@@ -313,12 +418,38 @@ public enum OmniFocusMoveSync {
             guard linked else { continue }
             guard project.column != "Shipped" else { continue }
 
+            let suppressed = (try? ShippedArchiveStore.isCompletedShipSuppressed(
+                forgeDir: forgeDir,
+                folderName: project.name
+            )) == true
+            let priorShip = try? ShippedArchiveStore.shippedAt(
+                forgeDir: forgeDir,
+                folderName: project.name
+            )
+            guard shouldForceCompletedToShipped(
+                finderColumn: project.column,
+                shippedAt: priorShip,
+                suppressed: suppressed
+            ) else {
+                // Persist suppression when Finder left Shipped after a recorded ship.
+                if !suppressed, priorShip != nil {
+                    try? ShippedArchiveStore.suppressCompletedShip(
+                        forgeDir: forgeDir,
+                        folderName: project.name
+                    )
+                }
+                continue
+            }
+
             do {
                 try setFinderWorkflowColumn(
                     path: project.path,
                     column: "Shipped",
                     config: config,
-                    tagStore: tagStore
+                    tagStore: tagStore,
+                    forgeDir: forgeDir,
+                    folderName: project.name,
+                    previousColumn: project.column
                 )
                 updated.append(project.name)
             } catch {

@@ -490,11 +490,12 @@ function(args) {
 """#
 
     /// Ensure `<linkRoot>:<folderName>` exists; tag matching OF project + active tasks.
-    /// Args: `{ folderName, linkRoot }`
+    /// Args: `{ folderName, linkRoot, aliasProjectNames? }`
     public static let tagMatchingOfProject = #"""
 function(args) {
   var linkRoot = (args && args.linkRoot) ? args.linkRoot : "🔥 Forge";
   var folderName = args.folderName;
+  var aliasProjectNames = (args && args.aliasProjectNames) ? args.aliasProjectNames : [];
   if (!folderName) {
     return JSON.stringify({ ok: false, error: "folderName required" });
   }
@@ -525,18 +526,34 @@ function(args) {
     createdTag = true;
   }
 
-  var project = null;
-  var projects = flattenedProjects;
-  for (var pi = 0; pi < projects.length; pi++) {
-    if ((projects[pi].name || "").trim() === folderName) {
-      project = projects[pi];
-      break;
+  var projectNamesToTry = [folderName];
+  for (var ai = 0; ai < aliasProjectNames.length; ai++) {
+    var aliasName = (aliasProjectNames[ai] || "").trim();
+    if (!aliasName) continue;
+    var seen = false;
+    for (var si = 0; si < projectNamesToTry.length; si++) {
+      if (projectNamesToTry[si] === aliasName) { seen = true; break; }
     }
+    if (!seen) projectNamesToTry.push(aliasName);
+  }
+  var project = null;
+  var matchedProjectName = null;
+  var projects = flattenedProjects;
+  for (var ni = 0; ni < projectNamesToTry.length; ni++) {
+    var targetName = projectNamesToTry[ni];
+    for (var pi = 0; pi < projects.length; pi++) {
+      if ((projects[pi].name || "").trim() === targetName) {
+        project = projects[pi];
+        matchedProjectName = targetName;
+        break;
+      }
+    }
+    if (project) break;
   }
   if (!project) {
     return JSON.stringify({
       ok: false,
-      error: "No OmniFocus project named " + folderName,
+      error: "No OmniFocus project named " + projectNamesToTry.join(", "),
       createdTag: createdTag
     });
   }
@@ -577,6 +594,82 @@ function(args) {
     taggedProject: taggedProject,
     taggedTaskIds: taggedTaskIds,
     tagPath: linkRoot + ":" + folderName
+  });
+}
+"""#
+
+    /// Set OF project status by name (and optional aliases).
+    /// Args: `{ folderName, status: "Active"|"Done", aliasProjectNames? }`
+    public static let setOfProjectStatus = #"""
+function(args) {
+  var folderName = args && args.folderName;
+  var statusName = (args && args.status) ? String(args.status) : "";
+  var aliasProjectNames = (args && args.aliasProjectNames) ? args.aliasProjectNames : [];
+  if (!folderName) {
+    return JSON.stringify({ ok: false, error: "folderName required" });
+  }
+  if (statusName !== "Active" && statusName !== "Done") {
+    return JSON.stringify({ ok: false, error: "status must be Active or Done" });
+  }
+  if (typeof Project === "undefined" || !Project.Status) {
+    return JSON.stringify({ ok: false, error: "Project.Status unavailable" });
+  }
+
+  var names = [folderName];
+  for (var a = 0; a < aliasProjectNames.length; a++) {
+    var an = aliasProjectNames[a];
+    if (an && names.indexOf(an) < 0) names.push(an);
+  }
+
+  var projects = flattenedProjects;
+  var match = null;
+  for (var i = 0; i < projects.length; i++) {
+    var p = projects[i];
+    var n = (p.name || "");
+    for (var j = 0; j < names.length; j++) {
+      if (n === names[j]) { match = p; break; }
+    }
+    if (match) break;
+  }
+  if (!match) {
+    return JSON.stringify({
+      ok: true,
+      updated: false,
+      reason: "no_matching_project",
+      folderName: folderName,
+      status: statusName
+    });
+  }
+
+  var before = "unknown";
+  try {
+    if (match.status === Project.Status.Done) before = "Done";
+    else if (match.status === Project.Status.Dropped) before = "Dropped";
+    else if (match.status === Project.Status.OnHold) before = "OnHold";
+    else if (match.status === Project.Status.Active) before = "Active";
+  } catch (e) {}
+
+  var target = (statusName === "Done") ? Project.Status.Done : Project.Status.Active;
+  if (match.status === target) {
+    return JSON.stringify({
+      ok: true,
+      updated: false,
+      reason: "already_set",
+      folderName: folderName,
+      projectName: match.name || folderName,
+      status: statusName,
+      before: before
+    });
+  }
+
+  match.status = target;
+  return JSON.stringify({
+    ok: true,
+    updated: true,
+    folderName: folderName,
+    projectName: match.name || folderName,
+    status: statusName,
+    before: before
   });
 }
 """#

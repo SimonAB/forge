@@ -86,7 +86,9 @@ public enum OmniFocusPlanExecutor {
                         path: path,
                         column: column,
                         config: config,
-                        tagStore: tagStore
+                        tagStore: tagStore,
+                        forgeDir: forgeDir,
+                        folderName: p.folderName
                     )
                     applied.append(p)
                 } catch {

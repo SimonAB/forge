@@ -289,7 +289,10 @@ final class PreferencesWindowController: NSWindowController {
                         path: project.path,
                         column: column,
                         config: cfg,
-                        tagStore: FinderTagStore()
+                        tagStore: FinderTagStore(),
+                        forgeDir: forgeDir,
+                        folderName: project.name,
+                        previousColumn: project.column
                     )
                 }
             )
@@ -306,6 +309,23 @@ final class PreferencesWindowController: NSWindowController {
             }
             if !remOut.errors.isEmpty {
                 parts.append(remOut.errors.joined(separator: "; "))
+            }
+            if KanbanArchivePolicy.isEnabled(config: cfg) {
+                let refreshed = try await scanner.scanProjects()
+                let sweep = try KanbanArchivePolicy.applyDueArchives(
+                    projects: refreshed,
+                    config: cfg,
+                    forgeDir: forgeDir
+                )
+                if !sweep.migratedFromLegacyArchived.isEmpty {
+                    parts.append("Migrated Archived → Completed: \(sweep.migratedFromLegacyArchived.joined(separator: ", ")).")
+                }
+                if !sweep.completedFolders.isEmpty {
+                    parts.append("Completed: \(sweep.completedFolders.joined(separator: ", ")).")
+                }
+                if !sweep.errors.isEmpty {
+                    parts.append(sweep.errors.joined(separator: "; "))
+                }
             }
             let inventory = try RemindersService(config: current).loadEligibleSnapshot(forgeDir: forgeDir)
             if let inventory {
@@ -738,7 +758,7 @@ private final class PreferencesOmniFocusView: NSView {
         syncFromOmnifocusCheckbox = pull
 
         let note = NSTextField(wrappingLabelWithString: """
-        Requires OmniFocus running with Automation permission for Forge. Change a column tag in OmniFocus, then press Refresh on the board. Advanced options remain in config.yaml.
+        Requires OmniFocus running with Automation permission for Forge. Change a column tag in OmniFocus, then press Refresh on the board. With board moves → OmniFocus on, leaving Shipped reopens the OF project and entering Shipped marks it Done (config: reopen_of_project_when_leaving_shipped / complete_of_project_when_entering_shipped).
         """)
         note.font = .systemFont(ofSize: 11, weight: .regular)
         note.textColor = .tertiaryLabelColor

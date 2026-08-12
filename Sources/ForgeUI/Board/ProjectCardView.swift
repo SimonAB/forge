@@ -5,6 +5,8 @@ import ForgeCore
 /// optional clickable folder icon to reveal in Finder, and optional context menu from environment.
 struct ProjectCardView: View {
     let project: Project
+    /// Optional Shipped→Completed countdown label (e.g. `complete in 3d`).
+    var archiveCountdownLabel: String? = nil
     @Environment(\.projectContextMenuActions) private var contextMenuActions
     @Environment(\.projectRevealAction) private var revealAction
     @State private var isHovering = false
@@ -25,6 +27,13 @@ struct ProjectCardView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
+                }
+                if let archiveCountdownLabel, !archiveCountdownLabel.isEmpty {
+                    Text(archiveCountdownLabel)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(1)
+                        .help("Days remaining before the Completed Finder tag is applied")
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)

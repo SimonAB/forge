@@ -180,7 +180,7 @@ Start from [`config.sample.yaml`](config.sample.yaml) and copy it to
 - **`project_roots`** — one or more directories whose subfolders are Forge projects (legacy `workspace` still supported).
 - **`project_scan_depth`** — how many levels to scan under each root (`1` = direct children only; `2` = also inside untagged grouping folders).
 - **`board.columns`** — ordered kanban columns, each mapped to a Finder tag.
-- **`board.meta_tags`** — supplementary tags (e.g. Collab, Student, URGENT), used for per-project flags and for the board's Radar view.
+- **`board.meta_tags`** — supplementary tags (e.g. Collab, Student, URGENT, Completed), used for per-project flags and for the board's Radar view. **`Completed ✔️`** is applied automatically after `board.archive_after_shipped_days` (default 7) in Shipped; use `forge archive` or board **Refresh**.
 - **`terminal`** — preferred terminal app (`auto`, `iTerm`, `Terminal.app`).
 
 ## Multi-Mac sync

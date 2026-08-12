@@ -32,6 +32,13 @@ In the menu bar: **OmniFocus Align…** (preview, then Apply).
 | Finder → OmniFocus | `forge move` / board drag, if `sync_on_move` is on |
 | OmniFocus → Finder | Board **Refresh**, or `forge omnifocus refresh --apply-finder`, if `sync_from_omnifocus` is on |
 | Completed OF project → Shipped | Refresh, if `sync_completed_project_to_shipped` is on |
+| Leave Shipped → reopen OF project | Board/`forge move`, if `reopen_of_project_when_leaving_shipped` (default true) and `sync_on_move` |
+| Enter Shipped → OF project Done | Board/`forge move`, if `complete_of_project_when_entering_shipped` (default true) and `sync_on_move` |
+
+Once a folder has been shipped (or you leave **Shipped** on the board / in Finder),
+Refresh will **not** keep forcing Shipped on every sync. Move the folder back to
+**Shipped** yourself to clear that override. Leaving Shipped also reopens the matching
+OmniFocus project when the reopen flag is on, so OF status stays aligned with Finder.
 
 Refresh does not push Finder columns onto OmniFocus. If doctor reports drift,
 `sync_on_move` skips OF writes unless you allow sync with drift or pass

@@ -52,11 +52,15 @@ struct MoveCommand: AsyncParsableCommand {
             }
         }
 
-        if let existingWorkflowTag = matched.workflowTag {
-            try tagStore.removeTag(existingWorkflowTag, at: matched.path)
-        }
-
-        try tagStore.addTag(targetCol.tag, at: matched.path)
+        try OmniFocusMoveSync.setFinderWorkflowColumn(
+            path: matched.path,
+            column: targetCol.name,
+            config: config,
+            tagStore: tagStore,
+            forgeDir: ConfigLoader.forgeDirectory(for: config),
+            folderName: matched.name,
+            previousColumn: matched.column
+        )
 
         let from = matched.column ?? "Untagged"
         print("\(matched.name): \(from) → \(targetCol.name)")
@@ -75,11 +79,14 @@ struct MoveCommand: AsyncParsableCommand {
             break
         case .skipped(let reason):
             print("OmniFocus sync skipped: \(reason)")
-        case .synced(let count, let alias, let missing):
+        case .synced(let count, let alias, let missing, let projectStatusNote):
             var msg = "OmniFocus sync: \(config.omnifocus.columnTagLabel(for: targetCol.name)) on \(count) task(s)."
             if let alias { msg += " alias \(alias)" }
             if !missing.isEmpty { msg += " (missing alias: \(missing.joined(separator: ", ")))" }
             print(msg)
+            if let projectStatusNote {
+                print(projectStatusNote)
+            }
         }
 
         if config.reminders.enabled {

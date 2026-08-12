@@ -106,10 +106,15 @@ private struct BoardRootView: View {
         let tagStore = FinderTagStore()
         let fetch: @Sendable () async throws -> [Project] = { try await scanner.scanProjects() }
         let move: @Sendable (Project, ColumnConfig) async throws -> Void = { project, column in
-            if let existing = project.workflowTag {
-                try tagStore.removeTag(existing, at: project.path)
-            }
-            try tagStore.addTag(column.tag, at: project.path)
+            try OmniFocusMoveSync.setFinderWorkflowColumn(
+                path: project.path,
+                column: column.name,
+                config: config,
+                tagStore: tagStore,
+                forgeDir: forgeDir,
+                folderName: project.name,
+                previousColumn: project.column
+            )
 
             guard let resolvedForgeDir = forgeDir else { return }
 
@@ -153,10 +158,11 @@ private struct BoardRootView: View {
                     || activeConfig.omnifocus.syncFromOmnifocus
                     || activeConfig.omnifocus.syncCompletedProjectToShipped
             )
-            guard ofRefresh || activeConfig.reminders.enabled else { return }
+            let archiveEnabled = KanbanArchivePolicy.isEnabled(config: activeConfig)
+            guard ofRefresh || activeConfig.reminders.enabled || archiveEnabled else { return }
 
             let freshScanner = WorkspaceScanner(config: activeConfig)
-            let projects = try await freshScanner.scanProjects()
+            var projects = try await freshScanner.scanProjects()
             var skipFolders: Set<String> = []
             var errors: [String] = []
 
@@ -168,6 +174,9 @@ private struct BoardRootView: View {
                 )
                 skipFolders = Set(outcome.pulledFolders)
                 errors.append(contentsOf: outcome.errors)
+                if !outcome.pulledFolders.isEmpty {
+                    projects = try await freshScanner.scanProjects()
+                }
             }
 
             if activeConfig.reminders.enabled {
@@ -182,11 +191,26 @@ private struct BoardRootView: View {
                             path: project.path,
                             column: column,
                             config: activeConfig,
-                            tagStore: FinderTagStore()
+                            tagStore: FinderTagStore(),
+                            forgeDir: resolvedForgeDir,
+                            folderName: project.name,
+                            previousColumn: project.column
                         )
                     }
                 )
                 errors.append(contentsOf: remOut.errors)
+                if !remOut.updatedFolders.isEmpty {
+                    projects = try await freshScanner.scanProjects()
+                }
+            }
+
+            if archiveEnabled {
+                let sweep = try KanbanArchivePolicy.applyDueArchives(
+                    projects: projects,
+                    config: activeConfig,
+                    forgeDir: resolvedForgeDir
+                )
+                errors.append(contentsOf: sweep.errors)
             }
 
             if !errors.isEmpty {
@@ -199,6 +223,7 @@ private struct BoardRootView: View {
             config: config,
             fetchProjects: fetch,
             moveProject: move,
+            forgeDir: forgeDir,
             filterMetaTags: BoardFilterPreferences.loadEnabledMetaTags(),
             performSync: performSync
         )

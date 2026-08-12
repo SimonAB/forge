@@ -279,9 +279,14 @@ public struct OmniFocusService: Sendable {
     /// Create `<linkRoot>:<folderName>` if needed and tag the matching OF project + active tasks.
     public func applyTagMatchingOfProject(folderName: String) throws -> (createdTag: Bool, taggedTaskCount: Int) {
         try requireEnabled()
+        let aliasProjectNames = ofConfig.folderAliases
+            .filter { $0.value == folderName }
+            .map(\.key)
+            .sorted()
         struct Args: Encodable {
             let folderName: String
             let linkRoot: String
+            let aliasProjectNames: [String]
         }
         struct Result: Decodable {
             let ok: Bool?
@@ -291,11 +296,79 @@ public struct OmniFocusService: Sendable {
         }
         let result: Result = try bridge.evaluateJSON(
             omniJSSource: OmniJSSnippets.tagMatchingOfProject,
-            argument: Args(folderName: folderName, linkRoot: ofConfig.linkTagRoot)
+            argument: Args(
+                folderName: folderName,
+                linkRoot: ofConfig.linkTagRoot,
+                aliasProjectNames: aliasProjectNames
+            )
         )
         if result.ok == false {
             throw OmniJSBridgeError.evaluationFailed(result.error ?? "tag_matching_of_project failed")
         }
         return (result.createdTag ?? false, result.taggedTaskIds?.count ?? 0)
+    }
+
+    /// Result of setting an OmniFocus project status (Active / Done).
+    public struct ProjectStatusOutcome: Sendable, Equatable {
+        public let updated: Bool
+        public let projectName: String?
+        public let status: String
+        public let before: String?
+        public let reason: String?
+
+        public init(
+            updated: Bool,
+            projectName: String?,
+            status: String,
+            before: String?,
+            reason: String?
+        ) {
+            self.updated = updated
+            self.projectName = projectName
+            self.status = status
+            self.before = before
+            self.reason = reason
+        }
+    }
+
+    /// Set the matching OF project to Active or Done (by Finder folder name + aliases).
+    public func applyOfProjectStatus(folderName: String, status: String) throws -> ProjectStatusOutcome {
+        try requireEnabled()
+        let aliasProjectNames = ofConfig.folderAliases
+            .filter { $0.value == folderName }
+            .map(\.key)
+            .sorted()
+        struct Args: Encodable {
+            let folderName: String
+            let status: String
+            let aliasProjectNames: [String]
+        }
+        struct Result: Decodable {
+            let ok: Bool?
+            let error: String?
+            let updated: Bool?
+            let projectName: String?
+            let status: String?
+            let before: String?
+            let reason: String?
+        }
+        let result: Result = try bridge.evaluateJSON(
+            omniJSSource: OmniJSSnippets.setOfProjectStatus,
+            argument: Args(
+                folderName: folderName,
+                status: status,
+                aliasProjectNames: aliasProjectNames
+            )
+        )
+        if result.ok == false {
+            throw OmniJSBridgeError.evaluationFailed(result.error ?? "set_of_project_status failed")
+        }
+        return ProjectStatusOutcome(
+            updated: result.updated ?? false,
+            projectName: result.projectName,
+            status: result.status ?? status,
+            before: result.before,
+            reason: result.reason
+        )
     }
 }

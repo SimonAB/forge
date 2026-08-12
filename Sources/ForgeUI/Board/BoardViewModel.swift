@@ -12,6 +12,8 @@ public final class BoardViewModel {
     public private(set) var projects: [Project] = []
     public private(set) var error: String?
     public private(set) var isLoading = false
+    /// Folder name → ship timestamp for archive countdown (loaded from `.cache/shipped-at.json`).
+    public private(set) var shippedAtByFolder: [String: Date] = [:]
 
     /// When set, only projects in this column are shown. Nil = show all columns.
     public var columnFilter: String? = nil
@@ -34,6 +36,7 @@ public final class BoardViewModel {
     
     /// When non-nil and non-empty, only these meta tags appear in the board filter picker; otherwise all from config.
     private let filterMetaTags: [String]?
+    private let forgeDir: String?
 
     /// Cached compiled regex for searchFilter; invalidated when searchFilter changes.
     private var searchRegexCache: (pattern: String, regex: NSRegularExpression?, literalLower: String?)?
@@ -53,14 +56,27 @@ public final class BoardViewModel {
         config: ForgeConfig,
         fetchProjects: @escaping @Sendable () async throws -> [Project],
         moveProject: @escaping @Sendable (Project, ColumnConfig) async throws -> Void,
+        forgeDir: String? = nil,
         filterMetaTags: [String]? = nil,
         performSync: (@Sendable () async throws -> Void)? = nil
     ) {
         self.config = config
         self.fetchProjects = fetchProjects
         self.moveProject = moveProject
+        self.forgeDir = forgeDir
         self.filterMetaTags = filterMetaTags
         self.performSync = performSync
+    }
+
+    /// Archive countdown / due label for Shipped cards, or nil when not applicable.
+    public func archiveCountdownLabel(for project: Project) -> String? {
+        let shippedAt = shippedAtByFolder[project.name]
+        let status = KanbanArchivePolicy.status(
+            project: project,
+            config: config,
+            shippedAt: shippedAt
+        )
+        return KanbanArchivePolicy.countdownLabel(for: status)
     }
 
     /// Meta tags to show in the board filter picker. Subset of config when preference is set; otherwise all.
@@ -84,8 +100,15 @@ public final class BoardViewModel {
         Task {
             do {
                 let result = try await fetchProjects()
+                let shippedMap: [String: Date]
+                if let forgeDir {
+                    shippedMap = (try? ShippedArchiveStore.read(forgeDir: forgeDir))?.shippedAt ?? [:]
+                } else {
+                    shippedMap = [:]
+                }
                 await MainActor.run {
                     self.projects = result
+                    self.shippedAtByFolder = shippedMap
                     self.boardCache = nil
                     self.isLoading = false
                     self.error = nil
@@ -93,6 +116,7 @@ public final class BoardViewModel {
             } catch {
                 await MainActor.run {
                     self.projects = []
+                    self.shippedAtByFolder = [:]
                     self.boardCache = nil
                     self.isLoading = false
                     self.error = error.localizedDescription

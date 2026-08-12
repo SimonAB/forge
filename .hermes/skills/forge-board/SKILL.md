@@ -36,6 +36,7 @@ Meta tags (from `config.yaml`):
 |----------|-------------|
 | `URGENT ⚠️` | Flag a project as requiring immediate attention. |
 | `Student 🎓` | Indicate a student project. |
+| `Completed ✔️` | Applied automatically ~7 days after Shipped (`forge archive` / Refresh). |
 
 Kanban flow: `Plan → Watch → Coding → Write → Review → Shipped`
 Side-column: All active columns can move to/from Paused.

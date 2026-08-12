@@ -240,6 +240,80 @@ import Testing
     #expect(updated.columnSyncEnabled)
 }
 
+@Test func archiveAfterShippedDaysDefaultsToSeven() throws {
+    let config = try loadForgeYAML("""
+    project_roots:
+      - /tmp
+    board:
+      columns:
+        - name: Shipped
+          tag: "Shipped"
+          colour: 3
+      meta_tags:
+        - "Completed ✔️"
+      tag_aliases: {}
+    """)
+    #expect(config.board.archiveAfterShippedDays == nil)
+    #expect(config.board.resolvedArchiveAfterShippedDays == 7)
+}
+
+@Test func archiveAfterShippedDaysDecodes() throws {
+    let config = try loadForgeYAML("""
+    project_roots:
+      - /tmp
+    board:
+      columns:
+        - name: Shipped
+          tag: "Shipped"
+          colour: 3
+      meta_tags:
+        - "Completed ✔️"
+      archive_after_shipped_days: 3
+      tag_aliases: {}
+    """)
+    #expect(config.board.resolvedArchiveAfterShippedDays == 3)
+}
+
+
+@Test func omnifocusShippedStatusFlagsDefaultTrue() throws {
+    let config = try loadForgeYAML("""
+    project_roots:
+      - /tmp
+    board:
+      columns:
+        - name: Shipped
+          tag: "Shipped"
+          colour: 3
+      meta_tags: []
+      tag_aliases: {}
+    omnifocus:
+      enabled: true
+      sync_on_move: true
+    """)
+    #expect(config.omnifocus.reopenOfProjectWhenLeavingShipped)
+    #expect(config.omnifocus.completeOfProjectWhenEnteringShipped)
+}
+
+@Test func omnifocusShippedStatusFlagsDecodeFalse() throws {
+    let config = try loadForgeYAML("""
+    project_roots:
+      - /tmp
+    board:
+      columns:
+        - name: Shipped
+          tag: "Shipped"
+          colour: 3
+      meta_tags: []
+      tag_aliases: {}
+    omnifocus:
+      enabled: true
+      reopen_of_project_when_leaving_shipped: false
+      complete_of_project_when_entering_shipped: false
+    """)
+    #expect(!config.omnifocus.reopenOfProjectWhenLeavingShipped)
+    #expect(!config.omnifocus.completeOfProjectWhenEnteringShipped)
+}
+
 private func loadForgeYAML(_ yaml: String) throws -> ForgeConfig {
     let tmp = FileManager.default.temporaryDirectory
         .appendingPathComponent("forge-config-\(UUID().uuidString).yaml")

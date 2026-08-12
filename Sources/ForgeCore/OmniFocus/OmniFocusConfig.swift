@@ -10,6 +10,10 @@ public struct OmniFocusConfig: Codable, Sendable, Equatable {
     public var syncFromOmnifocus: Bool
     /// When a linked OF *project* is Done/Dropped, move the Finder folder to Shipped on Refresh.
     public var syncCompletedProjectToShipped: Bool
+    /// On board/`forge move` leaving Shipped, reopen the matching OF project (Done/Dropped → Active).
+    public var reopenOfProjectWhenLeavingShipped: Bool
+    /// On board/`forge move` entering Shipped, mark the matching OF project Done.
+    public var completeOfProjectWhenEnteringShipped: Bool
     /// Allow `sync_on_move` even when `doctor` still reports drift.
     public var allowSyncWithDrift: Bool
     /// Maximum age of `.cache/omnifocus-snapshot.json` before refresh is required for enrichment.
@@ -45,6 +49,8 @@ public struct OmniFocusConfig: Codable, Sendable, Equatable {
         case syncOnMove = "sync_on_move"
         case syncFromOmnifocus = "sync_from_omnifocus"
         case syncCompletedProjectToShipped = "sync_completed_project_to_shipped"
+        case reopenOfProjectWhenLeavingShipped = "reopen_of_project_when_leaving_shipped"
+        case completeOfProjectWhenEnteringShipped = "complete_of_project_when_entering_shipped"
         case allowSyncWithDrift = "allow_sync_with_drift"
         case snapshotMaxAgeSeconds = "snapshot_max_age_seconds"
         case defaultUntaggedColumn = "default_untagged_column"
@@ -65,6 +71,8 @@ public struct OmniFocusConfig: Codable, Sendable, Equatable {
         syncOnMove: Bool = false,
         syncFromOmnifocus: Bool = true,
         syncCompletedProjectToShipped: Bool = true,
+        reopenOfProjectWhenLeavingShipped: Bool = true,
+        completeOfProjectWhenEnteringShipped: Bool = true,
         allowSyncWithDrift: Bool = false,
         snapshotMaxAgeSeconds: TimeInterval = 900,
         defaultUntaggedColumn: String = "Watch",
@@ -83,6 +91,8 @@ public struct OmniFocusConfig: Codable, Sendable, Equatable {
         self.syncOnMove = syncOnMove
         self.syncFromOmnifocus = syncFromOmnifocus
         self.syncCompletedProjectToShipped = syncCompletedProjectToShipped
+        self.reopenOfProjectWhenLeavingShipped = reopenOfProjectWhenLeavingShipped
+        self.completeOfProjectWhenEnteringShipped = completeOfProjectWhenEnteringShipped
         self.allowSyncWithDrift = allowSyncWithDrift
         self.snapshotMaxAgeSeconds = snapshotMaxAgeSeconds
         self.defaultUntaggedColumn = defaultUntaggedColumn
@@ -104,6 +114,8 @@ public struct OmniFocusConfig: Codable, Sendable, Equatable {
         syncOnMove = try c.decodeIfPresent(Bool.self, forKey: .syncOnMove) ?? false
         syncFromOmnifocus = try c.decodeIfPresent(Bool.self, forKey: .syncFromOmnifocus) ?? true
         syncCompletedProjectToShipped = try c.decodeIfPresent(Bool.self, forKey: .syncCompletedProjectToShipped) ?? true
+        reopenOfProjectWhenLeavingShipped = try c.decodeIfPresent(Bool.self, forKey: .reopenOfProjectWhenLeavingShipped) ?? true
+        completeOfProjectWhenEnteringShipped = try c.decodeIfPresent(Bool.self, forKey: .completeOfProjectWhenEnteringShipped) ?? true
         allowSyncWithDrift = try c.decodeIfPresent(Bool.self, forKey: .allowSyncWithDrift) ?? false
         snapshotMaxAgeSeconds = try c.decodeIfPresent(TimeInterval.self, forKey: .snapshotMaxAgeSeconds) ?? 900
         defaultUntaggedColumn = try c.decodeIfPresent(String.self, forKey: .defaultUntaggedColumn) ?? "Watch"
@@ -128,6 +140,12 @@ public struct OmniFocusConfig: Codable, Sendable, Equatable {
         }
         if !syncCompletedProjectToShipped {
             try c.encode(syncCompletedProjectToShipped, forKey: .syncCompletedProjectToShipped)
+        }
+        if !reopenOfProjectWhenLeavingShipped {
+            try c.encode(reopenOfProjectWhenLeavingShipped, forKey: .reopenOfProjectWhenLeavingShipped)
+        }
+        if !completeOfProjectWhenEnteringShipped {
+            try c.encode(completeOfProjectWhenEnteringShipped, forKey: .completeOfProjectWhenEnteringShipped)
         }
         try c.encode(allowSyncWithDrift, forKey: .allowSyncWithDrift)
         try c.encode(snapshotMaxAgeSeconds, forKey: .snapshotMaxAgeSeconds)
@@ -160,12 +178,20 @@ public struct OmniFocusConfig: Codable, Sendable, Equatable {
     public func updating(
         enabled: Bool? = nil,
         syncOnMove: Bool? = nil,
-        syncFromOmnifocus: Bool? = nil
+        syncFromOmnifocus: Bool? = nil,
+        reopenOfProjectWhenLeavingShipped: Bool? = nil,
+        completeOfProjectWhenEnteringShipped: Bool? = nil
     ) -> OmniFocusConfig {
         var copy = self
         if let enabled { copy.enabled = enabled }
         if let syncOnMove { copy.syncOnMove = syncOnMove }
         if let syncFromOmnifocus { copy.syncFromOmnifocus = syncFromOmnifocus }
+        if let reopenOfProjectWhenLeavingShipped {
+            copy.reopenOfProjectWhenLeavingShipped = reopenOfProjectWhenLeavingShipped
+        }
+        if let completeOfProjectWhenEnteringShipped {
+            copy.completeOfProjectWhenEnteringShipped = completeOfProjectWhenEnteringShipped
+        }
         return copy
     }
 

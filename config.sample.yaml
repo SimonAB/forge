@@ -34,6 +34,10 @@ board:
     - "URGENT ⚠️"
     - "Collab 🤝"
     - "Student 🎓"
+    - "Completed ✔️"
+
+  # Whole days in Shipped before adding the Completed meta tag (board Refresh and `forge archive`).
+  archive_after_shipped_days: 7
 
   tag_aliases: {}
 
@@ -79,6 +83,10 @@ omnifocus:
   sync_from_omnifocus: true
   # When a linked OF project is Done/Dropped, move Finder folder to Shipped on Refresh.
   sync_completed_project_to_shipped: true
+  # Board/`forge move` leaving Shipped → reopen OF project (Done/Dropped → Active).
+  reopen_of_project_when_leaving_shipped: true
+  # Board/`forge move` entering Shipped → mark OF project Done.
+  complete_of_project_when_entering_shipped: true
   allow_sync_with_drift: false
   snapshot_max_age_seconds: 900
   default_untagged_column: Watch

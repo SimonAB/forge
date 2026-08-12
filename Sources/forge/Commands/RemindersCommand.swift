@@ -307,7 +307,10 @@ extension RemindersCommand {
                         path: project.path,
                         column: column,
                         config: config,
-                        tagStore: tagStore
+                        tagStore: tagStore,
+                        forgeDir: forgeDir,
+                        folderName: project.name,
+                        previousColumn: project.column
                     )
                 }
             )

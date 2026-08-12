@@ -207,6 +207,10 @@ public enum OmniFocusAlignment {
         }
 
         let ofProjectSet = Set(inventory.ofProjectNames)
+        let taskCountByProject = Dictionary(
+            inventory.ofProjectSummaries.map { ($0.name, $0.activeTaskCount) },
+            uniquingKeysWith: { max($0, $1) }
+        )
         for name in projectNames.sorted() {
             if ofProjectSet.contains(name), (tagsByFolder[name] ?? []).isEmpty, (tasksByFolder[name] ?? []).isEmpty {
                 items.append(OmniFocusDoctorItem(
@@ -216,6 +220,18 @@ public enum OmniFocusAlignment {
                     detail: "OmniFocus has a project/folder named \(name) but no \(ofConfig.linkTagRoot): link tag yet."
                 ))
             }
+        }
+        for (ofName, forgeName) in ofConfig.folderAliases.sorted(by: { $0.key < $1.key }) {
+            guard projectNames.contains(forgeName), ofProjectSet.contains(ofName) else { continue }
+            guard (tasksByFolder[forgeName] ?? []).isEmpty else { continue }
+            let activeCount = taskCountByProject[ofName] ?? 0
+            guard activeCount > 0 else { continue }
+            items.append(OmniFocusDoctorItem(
+                bucket: .structureHint,
+                folderName: forgeName,
+                path: projectByName[forgeName]?.path,
+                detail: "OmniFocus project \(ofName) matches folder alias but has no \(ofConfig.linkTagRoot): link on tasks yet."
+            ))
         }
 
         return OmniFocusDoctorReport(generatedAt: now, items: items)
@@ -371,13 +387,15 @@ public enum OmniFocusAlignment {
                 }
             case .structureHint:
                 if let name = item.folderName {
-                    let n = taskCountByProject[name] ?? 0
+                    let aliasOFName = ofConfig.folderAliases.first { $0.value == name && (taskCountByProject[$0.key] ?? 0) > 0 }?.key
+                    let n = aliasOFName.flatMap { taskCountByProject[$0] } ?? taskCountByProject[name] ?? 0
+                    let ofLabel = aliasOFName ?? name
                     proposals.append(OmniFocusAlignProposal(
                         kind: .tagMatchingOfProject,
                         folderName: name,
                         path: item.path,
                         ofTag: ofConfig.linkTagPath(folderName: name),
-                        summary: "Tag OF project \(name) and \(n) active task(s) with \(ofConfig.linkTagPath(folderName: name))"
+                        summary: "Tag OF project \(ofLabel) and \(n) active task(s) with \(ofConfig.linkTagPath(folderName: name))"
                     ))
                 }
             case .hygiene:

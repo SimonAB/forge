@@ -116,10 +116,15 @@ final class BoardWindowController: NSObject, NSWindowDelegate {
         }
 
         let moveProject: @Sendable (Project, ColumnConfig) async throws -> Void = { project, column in
-            if let existing = project.workflowTag {
-                try tagStore.removeTag(existing, at: project.path)
-            }
-            try tagStore.addTag(column.tag, at: project.path)
+            try OmniFocusMoveSync.setFinderWorkflowColumn(
+                path: project.path,
+                column: column.name,
+                config: config,
+                tagStore: tagStore,
+                forgeDir: forgeDir,
+                folderName: project.name,
+                previousColumn: project.column
+            )
 
             guard let resolvedForgeDir = forgeDir else { return }
 
@@ -164,10 +169,11 @@ final class BoardWindowController: NSObject, NSWindowDelegate {
                     || activeConfig.omnifocus.syncFromOmnifocus
                     || activeConfig.omnifocus.syncCompletedProjectToShipped
             )
-            guard ofRefresh || activeConfig.reminders.enabled else { return }
+            let archiveEnabled = KanbanArchivePolicy.isEnabled(config: activeConfig)
+            guard ofRefresh || activeConfig.reminders.enabled || archiveEnabled else { return }
 
             let freshScanner = WorkspaceScanner(config: activeConfig)
-            let projects = try await freshScanner.scanProjects()
+            var projects = try await freshScanner.scanProjects()
             var skipFolders: Set<String> = []
             var errors: [String] = []
 
@@ -179,6 +185,9 @@ final class BoardWindowController: NSObject, NSWindowDelegate {
                 )
                 skipFolders = Set(outcome.pulledFolders)
                 errors.append(contentsOf: outcome.errors)
+                if !outcome.pulledFolders.isEmpty {
+                    projects = try await freshScanner.scanProjects()
+                }
             }
 
             if activeConfig.reminders.enabled {
@@ -193,11 +202,26 @@ final class BoardWindowController: NSObject, NSWindowDelegate {
                             path: project.path,
                             column: column,
                             config: activeConfig,
-                            tagStore: FinderTagStore()
+                            tagStore: FinderTagStore(),
+                            forgeDir: resolvedForgeDir,
+                            folderName: project.name,
+                            previousColumn: project.column
                         )
                     }
                 )
                 errors.append(contentsOf: remOut.errors)
+                if !remOut.updatedFolders.isEmpty {
+                    projects = try await freshScanner.scanProjects()
+                }
+            }
+
+            if archiveEnabled {
+                let sweep = try KanbanArchivePolicy.applyDueArchives(
+                    projects: projects,
+                    config: activeConfig,
+                    forgeDir: resolvedForgeDir
+                )
+                errors.append(contentsOf: sweep.errors)
             }
 
             if !errors.isEmpty {
@@ -211,6 +235,7 @@ final class BoardWindowController: NSObject, NSWindowDelegate {
             config: config,
             fetchProjects: fetchProjects,
             moveProject: moveProject,
+            forgeDir: forgeDir,
             filterMetaTags: BoardFilterPreferences.loadEnabledMetaTags(),
             performSync: performSync
         )
