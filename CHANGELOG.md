@@ -6,12 +6,42 @@ The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 ### Unreleased
 
-- **Completed after Shipped:** `Completed ✔️` meta tag applied after `board.archive_after_shipped_days` (default 7). Ship dates in `.cache/shipped-at.json`; board Refresh and `forge archive` / `--dry-run` apply or preview; Shipped cards show a complete countdown; legacy Shipped folders use activity age; legacy `Archived…` tags migrate to Completed.
-- **Refresh respects leaving Shipped:** if you move a project out of Shipped (board or Finder) after OmniFocus marked it Done, Refresh no longer forces Shipped again until you put it back in Shipped yourself.
-- **OmniFocus project status feedback:** with `sync_on_move`, leaving Shipped reopens the matching OF project (`reopen_of_project_when_leaving_shipped`, default true); entering Shipped marks it Done (`complete_of_project_when_entering_shipped`, default true), in addition to column-tag mirroring.
-- Forge.app: saving Preferences no longer closes the board window (config reloads in place). **Window → Board** (Cmd+B) reopens it; clicking the Dock icon does the same when no windows are visible.
-- Documentation: Forge as folder-first project kanban; optional task apps (OmniFocus bridge, Reminders EventKit backend, Things later).
-- **Reminders (optional task backend):** `forge reminders` / `status` / `show` / `refresh` / `doctor` / `align` / `paint-colours` / `paint-priorities` via EventKit; one list per Forge folder (optional `folder_aliases`); snapshot `.cache/reminders-snapshot.json`; Preferences → Reminders (enable, inbox list, include completed, optional sentinel sync, snapshot status, **Refresh now**); `forge board --json` may include a `reminders` enrichment per folder. Create missing lists with `align --apply` only. Board **Refresh**, Preferences **Refresh now**, and `forge reminders refresh` update the snapshot, paint list colours from Finder columns, and set sentinel priority from Finder `URGENT ⚠️` (background snapshot refresh does not paint). List colour also follows the Finder column on create and on `forge move`. URGENT priority also follows `forge project-tag` / `paint-priorities`. Optional sentinel reminder per list mirrors the column when sync flags are on. Doctor / align may propose Finder Shipped when a list is all-complete (never auto-moved).
+### [0.9.3] – 2026-08-12
+
+Shipped completion tagging, stronger OmniFocus ↔ Finder Shipped sync, and the
+Reminders backend that landed on `main` after **0.9.2**.
+
+#### Completed after Shipped
+
+- **`Completed ✔️`** meta tag applied after `board.archive_after_shipped_days` (default 7).
+- Ship dates in `.cache/shipped-at.json`; board **Refresh** and **`forge archive`**
+  (with **`--dry-run`**) apply or preview; Shipped cards show a **complete in Nd** countdown.
+- Legacy Shipped folders use folder activity age; legacy **`Archived…`** tags migrate to Completed.
+
+#### OmniFocus Shipped sync
+
+- **Refresh respects leaving Shipped** — after you move out of Shipped (board or Finder),
+  Refresh no longer re-forces Shipped until you return there yourself.
+- **`reopen_of_project_when_leaving_shipped`** (default true) — board/`forge move` reopens
+  the matching OF project when leaving Shipped.
+- **`complete_of_project_when_entering_shipped`** (default true) — entering Shipped marks
+  the OF project Done, in addition to column-tag mirroring.
+
+#### Reminders (optional task backend)
+
+- **`forge reminders`** / `status` / `show` / `refresh` / `doctor` / `align` /
+  `paint-colours` / `paint-priorities` via EventKit; one list per Forge folder.
+- Snapshot `.cache/reminders-snapshot.json`; Preferences → Reminders; **`forge board --json`**
+  may include `reminders` enrichment. Create missing lists with **`align --apply`** only.
+- Board **Refresh** / Preferences **Refresh now** update snapshot, list colours, URGENT
+  sentinel priority, and optional sentinel → Finder pull.
+
+#### Forge.app / docs
+
+- Saving Preferences no longer closes the board window (config reloads in place).
+  **Window → Board** (Cmd+B) or the Dock icon reopens when no windows are visible.
+- Documentation sweep: folder-first kanban, **`forge archive`**, OmniFocus Shipped feedback,
+  **`docs/app.md`**, **`docs/kanban.md`**, **`docs/omnifocus.md`**, **`docs/cli.md`**.
 
 ### [0.9.2] – 2026-08-09
 
@@ -397,6 +427,7 @@ updated website, and the default Forge-home move.
   - Provide a help URL and AppleScript usage description.
   - Update the `generate_icon` script (`7767ca9`, `d0b87fa`, `23db3b1`, `a4742ff`).
 
+[0.9.3]: https://github.com/SimonAB/forge/releases/tag/v0.9.3
 [0.9.2]: https://github.com/SimonAB/forge/releases/tag/v0.9.2
 [0.9.0]: https://github.com/SimonAB/forge/releases/tag/v0.9.0
 [0.8.12]: https://github.com/SimonAB/forge/releases/tag/v0.8.12
