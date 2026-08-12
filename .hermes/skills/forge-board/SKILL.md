@@ -124,13 +124,22 @@ forge project-tag remove <Project> "URGENT \u26A0\uFE0F"
 
 ### Briefs
 
-Generate a structured kanban brief:
+Morning review (when the user agrees) follows Forge `.cursor/rules/morning-brief.mdc`:
+
+1. `forge omnifocus refresh --apply-finder` — sync OF snapshot + OF→Finder (orchestrator).
+2. Parallelise calendar / OF today / board / GitHub as Hephaestus judges best
+   (this pane for fast CLI; Herdr helpers with a suitable `--kind` only when faster).
+3. Cap helper waits; take over locally on stall. Synthesise `## Brief` / `## Details`;
+   no column/tag writes without approval.
+4. Fallback: run all steps in this session if Herdr is unavailable.
+
+Board-only brief generator:
 
 ```bash
 python3 scripts/forge-brief.py
 ```
 
-The brief includes:
+The board brief includes:
 
 1. **Calendar** — today's events, upcoming events, warnings (events due within N hours).
 2. **Column load** — project count per column.

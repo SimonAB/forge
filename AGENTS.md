@@ -271,15 +271,22 @@ Read-only brief generator for many concurrent projects. Run `python3 scripts/for
 ### Brief output format (must be consistent)
 
 When producing a brief for the user, **always** use this compact layout.
+Morning review steps (sync, calendar, OF today, board, GitHub) live in
+`@.cursor/rules/morning-brief.mdc`. As **Hephaestus**, choose which Herdr/LLM
+helper (if any) fits each pull — favour speed for CLI scrapes; take over on
+timeout. The orchestrator synthesises the brief and retains the approval gate
+for board writes.
 
 #### Section 1: `Brief` (narrative, compact)
 
 - Heading must be exactly: `## Brief`
 - Tone: discreet “classic valet” manner (no filler acknowledgements; no managerial language).
 - Content (keep to a few sentences):
-  - Today’s fixed points + tomorrow’s earliest constraints (from calendar).
+  - Today’s calendar fixed points (and tomorrow’s earliest constraints when useful).
+  - OmniFocus due today / overdue (Forge-linked), in one short clause.
   - **URGENT ⚠️** items first (column + smallest next nudge).
   - Most stale in-flight item(s) (Watch/Coding/Write/Review), then Paused.
+  - GitHub: open issues/PRs on primary packages, and any forks behind/ahead of upstream.
   - Hygiene note if present (no changes without explicit approval).
   - Close with `**Top 3 (proposed):** ...` (options, not instructions).
 
@@ -287,11 +294,19 @@ When producing a brief for the user, **always** use this compact layout.
 
 - Heading must be exactly: `## Details`
 - Keep it dense and scannable; use **bold** for highest-signal items.
-- Prefer **two compact tables**:
-  - `### Schedule` table with rows for Today / Tomorrow or key days, plus Warnings.
-  - `### Board` table with one row per subsection (Column load, URGENT, Neglected, Stuck in-flight, Hygiene).
+- Prefer compact tables:
+  - `### Schedule` — Today (and Tomorrow if needed), plus Warnings.
+  - `### OmniFocus` — due today / overdue (title, project, column).
+  - `### Board` — Column load, URGENT, Neglected, Stuck in-flight, Hygiene.
+  - `### GitHub` — primary packages (open issues / PRs); forks vs upstream (drift only).
+
+Primary package repos: `CausalDynamics.jl`, `CausalTargeted.jl`, `CausalMediation.jl`,
+`DAGMakie.jl`, `forge` (all under `SimonAB/`). Forks: check all non-archived forks;
+report only those not in sync with upstream.
 
 Generating briefs is always safe; **moving columns or changing tags requires explicit user approval**.
+Morning `forge omnifocus refresh --apply-finder` is part of the agreed morning sync
+(OF→Finder); it is not a free licence to run other write commands.
 
 ## Safety, Ethics and Pitfalls
 
@@ -353,8 +368,9 @@ For full specs: `@.cursor/rules/forge-cli.mdc`, `@.cursor/rules/forge-workflows.
 ## Learned User Preferences
 
 - Documentation tone: direct and matter-of-fact (Julia-package style); avoid contrastive “X is not Y, X is Z” constructions.
+- Do not append kanban or meta tags to Reminders list titles; titles stay as folder names.
 
 ## Learned Workspace Facts
 
 - Default Forge home is `~/Documents/Software/Forge`; config search still includes legacy `~/Documents/Forge` and `~/Documents/Work/Projects/Forge`.
-- Reminders integration: one EventKit **list** per Forge-tagged folder (title match); EventKit cannot maintain list groups, sections, icons, or hashtags. List colour follows the Finder column (paint only). Optional sentinel reminder (`Forge · <Column>`) for column sync. Finder `URGENT ⚠️` sets sentinel EventKit priority (high / none); there is no Flagged API. Board Refresh / Preferences Refresh now / `forge reminders refresh` snapshot + colour + URGENT priority (never delete unmatched lists; do not create lists). Background snapshot refresh does not paint. Create lists with `align --apply`. Forge does not create or complete ordinary reminder items.
+- Reminders is the OmniFocus-alternative task inbox: one EventKit **list** per Forge-tagged folder (title match); kanban stays on Finder (not column-lists or list tags). EventKit cannot maintain list groups, sections, icons, or hashtags; user-created Reminders.app groups are layout-only and do not affect Forge visibility. List colour follows the Finder column (paint only). Optional sentinel reminder (`Forge · <Column>`) for column sync. Finder `URGENT ⚠️` sets sentinel EventKit priority (high / none); there is no Flagged API. Board Refresh / Preferences Refresh now / `forge reminders refresh` snapshot + colour + URGENT priority (never delete unmatched lists; do not create lists). Background snapshot refresh does not paint. Create lists with `align --apply`. Forge does not create or complete ordinary reminder items.
