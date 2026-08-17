@@ -159,7 +159,7 @@ Never modify project state with forge-brief; it is always read-only.
 
 Morning review (session start when the user agrees) also runs
 `forge omnifocus refresh --apply-finder`, `forge calendar --days 1 --json`,
-OmniFocus due-today/overdue from the snapshot, and GitHub package/fork checks —
+OmniFocus due-today/overdue from the snapshot, and GitHub owned-repo/fork checks —
 see `@.cursor/rules/morning-brief.mdc` and `AGENTS.md` Briefs.
 
 ## General rules for the assistant

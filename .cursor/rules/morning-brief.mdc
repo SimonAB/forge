@@ -52,7 +52,7 @@ Standing authorisation for this morning review: `herdr pane split`, `herdr agent
 |------------|--------|
 | Calendar + OF today | `forge calendar --days 1 --json`; parse snapshot for due today / overdue |
 | Board | `python3 scripts/forge-brief.py` |
-| GitHub primary | open issues/PRs on the five primary repos |
+| GitHub owned | open issues/PRs on all owned (non-fork) repos |
 | GitHub forks | fork list + compare vs upstream (drift only) |
 
 **Orchestrator keeps:** step 1 sync (so the OF snapshot is ready), herd assignment, synthesis of `## Brief` / `## Details`. If Herdr is unavailable, run everything here.
@@ -100,9 +100,14 @@ python3 scripts/forge-brief.py
 
 Summarise: URGENT / hot, neglected, stuck mid-flow, overloaded columns, hygiene. Options only.
 
-### 5. GitHub packages (issues, PRs, fork drift)
+### 5. GitHub (owned issues/PRs, fork drift)
 
-**Primary (owned) — open issues and PRs:**
+**Owned (non-fork) — open issues and PRs:**
+
+- Enumerate with `gh repo list SimonAB --source --no-archived --limit 100`.
+- Search open issues and PRs across those repos (`gh search issues` / `gh search prs` with `--owner SimonAB --state open`, then drop forks). GitHub MCP `search_issues` / `search_pull_requests` is an alternative.
+- In the brief, **list only owned repos that have open issues or PRs** (counts + highest-signal titles). Mention the count of quiet owned repos in one line.
+- Still highlight these primary packages when they have open items:
 
 | Repo |
 |------|
@@ -111,8 +116,6 @@ Summarise: URGENT / hot, neglected, stuck mid-flow, overloaded columns, hygiene.
 | `SimonAB/CausalMediation.jl` |
 | `SimonAB/DAGMakie.jl` |
 | `SimonAB/forge` |
-
-Use `gh` or the GitHub MCP (`search_issues` / `search_pull_requests` scoped to each repo, `is:open`). Keep the table compact (counts + highest-signal titles).
 
 **Forks — state vs upstream:**
 

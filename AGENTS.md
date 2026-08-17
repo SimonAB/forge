@@ -18,7 +18,7 @@ When this workspace is used with a language model, **prefer local inference for 
 
 ## OmniFocus Integration
 
-When OmniFocus.app is running and `omnifocus.enabled` is true, treat OmniFocus as the task-level source. When `reminders.enabled` is true, use `forge reminders` for Apple Reminders (EventKit; lists match folders by title; `doctor` / `align --apply` for missing lists; list colour follows Finder column; Finder URGENT sets sentinel priority; optional sentinel column sync). Forge remains project kanban. Tasks may also live in Things or another app:
+When OmniFocus.app is running and `omnifocus.enabled` is true, treat OmniFocus as the task-level source. Task dates (defer, planned, due), inbox, completion, notes, and review go through OmniFocus directly (OmniJS / JXA, or Omni Group MCP when available). **`forge omnifocus`** covers the project join: snapshot, `doctor` / `align` / `show`, Refresh onto Finder, and column-tag mirroring on `forge move`. Only Forge writes kanban column tags and `🔥 Forge:` link tags. When `reminders.enabled` is true, use `forge reminders` for Apple Reminders (EventKit; lists match folders by title; `doctor` / `align --apply` for missing lists; list colour follows Finder column; Finder URGENT sets sentinel priority; optional sentinel column sync). Forge remains project kanban. Tasks may also live in Things or another app:
 
 ### Read Commands (always safe)
 
@@ -290,7 +290,7 @@ for board writes.
   - OmniFocus due today / overdue (Forge-linked), in one short clause.
   - **URGENT ⚠️** items first (column + smallest next nudge).
   - Most stale in-flight item(s) (Watch/Coding/Write/Review), then Paused.
-  - GitHub: open issues/PRs on primary packages, and any forks behind/ahead of upstream.
+  - GitHub: open issues/PRs on owned (non-fork) repos, and any forks behind/ahead of upstream.
   - Hygiene note if present (no changes without explicit approval).
   - Close with `**Top 3 (proposed):** ...` (options, not instructions).
 
@@ -302,11 +302,13 @@ for board writes.
   - `### Schedule` — Today (and Tomorrow if needed), plus Warnings.
   - `### OmniFocus` — due today / overdue (title, project, column).
   - `### Board` — Column load, URGENT, Neglected, Stuck in-flight, Hygiene.
-  - `### GitHub` — primary packages (open issues / PRs); forks vs upstream (drift only).
+  - `### GitHub` — owned repos with open issues / PRs; forks vs upstream (drift only).
 
-Primary package repos: `CausalDynamics.jl`, `CausalTargeted.jl`, `CausalMediation.jl`,
-`DAGMakie.jl`, `forge` (all under `SimonAB/`). Forks: check all non-archived forks;
-report only those not in sync with upstream.
+Owned repos: check all non-archived, non-fork `SimonAB/` repositories; report only
+those with open issues or PRs. Primary packages (`CausalDynamics.jl`,
+`CausalTargeted.jl`, `CausalMediation.jl`, `DAGMakie.jl`, `forge`) are worth a
+glance even when quiet. Forks: check all non-archived forks; report only those
+not in sync with upstream.
 
 Generating briefs is always safe; **moving columns or changing tags requires explicit user approval**.
 Morning `forge omnifocus refresh --apply-finder` is part of the agreed morning sync
@@ -375,6 +377,9 @@ For full specs: `@.cursor/rules/forge-cli.mdc`, `@.cursor/rules/forge-workflows.
 - Do not append kanban or meta tags to Reminders list titles; titles stay as folder names.
 - Forge Watch means “monitor this project” (`Watch 👁️`); never map personal video-queue tags (e.g. `Watch Later…`) onto kanban columns.
 - Prefer `Completed ✔️` (not `Archived…`) as the post-Shipped meta tag.
+- When aligning GitHub forks with upstream, merge upstream into the fork locally, resolve conflicts, and push to the fork; do not open pull requests to upstream.
+- OmniFocus task dates and inbox may be written directly (OmniJS; later Omni’s MCP). Forge stays the kanban and link-tag join. Leave community OmniFocus MCP servers uninstalled while that join lives in Forge.
+- When converting deadlines into OmniFocus due dates, keep dues on weekdays (typically the preceding Friday); leave calendar event dates as given.
 
 ## Learned Workspace Facts
 
