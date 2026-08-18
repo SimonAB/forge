@@ -270,7 +270,10 @@ def build_brief(
     urgent = [p for p in projects if p.is_urgent]
     urgent_sorted = sorted(urgent, key=lambda p: (-p.days_since_activity, p.name.casefold()))
 
-    stale = [p for p in projects if p.days_since_activity >= stale_days]
+    paused = [p for p in projects if p.column == "Paused"]
+    paused_sorted = _sorted_by_neglect(paused)
+
+    stale = [p for p in projects if p.days_since_activity >= stale_days and p.column != "Paused"]
     stale_sorted = _sorted_by_neglect(stale)
 
     active_overdue = [
@@ -366,6 +369,15 @@ def build_brief(
             out.append(f"- {_format_age(p.days_since_activity)}\t{p.column}\t{p.name}")
         if len(active_overdue_sorted) > show:
             out.append(f"- … and {len(active_overdue_sorted) - show} more")
+    else:
+        out.append("- None")
+
+    out.append(f"\nPaused ({len(paused_sorted)})")
+    if paused_sorted:
+        for p in paused_sorted[:show]:
+            out.append(f"- {_format_age(p.days_since_activity)}\t{p.name}")
+        if len(paused_sorted) > show:
+            out.append(f"- … and {len(paused_sorted) - show} more")
     else:
         out.append("- None")
 
