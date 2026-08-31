@@ -145,9 +145,10 @@ The board brief includes:
 1. **Calendar** — today's events, upcoming events, warnings (events due within N hours).
 2. **Column load** — project count per column.
 3. **URGENT** — projects tagged `URGENT ⚠️`, sorted by staleness.
-4. **Neglected** — projects ≥7 days inactive (across all columns).
-5. **Stuck in-flight** — projects ≥14 days in Watch/Coding/Write/Review.
-6. **Hygiene** — projects missing a column or workflow tag.
+4. **Neglected** — projects ≥7 days inactive (excludes Paused; list Paused separately).
+5. **Stuck in-flight** — projects ≥14 days in Watch/Coding/Write/Review (not Paused).
+6. **Paused** — paused projects listed in their own section.
+7. **Hygiene** — projects missing a column or workflow tag.
 
 Common variants:
 - `--stale-days 5` — catch stale earlier.
@@ -172,7 +173,7 @@ Workflow for URGENT projects:
 
 Workflow for stale projects:
 
-1. **Identify stale**: `forge-brief.py` shows Neglected (≥7 days) and Stuck in-flight (≥14 days in Watch/Coding/Write/Review).
+1. **Identify stale**: `forge-brief.py` shows Neglected (≥7 days, excluding Paused), Stuck in-flight (≥14 days in Watch/Coding/Write/Review), and a separate Paused section.
 2. **Assess each stale project**:
    - What column is it in?
    - What is the last activity and when?
@@ -184,7 +185,7 @@ Workflow for stale projects:
    - Move back to Plan for re-planning.
    - Add `#Person` for delegation.
    - Mark as URGENT if critical.
-4. **Propose to the user**: Present options and wait for approval.
+4. **Propose to the user**: Present options and wait for approval. Do not treat Paused projects as Neglected.
 
 ### Calendar Integration
 
@@ -225,9 +226,10 @@ which calendars to read via `calendar.include` in `config.yaml`.
 | `forge project-tag add <Proj> <Tag>` | Add tag | No (approval required) |
 | `forge project-tag remove <Proj> <Tag>` | Remove tag | No (approval required) |
 | `forge calendar` | Read events | Yes |
-| `forge events` | Alias | Yes |
-| `forge --json` | Calendar JSON | Yes |
-| `forge events --json` | Calendar JSON | Yes |
-| `forge project-tag add <Project> "URGENT"` | Add URGENT flag | No |
-| `forge project-tag remove <Project> "URGENT"` | Remove URGENT flag | No |
 | `forge calendar --json` | Calendar JSON | Yes |
+| `forge events` | Alias for calendar | Yes |
+| `forge events --json` | Calendar JSON | Yes |
+| `forge project-tag add <Project> "URGENT ⚠️"` | Add URGENT flag | No |
+| `forge project-tag remove <Project> "URGENT ⚠️"` | Remove URGENT flag | No |
+| `forge omnifocus refresh --apply-finder` | OF snapshot + OF→Finder | Morning sync (when agreed) |
+| `forge reminders …` | Optional Reminders backend | See `forge reminders --help` |

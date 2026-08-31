@@ -14,12 +14,41 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Any, Iterable, Mapping, Sequence
+
+FORGE_DIR = os.environ.get("FORGE_DIR", os.path.expanduser("~/Documents/Software/Forge"))
+
+
+def _resolve_forge_bin() -> str:
+    """Return an executable forge CLI path."""
+
+    candidates: list[str] = []
+    if env := os.environ.get("FORGE_BIN", "").strip():
+        candidates.append(env)
+    candidates.extend(
+        [
+            os.path.expanduser("~/bin/forge"),
+            "/Applications/Forge.app/Contents/Resources/bin/forge",
+            os.path.join(FORGE_DIR, ".build", "debug", "forge"),
+        ]
+    )
+    seen: set[str] = set()
+    for path in candidates:
+        if not path or path in seen:
+            continue
+        seen.add(path)
+        if os.path.isfile(path) and os.access(path, os.X_OK):
+            return path
+    raise SystemExit(
+        "forge CLI not found. Install via Forge → Preferences → Install CLI, "
+        "or set FORGE_BIN to the forge binary."
+    )
 
 
 def _is_urgent_tag(tag: str) -> bool:
@@ -68,9 +97,14 @@ def _run_forge_board_json() -> Mapping[str, Any]:
     """Return parsed JSON from `forge board --json`."""
 
     try:
-        output = subprocess.check_output(["forge", "board", "--json"], text=True)
+        output = subprocess.check_output(
+            [_resolve_forge_bin(), "board", "--json"], text=True
+        )
     except FileNotFoundError:
-        raise SystemExit("forge is not on PATH; run from the Forge repo or install/configure forge.")
+        raise SystemExit(
+            "forge CLI not found. Install via Forge → Preferences → Install CLI, "
+            "or set FORGE_BIN to the forge binary."
+        )
     except subprocess.CalledProcessError as exc:
         raise SystemExit(exc.output.strip() or "forge board --json failed.")
     return json.loads(output)
@@ -146,14 +180,14 @@ def _try_run_calendar_events(
     # This avoids the slow AppleScript approach and matches what Forge.app/CLI already uses.
     try:
         completed = subprocess.run(
-            ["forge", "calendar", "--days", str(int(days)), "--json"],
+            [_resolve_forge_bin(), "calendar", "--days", str(int(days)), "--json"],
             text=True,
             capture_output=True,
             timeout=timeout_seconds,
             check=False,
         )
     except FileNotFoundError:
-        return ([], "forge is not on PATH (required for Calendar integration).")
+        return ([], "forge CLI not found (required for Calendar integration).")
     except subprocess.TimeoutExpired:
         return ([], f"forge calendar timed out after {timeout_seconds:g}s.")
 

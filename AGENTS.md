@@ -379,7 +379,8 @@ For full specs: `@.cursor/rules/forge-cli.mdc`, `@.cursor/rules/forge-workflows.
 - Prefer `Completed ✔️` (not `Archived…`) as the post-Shipped meta tag.
 - When aligning GitHub forks with upstream, merge upstream into the fork locally, resolve conflicts, and push to the fork; do not open pull requests to upstream.
 - OmniFocus task dates and inbox may be written directly (OmniJS; later Omni’s MCP). Forge stays the kanban and link-tag join. Leave community OmniFocus MCP servers uninstalled while that join lives in Forge.
-- When converting deadlines into OmniFocus due dates, keep dues on weekdays (typically the preceding Friday); leave calendar event dates as given.
+- Schedule OmniFocus with GTD: the calendar is the hard landscape (time-specific events only). Due dates are for genuine deadlines (external, or an explicit personal commitment), kept on weekdays, typically the preceding Friday. Planned dates are when to engage; defer dates hide work until it can start. Do not use due dates to mean “do this on Thursday”. A missed planned date is re-planned, not rolled as an overdue due. Time-specific actions may match the calendar start/end. Do not put planned dates on action groups (OmniFocus inherits them onto children and clutters Forecast Past); plan only the next leaf action.
+- In briefs, list Paused projects in their own section; do not include them in Neglected or Stuck in-flight.
 
 ## Learned Workspace Facts
 
