@@ -39,6 +39,9 @@ dist-app/
 # Task files and caches (workspace-specific, may contain private data)
 tasks/
 .cache/
+.forge/world.db
+.forge/tasks.db
+.forge/inbox/
 
 # Local configuration (contains machine- and person-specific paths/projects)
 config.yaml

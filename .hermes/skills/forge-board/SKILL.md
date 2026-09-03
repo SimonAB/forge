@@ -128,7 +128,8 @@ forge project-tag remove <Project> "URGENT \u26A0\uFE0F"
 Morning review (when the user agrees) follows Forge `.cursor/rules/morning-brief.mdc`:
 
 1. `forge omnifocus refresh --apply-finder` — sync OF snapshot + OF→Finder (orchestrator).
-2. Parallelise calendar / OF today / board / GitHub as Hephaestus judges best
+2. `bash scripts/morning-review-pull.sh` — OF → `TASKS.toml` + `world.db`, then calendar/board/due via `forge-brief.py`.
+3. Parallelise GitHub checks as Hephaestus judges best (or delegate to an idle **Morning Brief** Herdr pane).
    (this pane for fast CLI; Herdr helpers with a suitable `--kind` only when faster).
 3. Cap helper waits; take over locally on stall. Synthesise `## Brief` / `## Details`;
    no column/tag writes without approval.
@@ -143,12 +144,27 @@ python3 scripts/forge-brief.py
 The board brief includes:
 
 1. **Calendar** — today's events, upcoming events, warnings (events due within N hours).
-2. **Column load** — project count per column.
-3. **URGENT** — projects tagged `URGENT ⚠️`, sorted by staleness.
-4. **Neglected** — projects ≥7 days inactive (excludes Paused; list Paused separately).
-5. **Stuck in-flight** — projects ≥14 days in Watch/Coding/Write/Review (not Paused).
-6. **Paused** — paused projects listed in their own section.
-7. **Hygiene** — projects missing a column or workflow tag.
+2. **Due tasks** — overdue, due today, and upcoming from `.forge/tasks.db` (fed by capture + `TASKS.toml`).
+3. **Column load** — project count per column.
+4. **URGENT** — projects tagged `URGENT ⚠️`, sorted by staleness.
+5. **Neglected** — projects ≥7 days inactive (excludes Paused; list Paused separately).
+6. **Stuck in-flight** — projects ≥14 days in Watch/Coding/Write/Review (not Paused).
+7. **Paused** — paused projects listed in their own section.
+8. **Hygiene** — projects missing a column or workflow tag.
+
+**Capture (when the user says capture: / inbox:):**
+
+```bash
+forge capture "<text>" --source assistant
+```
+
+Project tasks sync (before or with the brief):
+
+```bash
+bash scripts/morning-review-pull.sh
+```
+
+Do not also run `forge calendar` or `forge-tasks-world.py due` when the pull script (or `forge-brief.py`) output is already in hand.
 
 Common variants:
 - `--stale-days 5` — catch stale earlier.

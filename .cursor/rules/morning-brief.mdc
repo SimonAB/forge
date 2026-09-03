@@ -50,12 +50,60 @@ Standing authorisation for this morning review: `herdr pane split`, `herdr agent
 
 | Workstream | Scope |
 |------------|--------|
-| Calendar + OF today | `forge calendar --days 1 --json`; parse snapshot for due today / overdue |
-| Board | `python3 scripts/forge-brief.py` |
+| Calendar + tasks + board | `bash scripts/morning-review-pull.sh` (or orchestrator delegates to Morning Brief pane) |
+| Board only (no sync) | `python3 scripts/forge-brief.py --calendar-days 1` |
 | GitHub owned | open issues/PRs on all owned (non-fork) repos |
 | GitHub forks | fork list + compare vs upstream (drift only) |
 
-**Orchestrator keeps:** step 1 sync (so the OF snapshot is ready), herd assignment, synthesis of `## Brief` / `## Details`. If Herdr is unavailable, run everything here.
+**Orchestrator keeps:** step 1 sync (so the OF snapshot is ready), herd assignment, synthesis of `## Brief` / `## Details`. If a **Morning Brief** Herdr pane is idle, prompt it with the closed worker task below instead of duplicating pulls here. If Herdr is unavailable, run everything here.
+
+### Herdr brief worker (adjacent pane)
+
+When this pane is dedicated to morning brief (Herdr title **Morning Brief**, or the user asks solely for a brief):
+
+- You are a **brief worker**, not the orchestrator. Do not spawn subagents or split panes.
+- **Read-only:** do not move columns, change tags, or edit task files.
+- Use exact output headings: `## Brief` then `## Details` (AGENTS.md layout).
+
+**Pull sequence (avoid duplicate commands):**
+
+```bash
+bash scripts/morning-review-pull.sh
+```
+
+That script runs: `forge omnifocus refresh --apply-finder`, `sync-of-tasks-from-of.py`, and `forge-brief.py --calendar-days 1`.
+
+Do **not** also run `forge calendar`, `forge-tasks-world.py due`, or a second `forge-brief.py` — the brief script already includes calendar, board neglect, and due tasks from the task index.
+
+**Then (GitHub only):** owned open issues/PRs and fork drift vs upstream — parallel `gh` commands are fine. Cap fork compares at ~90s; note partial results if truncated.
+
+**Synthesise:** Schedule and Tasks tables from the pull output + GitHub tables; close `## Brief` with `**Top 3 (proposed):**` (options, not instructions).
+
+### Herdr dashboard layouts
+
+Terminal dashboard for live GTD + project state:
+
+```bash
+python3 scripts/forge-dashboard.py --layout compact    # glance (~25 lines)
+python3 scripts/forge-dashboard.py --layout split      # board | tasks
+python3 scripts/forge-dashboard.py --layout tick --watch 30   # one-line strip
+bash scripts/herdr-forge-layout.sh stack|dashboard|triple|brief
+```
+
+Recommended Forge workspace (`w8`):
+
+| Preset | Layout | Use |
+|--------|--------|-----|
+| `brief` | 50/50 | orchestrator \| morning brief agent |
+| `stack` | main + bottom | orchestrator over live compact dashboard |
+| `dashboard` | 65/35 | main \| split dashboard watch |
+| `triple` | main + right stack | orchestrator \| brief + tick strip |
+
+The bottom/tick panes use `--watch` refresh; the brief worker pane synthesises narrative briefs only.
+
+```text
+Morning brief worker — read-only. Run bash scripts/morning-review-pull.sh, then GitHub owned issues/PRs and fork drift. Return ## Brief and ## Details per AGENTS.md. Do not move projects or change tags.
+```
 
 Example spawn when a Herdr helper *is* the right call:
 
@@ -65,40 +113,63 @@ herdr agent prompt <pane_id|name> "…" --wait --until done --timeout 90000
 herdr agent read <pane_id|name> --lines 120
 ```
 
-### 1. Sync Forge ↔ OmniFocus
+When the user says **capture:** or **inbox:** followed by text, run
+`forge capture "<text>" --source assistant` (add `--link` / `--file` when
+provided). Do not invent due dates or task IDs; process later with
+`forge tasks assign`.
+
+### 1. Sync Forge ↔ OmniFocus + project tasks
 
 ```bash
 forge omnifocus refresh --apply-finder
+python3 scripts/sync-of-tasks-from-of.py
 ```
 
-This refreshes `.cache/omnifocus-snapshot.json` and pulls OF columns onto Finder (same OF half of board Refresh). Report any apply-finder errors briefly; continue the brief even if doctor still reports drift.
+The OF refresh updates `.cache/omnifocus-snapshot.json` and pulls OF columns onto Finder (same OF half of board Refresh). **`sync-of-tasks-from-of.py`** imports Forge-linked OmniFocus tasks into per-project **`TASKS.toml`** and refreshes the SQLite **task index** at **`.forge/world.db`**. Report any apply-finder or sync errors briefly; continue the brief even if doctor still reports drift.
+
+If you edited `TASKS.toml` by hand instead, run `python3 scripts/forge-tasks-world.py ingest` to refresh the task index without re-exporting OmniFocus.
 
 If Reminders is also enabled, do **not** invent a second sync unless asked; OF refresh comes first.
 
-### 2. Today’s calendar
+### 2. Today’s calendar, board, and due tasks
 
 ```bash
-forge calendar --days 1 --json
+bash scripts/morning-review-pull.sh
 ```
+
+Or, step by step:
+
+```bash
+forge omnifocus refresh --apply-finder
+python3 scripts/sync-of-tasks-from-of.py
+python3 scripts/forge-brief.py --calendar-days 1
+```
+
+`forge-brief.py` includes **Calendar**, **Inbox**, **Due tasks**, column load, URGENT, Neglected, stuck in-flight, Paused, and Hygiene. Do not re-run `forge calendar` or `forge-tasks-world.py due` when you already have that output.
 
 Use today’s events as fixed points in `## Brief` and the `### Schedule` table.
 
-### 3. OmniFocus tasks for today
+### 3. Due tasks — parsing only
 
-From the refreshed snapshot (`.cache/omnifocus-snapshot.json` → `inventory.tasks`):
+When using `morning-review-pull.sh` or `forge-brief.py`, due tasks come from the **Due tasks** section (`.forge/world.db` ← `TASKS.toml`).
 
-- Include incomplete Forge-linked tasks whose `due` falls on **today (local calendar day)**, plus **overdue** (`due` before today).
-- Group by Forge folder / OF project; show title, due, and `forgeColumn` when present.
-- Never invent task IDs; cite OF/Forge titles and columns only.
+If you hand-edited TASKS.toml without re-syncing OmniFocus:
+
+```bash
+python3 scripts/forge-tasks-world.py ingest
+python3 scripts/forge-tasks-world.py due --days 14
+```
+
+- Include open tasks (`next`, `waiting`) whose `due` is **today**, plus **overdue**, and upcoming within the horizon.
+- Group by project; show title, due, kanban column, and `[waiting]` when applicable.
+- Never invent task IDs; cite titles and columns only.
 - If almost no tasks have `due` set, say so briefly and do not invent “today” membership.
+
+Project tasks live at `<project>/TASKS.toml`; the task index is gitignored at `Forge/.forge/world.db`.
 
 ### 4. Project review (board)
 
-```bash
-python3 scripts/forge-brief.py
-```
-
-Summarise: URGENT / hot, neglected, stuck mid-flow, overloaded columns, hygiene. Options only.
+Covered by `forge-brief.py` in step 2. Summarise: URGENT / hot, neglected, stuck mid-flow, overloaded columns, hygiene. Options only.
 
 ### 5. GitHub (owned issues/PRs, fork drift)
 
@@ -132,7 +203,7 @@ gh api "repos/SimonAB/<fork>/compare/<upstream_owner>:<upstream_default>...<fork
 
 ### Brief output layout
 
-Follow `AGENTS.md` (**Briefs**): `## Brief` then `## Details`, with tables for Schedule, OmniFocus (today), Board, and GitHub.
+Follow `AGENTS.md` (**Briefs**): `## Brief` then `## Details`, with tables for Schedule, Tasks, Board, and GitHub.
 
 Close Brief with `**Top 3 (proposed):** ...` (options, not instructions).
 

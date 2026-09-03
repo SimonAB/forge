@@ -10,6 +10,7 @@ enum ShortcutPreferences {
 
     enum Identifier: String, CaseIterable {
         case openBoard = "openBoard"
+        case capture = "capture"
     }
 
     /// Stored key + modifiers for one shortcut. Used for menu items and global monitor matching.
@@ -25,12 +26,15 @@ enum ShortcutPreferences {
 
     private static let defaultSpecs: [Identifier: Spec] = [
         .openBoard: Spec(keyEquivalent: "b", keyCode: 11, modifierFlags: .command),
+        // ⌃⌘Space — quick capture (device-independent modifiers).
+        .capture: Spec(keyEquivalent: " ", keyCode: 49, modifierFlags: [.control, .command]),
     ]
 
     /// Human-readable label for each shortcut (for Preferences UI).
     static func label(for id: Identifier) -> String {
         switch id {
         case .openBoard: return "Board"
+        case .capture: return "Capture"
         }
     }
 

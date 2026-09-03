@@ -249,6 +249,7 @@ See `@.cursor/rules/forge-workflows.mdc` for stale remediation and URGENT triage
 | `forge project-tag add <proj> <tag>` | Add tag              |
 | `forge project-tag remove <proj> <tag>` | Remove tag          |
 | `forge status`                  | Summary dashboard (column counts, URGENT) |
+| `forge dashboard`               | GTD dashboard (terminal or `--json` for Forge.app) |
 
 ### Restricted (Require Approval)
 
@@ -268,9 +269,50 @@ forge project-tag remove <Project> <Tag>
 
 See `@.cursor/rules/forge-cli.mdc` for full command specs.
 
-## Briefs (neglect + URGENT attention)
+## Briefs (neglect + URGENT + tasks)
 
-Read-only brief generator for many concurrent projects. Run `python3 scripts/forge-brief.py` (variants: `--stale-days`, `--show`, `--overdue-active-days`, `--calendar-timeout-seconds`, `--calendar-calendars`). See `@.cursor/rules/forge-cli.mdc` for section meanings (URGENT, Neglected, stuck in-flight, Hygiene).
+Read-only brief generator for many concurrent projects. Run `python3 scripts/forge-brief.py` (variants: `--stale-days`, `--show`, `--overdue-active-days`, `--due-days`, `--calendar-timeout-seconds`, `--calendar-calendars`). See `@.cursor/rules/forge-cli.mdc` for section meanings (URGENT, Neglected, stuck in-flight, Hygiene, due tasks from task index).
+
+### Project tasks (TASKS.toml + task index)
+
+Forge task data uses **per-project files** and a **cross-project index**:
+
+| Layer | Path | Role |
+|-------|------|------|
+| **Project tasks** | `<project>/TASKS.toml` | Human-editable tasks per project (Neovim-friendly) |
+| **Task index** | `Forge/.forge/tasks.db` | SQLite inbox + cross-project due/search (migrates from `world.db`) |
+
+**Capture (inbox-first):**
+
+```bash
+forge capture "Reply to Rivka" --source assistant
+forge capture "Review budget" --file ~/Desktop/budget.xlsx   # link only
+forge capture "Keep a copy" --file ~/Desktop/budget.xlsx --stash
+forge tasks inbox
+forge tasks assign <id> "Apodemus luxury"
+forge tasks open <id>
+forge tasks complete <id>
+```
+
+When the user says **capture:** / **inbox:** something, run `forge capture "…" --source assistant` (add `--link` / `--file` when a URI or path is given). Do not invent due dates or task IDs.
+
+**Sync from OmniFocus** (optional morning path while migrating):
+
+```bash
+python3 scripts/sync-of-tasks-from-of.py
+```
+
+**After hand-editing TASKS.toml:**
+
+```bash
+python3 scripts/forge-tasks-world.py ingest
+python3 scripts/forge-tasks-world.py show <Project>   # readable checklist
+python3 scripts/forge-tasks-world.py format [Project] # rewrite TASKS.toml layout
+python3 scripts/forge-tasks-world.py due --days 14
+python3 scripts/forge-tasks-world.py status
+```
+
+Legacy `TASKS.md` is retired on the board; `forge-tasks-world.py convert` remains for one-off migration.
 
 ### Brief output format (must be consistent)
 
@@ -287,7 +329,7 @@ for board writes.
 - Tone: discreet “classic valet” manner (no filler acknowledgements; no managerial language).
 - Content (keep to a few sentences):
   - Today’s calendar fixed points (and tomorrow’s earliest constraints when useful).
-  - OmniFocus due today / overdue (Forge-linked), in one short clause.
+  - Inbox count from **task index** (`.forge/tasks.db`), plus due today / overdue, in one short clause.
   - **URGENT ⚠️** items first (column + smallest next nudge).
   - Most stale in-flight item(s) (Watch/Coding/Write/Review), then Paused.
   - GitHub: open issues/PRs on owned (non-fork) repos, and any forks behind/ahead of upstream.
@@ -300,7 +342,8 @@ for board writes.
 - Keep it dense and scannable; use **bold** for highest-signal items.
 - Prefer compact tables:
   - `### Schedule` — Today (and Tomorrow if needed), plus Warnings.
-  - `### OmniFocus` — due today / overdue (title, project, column).
+  - `### Inbox` — unprocessed captures (title, source).
+  - `### Tasks` — due today / overdue / horizon from task index (title, project, column).
   - `### Board` — Column load, URGENT, Neglected, Stuck in-flight, Hygiene.
   - `### GitHub` — owned repos with open issues / PRs; forks vs upstream (drift only).
 

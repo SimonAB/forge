@@ -12,7 +12,11 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     private var forgeDir: String?
     private var boardWindowController: BoardWindowController?
     private var omnifocusAlignWindowController: OmniFocusAlignWindowController?
+    private var dashboardPopoverController: DashboardPopoverController?
+    private var capturePopoverController: CapturePopoverController?
     private var remindersRefreshTimer: Timer?
+    private var globalShortcutMonitor: Any?
+    private var localShortcutMonitor: Any?
 
     /// We keep a single menu instance and mutate it in-place. Replacing `statusItem.menu`
     /// while the menu is open does not update the visible dropdown (macOS continues showing
@@ -81,6 +85,32 @@ final class StatusBarController: NSObject, NSMenuDelegate {
 
     @objc private func shortcutPreferencesDidChange() {
         rebuildMenu()
+        installGlobalShortcutMonitor()
+    }
+
+    private func installGlobalShortcutMonitor() {
+        if let globalShortcutMonitor {
+            NSEvent.removeMonitor(globalShortcutMonitor)
+            self.globalShortcutMonitor = nil
+        }
+        if let localShortcutMonitor {
+            NSEvent.removeMonitor(localShortcutMonitor)
+            self.localShortcutMonitor = nil
+        }
+        let captureSpec = ShortcutPreferences.spec(for: .capture)
+        globalShortcutMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard ShortcutPreferences.eventMatches(event, spec: captureSpec) else { return }
+            Task { @MainActor in
+                self?.openCapture()
+            }
+        }
+        localShortcutMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard ShortcutPreferences.eventMatches(event, spec: captureSpec) else { return event }
+            Task { @MainActor in
+                self?.openCapture()
+            }
+            return nil
+        }
     }
 
     // MARK: - Configuration
@@ -92,6 +122,8 @@ final class StatusBarController: NSObject, NSMenuDelegate {
            let cfg = try? ForgeConfig.load(from: preferred) {
             config = cfg
             forgeDir = (preferred as NSString).deletingLastPathComponent
+            dashboardPopoverController?.updateForgeDir(forgeDir)
+            capturePopoverController?.updateForgeDir(forgeDir)
             return
         }
         let candidates = ForgePaths.configCandidatePaths(home: home)
@@ -99,6 +131,8 @@ final class StatusBarController: NSObject, NSMenuDelegate {
             if FileManager.default.fileExists(atPath: candidate) {
                 config = try? ForgeConfig.load(from: candidate)
                 forgeDir = (candidate as NSString).deletingLastPathComponent
+                dashboardPopoverController?.updateForgeDir(forgeDir)
+                capturePopoverController?.updateForgeDir(forgeDir)
                 return
             }
         }
@@ -117,11 +151,23 @@ final class StatusBarController: NSObject, NSMenuDelegate {
             image?.isTemplate = true
             button.image = image
             button.imagePosition = .imageLeading
+            button.action = #selector(statusBarButtonClicked(_:))
+            button.target = self
+            button.sendAction(on: [.leftMouseUp, .rightMouseUp])
         }
 
+        let dashboard = DashboardPopoverController()
+        dashboard.onOpenBoard = { [weak self] in self?.openBoardWindow() }
+        dashboard.updateForgeDir(forgeDir)
+        dashboardPopoverController = dashboard
+
+        let capture = CapturePopoverController()
+        capture.updateForgeDir(forgeDir)
+        capturePopoverController = capture
+
         statusMenu.delegate = self
-        statusItem.menu = statusMenu
         rebuildMenu()
+        installGlobalShortcutMonitor()
     }
 
     private func updateBadge() {
@@ -164,6 +210,25 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         }
 
         if config != nil {
+            let captureSpec = ShortcutPreferences.spec(for: .capture)
+            let captureItem = NSMenuItem(
+                title: "Capture…",
+                action: #selector(openCapture),
+                keyEquivalent: captureSpec.keyEquivalent
+            )
+            captureItem.keyEquivalentModifierMask = captureSpec.modifierFlags
+            captureItem.target = self
+            menu.addItem(captureItem)
+
+            let dashboardItem = NSMenuItem(
+                title: "Dashboard…",
+                action: #selector(openDashboard),
+                keyEquivalent: "d"
+            )
+            dashboardItem.keyEquivalentModifierMask = [.command, .shift]
+            dashboardItem.target = self
+            menu.addItem(dashboardItem)
+
             let boardSpec = ShortcutPreferences.spec(for: .openBoard)
             let boardItem = NSMenuItem(
                 title: "Board",
@@ -273,6 +338,30 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         urgentProjectCount = projects.filter { KanbanRadar.isUrgent(metaTags: $0.metaTags) }.count
         updateBadge()
         rebuildMenu()
+    }
+
+    @objc private func statusBarButtonClicked(_ sender: NSStatusBarButton) {
+        guard let event = NSApp.currentEvent else { return }
+        if event.type == .rightMouseUp {
+            refreshUrgentCount()
+            statusMenu.popUp(
+                positioning: nil,
+                at: NSPoint(x: 0, y: sender.bounds.height + 4),
+                in: sender
+            )
+            return
+        }
+        dashboardPopoverController?.toggle(relativeTo: sender)
+    }
+
+    @objc private func openDashboard() {
+        guard let button = statusItem.button else { return }
+        dashboardPopoverController?.toggle(relativeTo: button)
+    }
+
+    @objc func openCapture() {
+        guard let button = statusItem.button else { return }
+        capturePopoverController?.toggle(relativeTo: button)
     }
 
     @objc private func openOmniFocusAlign() {

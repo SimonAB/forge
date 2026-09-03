@@ -19,8 +19,8 @@ Reading and reporting is always safe. The assistant may:
 - Run `forge project-tag list <project>` to inspect tags on a project.
 - Run `forge calendar --json` or `forge events --json` to inspect upcoming calendar events.
 - Run `forge status` to see a summary dashboard.
-- Run `python3 scripts/forge-brief.py` to generate a structured brief (URGENT, stale, stuck, hygiene).
-- Read project directory contents (TASKS.md, TASKS.csv, README.md) to understand project state.
+- Run `python3 scripts/forge-brief.py` to generate a structured brief (due tasks, URGENT, stale, stuck, hygiene).
+- Read project directory contents (`TASKS.toml`, README.md) to understand project task state.
 
 ## Restricted operations (require explicit user approval)
 
@@ -145,22 +145,65 @@ Always safe to run. Use `--json` for structured processing.
 
 ## forge brief (scripts/forge-brief.py)
 
-Purpose: Generate a compact, action-oriented brief from `forge board --json`.
+Purpose: Generate a compact, action-oriented brief from `forge board --json`, optional calendar, and the **task index** (`.forge/world.db`).
 
 Usage:
-- `python3 scripts/forge-brief.py` — default brief.
+- `python3 scripts/forge-brief.py` — default brief (includes due tasks from world.db, 14-day horizon).
 - `python3 scripts/forge-brief.py --stale-days 5` — catch stale projects earlier.
 - `python3 scripts/forge-brief.py --show 8` — fewer lines per section.
 - `python3 scripts/forge-brief.py --overdue-active-days 10` — flag stuck work sooner.
+- `python3 scripts/forge-brief.py --due-days 7` — shorter due-task horizon.
+- `python3 scripts/forge-brief.py --no-task-index` — board/calendar only.
 
-Outputs sections: Calendar (today, upcoming, warnings), Column load, URGENT, Neglected (stale), Possibly stuck in-flight (Watch/Coding/Write/Review), Hygiene (missing column tag).
+Outputs sections: Calendar (today, upcoming, warnings), **Inbox**, **Due tasks** (overdue, today, upcoming), Column load, URGENT, Neglected (stale), Possibly stuck in-flight (Watch/Coding/Write/Review), Paused, Hygiene (missing column tag).
 
 Never modify project state with forge-brief; it is always read-only.
 
+## Project tasks (scripts/forge-tasks-world.py, forge-capture.py, sync-of-tasks-from-of.py)
+
+| Command | Purpose |
+|---------|---------|
+| `forge capture "…"` | Capture into inbox (`.forge/tasks.db`); `--source assistant` for chat |
+| `forge tasks inbox` | List inbox |
+| `forge tasks assign <id> <project>` | Process inbox → project |
+| `forge tasks complete <id>` | Mark done |
+| `forge tasks open <id>` | Open first mail/file/url link |
+| `python3 scripts/sync-of-tasks-from-of.py` | OmniFocus → `TASKS.toml` + ingest `tasks.db` (optional) |
+| `python3 scripts/forge-tasks-world.py ingest` | Re-ingest all board `TASKS.toml` files into task index |
+| `python3 scripts/forge-tasks-world.py due --days N` | List due/open tasks from task index |
+| `python3 scripts/forge-tasks-world.py status` | Task index summary (project/task/inbox counts) |
+| `python3 scripts/forge-tasks-world.py show [project]` | Pretty-print TASKS.toml (read-only checklist) |
+| `python3 scripts/forge-tasks-world.py format [project]` | Rewrite TASKS.toml with the readable writer |
+| `python3 scripts/forge-tasks-world.py convert` | Legacy `TASKS.md` → `TASKS.toml` (one-off) |
+
+Project tasks: `<project>/TASKS.toml` (optional view). Task database: `Forge/.forge/tasks.db` (gitignored; migrates from `world.db`). Capture is **link-only** unless `--stash`.
+
+When the user says **capture:** / **inbox:**, run `forge capture "…" --source assistant` immediately (no project picker).
+
 Morning review (session start when the user agrees) also runs
-`forge omnifocus refresh --apply-finder`, `forge calendar --days 1 --json`,
-OmniFocus due-today/overdue from the snapshot, and GitHub owned-repo/fork checks —
+`forge omnifocus refresh --apply-finder`, `sync-of-tasks-from-of.py`,
+`forge calendar --days 1 --json`, due tasks from task index, and GitHub owned-repo/fork checks —
 see `@.cursor/rules/morning-brief.mdc` and `AGENTS.md` Briefs.
+
+## forge dashboard (scripts/forge-dashboard.py)
+
+Unified **project + GTD** terminal dashboard: kanban columns, URGENT/stale/stuck, calendar today, due tasks from task index.
+
+```bash
+python3 scripts/forge-dashboard.py --layout compact
+python3 scripts/forge-dashboard.py --layout split --watch 60
+python3 scripts/forge-dashboard.py --layout tick
+python3 scripts/forge-dashboard.py --layout full --refresh
+```
+
+| Layout | Best for |
+|--------|----------|
+| `tick` | Narrow Herdr strip (one line) |
+| `compact` | Bottom pane / quick glance (~25 lines) |
+| `split` | Wide pane: board \| tasks side-by-side |
+| `full` | Full GTD overview with all sections |
+
+Herdr presets: `bash scripts/herdr-forge-layout.sh brief|dashboard|triple|stack`
 
 ## General rules for the assistant
 

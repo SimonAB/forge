@@ -9,6 +9,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
 
     private var statusBar: StatusBarController!
     private var preferencesWindowController: PreferencesWindowController?
+    private let captureServices = CaptureServiceProvider()
     private let isRunningFromAppBundle = Bundle.main.bundleURL.pathExtension == "app"
     private var updaterController: SPUStandardUpdaterController?
 
@@ -23,6 +24,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         }
         statusBar = StatusBarController()
         statusBar.start()
+        NSApp.servicesProvider = captureServices
+        NSUpdateDynamicServices()
         setupMainMenu()
         NotificationCenter.default.addObserver(
             self,
@@ -92,7 +95,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         let fileMenuItem = NSMenuItem(title: "File", action: nil, keyEquivalent: "")
         mainMenu.addItem(fileMenuItem)
         fileMenuItem.submenu = fileMenu
-        // No task capture items in kanban-only mode.
+        let captureSpec = ShortcutPreferences.spec(for: .capture)
+        addItem(
+            to: fileMenu,
+            title: "Capture…",
+            action: #selector(showCapture(_:)),
+            keyEquivalent: captureSpec.keyEquivalent,
+            modifiers: captureSpec.modifierFlags
+        )
 
         // Edit
         let editMenu = NSMenu(title: "Edit")
@@ -178,6 +188,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
 
     @objc private func showBoard(_ sender: Any?) {
         statusBar.showBoardWindow()
+    }
+
+    @objc private func showCapture(_ sender: Any?) {
+        statusBar.openCapture()
     }
 
     @objc private func showHelp(_ sender: Any?) {

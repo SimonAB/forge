@@ -109,7 +109,51 @@ cat > "$CONTENTS/Info.plist" << PLIST
     <key>NSRemindersUsageDescription</key>
     <string>Forge can read Apple Reminders lists matched to your projects, create missing lists, set list colour from the kanban column, and update one optional status reminder per list.</string>
     <key>NSAppleEventsUsageDescription</key>
-    <string>Forge runs commands in your chosen terminal and shows task notifications.</string>
+    <string>Forge reads selected Mail messages so you can capture them to the inbox, and runs commands in your chosen terminal.</string>
+    <key>NSServices</key>
+    <array>
+        <dict>
+            <key>NSMenuItem</key>
+            <dict>
+                <key>default</key>
+                <string>Capture to Forge Inbox</string>
+            </dict>
+            <key>NSMessage</key>
+            <string>captureToForgeInbox</string>
+            <key>NSPortName</key>
+            <string>Forge</string>
+            <key>NSSendTypes</key>
+            <array>
+                <string>public.utf8-plain-text</string>
+                <string>NSStringPboardType</string>
+                <string>public.file-url</string>
+                <string>NSURLPboardType</string>
+            </array>
+            <key>NSRequiredContext</key>
+            <dict/>
+        </dict>
+        <dict>
+            <key>NSMenuItem</key>
+            <dict>
+                <key>default</key>
+                <string>Capture Mail Message to Forge</string>
+            </dict>
+            <key>NSMessage</key>
+            <string>captureMailToForgeInbox</string>
+            <key>NSPortName</key>
+            <string>Forge</string>
+            <key>NSSendTypes</key>
+            <array>
+                <string>public.utf8-plain-text</string>
+                <string>NSStringPboardType</string>
+            </array>
+            <key>NSRequiredContext</key>
+            <dict>
+                <key>NSAppName</key>
+                <string>Mail</string>
+            </dict>
+        </dict>
+    </array>
     <key>SUFeedURL</key>
     <string>${SUFeedURL}</string>
     <key>SUPublicEDKey</key>

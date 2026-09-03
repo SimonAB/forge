@@ -5,9 +5,8 @@
       {
         "type": "prompt",
         "timeout": 10,
-        "prompt": "When a session starts in this repo, ask the user: \"Good day. Shall I prepare your brief?\" If the user agrees, run `python3 scripts/forge-brief.py` and produce the assistant-style brief using the Brief output format in AGENTS.md (sections ## Brief and ## Details). Hook input: $ARGUMENTS"
+        "prompt": "When a session starts in this repo, ask the user: \"Good day. Shall I prepare your brief?\" If the user agrees, run `bash scripts/morning-review-pull.sh`, gather GitHub (owned issues/PRs, fork drift), and produce the assistant-style brief using AGENTS.md (`## Brief`, `## Details`). Hook input: $ARGUMENTS"
       }
     ]
   }
 }
-

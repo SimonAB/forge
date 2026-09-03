@@ -123,8 +123,16 @@ CLI: `forge reminders` / `status` / `show` / `doctor` / `align` / `refresh` / `p
 
 ## Quick capture
 
-There is no capture panel. Day-to-day tasks can live in OmniFocus, Reminders,
-Things, or another app.
+Capture into the Forge inbox (`.forge/tasks.db`) without choosing a project:
+
+- **Menubar:** **Capture…** (default ⌃⌘Space), or File → Capture…
+- **Services:** **Capture to Forge Inbox** (Finder files or selected text); **Capture Mail Message to Forge** (Mail)
+- **CLI:** `forge capture "…"`, `forge tasks inbox`, `forge tasks assign <id> <project>`
+- Clipboard URIs (`message://`, `https://`, `file://`, …) are attached as **links** (link-only unless `forge capture --file … --stash`)
+
+Assistants should run the same CLI with `--source assistant` when the user says “capture: …”.
+
+Day-to-day OmniFocus / Reminders remain optional bridges during migration.
 
 ## Permissions
 

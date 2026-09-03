@@ -3,6 +3,7 @@
 Generate a concise Forge kanban brief from `forge board --json`.
 
 Focus:
+- Due tasks from task index (`.forge/world.db` ← `TASKS.toml`)
 - URGENT-tagged projects
 - neglected (stale) projects by days since activity
 - overloaded columns and obvious board hygiene issues (e.g. missing column tag)
@@ -19,10 +20,14 @@ import subprocess
 import sys
 from collections import Counter
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
+from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
 
 FORGE_DIR = os.environ.get("FORGE_DIR", os.path.expanduser("~/Documents/Software/Forge"))
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+if SCRIPT_DIR not in sys.path:
+    sys.path.insert(0, SCRIPT_DIR)
 
 
 def _resolve_forge_bin() -> str:
@@ -80,6 +85,133 @@ class Project:
         return any(_is_urgent_tag(t) for t in self.meta_tags) or any(
             _is_urgent_tag(t) for t in self.tags
         )
+
+
+@dataclass(frozen=True)
+class DueTaskRow:
+    """Open task with a due date from the task index."""
+
+    task_id: str
+    title: str
+    project_name: str
+    project_path: str
+    section: str
+    due: str
+    column: str | None
+
+
+@dataclass(frozen=True)
+class InboxRow:
+    """Open inbox capture awaiting processing."""
+
+    task_id: str
+    title: str
+    source: str | None
+    created_at: str | None
+
+
+def _task_index_path() -> Path:
+    """Return the materialised task database path (tasks.db, migrating world.db)."""
+
+    from forge_tasks_world.capture import task_db_path
+
+    return task_db_path(Path(FORGE_DIR).expanduser())
+
+
+def _load_inbox() -> tuple[list[InboxRow], str | None]:
+    """Return inbox items from the task database."""
+    db_path = _task_index_path()
+    if not db_path.is_file():
+        return ([], None)
+    try:
+        from forge_tasks_world.world_db import WorldDatabase
+
+        db = WorldDatabase(db_path)
+        try:
+            rows = db.list_inbox()
+        finally:
+            db.close()
+    except Exception as exc:  # pragma: no cover
+        return ([], f"inbox unreadable: {exc}")
+
+    items: list[InboxRow] = []
+    for row in rows:
+        items.append(
+            InboxRow(
+                task_id=row["id"],
+                title=row["title"],
+                source=row["source"],
+                created_at=row["created_at"],
+            )
+        )
+    return (items, None)
+
+
+def _load_due_tasks_from_index(
+    *,
+    due_days: int,
+    projects: Sequence[Project],
+) -> tuple[list[DueTaskRow], dict[str, int | str] | None, str | None]:
+    """
+    Return due tasks and index status from `.forge/world.db`.
+
+    Returns (due_rows, status_dict, error_message).
+    """
+
+    db_path = _task_index_path()
+    if not db_path.is_file():
+        return ([], None, f"task index not found ({db_path}); run sync-of-tasks-from-of.py")
+
+    column_by_path = {p.path: p.column for p in projects}
+
+    try:
+        from forge_tasks_world.world_db import WorldDatabase
+
+        db = WorldDatabase(db_path)
+        try:
+            status = db.status()
+            raw_due = db.due_tasks(horizon_days=max(0, due_days), include_overdue=True)
+        finally:
+            db.close()
+    except Exception as exc:  # pragma: no cover - defensive for brief generation
+        return ([], None, f"task index unreadable: {exc}")
+
+    rows: list[DueTaskRow] = []
+    for item in raw_due:
+        rows.append(
+            DueTaskRow(
+                task_id=item.task_id,
+                title=item.title,
+                project_name=item.project_name,
+                project_path=item.project_path,
+                section=item.section,
+                due=item.due,
+                column=column_by_path.get(item.project_path),
+            )
+        )
+    return (rows, status, None)
+
+
+def _parse_due_day(due: str) -> date | None:
+    """Parse the calendar day from a due string."""
+
+    prefix = (due or "").strip()[:10]
+    if not prefix:
+        return None
+    try:
+        return date.fromisoformat(prefix)
+    except ValueError:
+        return None
+
+
+def _format_due_task(row: DueTaskRow) -> str:
+    """Format one due task line for the brief."""
+
+    due_day = _parse_due_day(row.due)
+    due_s = due_day.isoformat() if due_day else row.due[:16]
+    column = row.column or "?"
+    waiting = " [waiting]" if row.section == "waiting" else ""
+    return f"{due_s}\t{column}\t{row.project_name}\t{row.title}{waiting}"
 
 
 @dataclass(frozen=True)
@@ -298,6 +430,8 @@ def build_brief(
     calendar_warn_hours: float,
     calendar_timeout_seconds: float,
     calendar_names: Sequence[str] | None,
+    due_days: int,
+    include_task_index: bool,
 ) -> str:
     """Build and return the full brief as a string."""
 
@@ -370,6 +504,61 @@ def build_brief(
                     in_hours = (ev.start - now_local).total_seconds() / 3600.0
                     day = ev.start.strftime("%a")
                     out.append(f"  - in {in_hours:.1f}h\t{day}\t{_format_event_time(ev)}\t{ev.title}")
+            else:
+                out.append("  - None")
+
+    if include_task_index:
+        inbox_rows, inbox_err = _load_inbox()
+        out.append(f"\nInbox ({len(inbox_rows)})")
+        if inbox_err:
+            out.append(f"- Unavailable: {inbox_err}")
+        elif inbox_rows:
+            for row in inbox_rows[:show]:
+                source = f" [{row.source}]" if row.source else ""
+                out.append(f"  - {row.title}{source}")
+            if len(inbox_rows) > show:
+                out.append(f"  - … and {len(inbox_rows) - show} more")
+        else:
+            out.append("  - None")
+
+        due_rows, index_status, index_err = _load_due_tasks_from_index(
+            due_days=due_days, projects=projects
+        )
+        today = _local_now().date()
+        overdue = [row for row in due_rows if (day := _parse_due_day(row.due)) and day < today]
+        due_today = [row for row in due_rows if (day := _parse_due_day(row.due)) and day == today]
+        upcoming = [row for row in due_rows if (day := _parse_due_day(row.due)) and day > today]
+
+        out.append(f"\nDue tasks (horizon {due_days} days)")
+        if index_err:
+            out.append(f"- Unavailable: {index_err}")
+        else:
+            if index_status:
+                out.append(
+                    f"- Index: {index_status['projects']} project(s), "
+                    f"{index_status['open_tasks']} open task(s) "
+                    f"({index_status['db_path']})"
+                )
+            out.append(f"- Overdue ({len(overdue)})")
+            if overdue:
+                for row in overdue[:show]:
+                    out.append(f"  - {_format_due_task(row)}")
+                if len(overdue) > show:
+                    out.append(f"  - … and {len(overdue) - show} more")
+            else:
+                out.append("  - None")
+            out.append(f"- Due today ({len(due_today)})")
+            if due_today:
+                for row in due_today[:show]:
+                    out.append(f"  - {_format_due_task(row)}")
+            else:
+                out.append("  - None")
+            out.append(f"- Upcoming ({len(upcoming)})")
+            if upcoming:
+                for row in upcoming[:show]:
+                    out.append(f"  - {_format_due_task(row)}")
+                if len(upcoming) > show:
+                    out.append(f"  - … and {len(upcoming) - show} more")
             else:
                 out.append("  - None")
 
@@ -464,6 +653,17 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
         default="",
         help="Comma-separated Calendar.app calendar names to include (empty = all calendars).",
     )
+    parser.add_argument(
+        "--due-days",
+        type=int,
+        default=14,
+        help="Horizon (days) for due tasks from world.db (0 disables).",
+    )
+    parser.add_argument(
+        "--no-task-index",
+        action="store_true",
+        help="Skip due-task section from .forge/world.db.",
+    )
     return parser.parse_args(list(argv))
 
 
@@ -484,6 +684,8 @@ def main(argv: Sequence[str]) -> int:
         calendar_warn_hours=max(0.0, args.calendar_warn_hours),
         calendar_timeout_seconds=max(0.1, args.calendar_timeout_seconds),
         calendar_names=calendar_names,
+        due_days=max(0, args.due_days),
+        include_task_index=not args.no_task_index and args.due_days > 0,
     )
     sys.stdout.write(brief)
     return 0

@@ -32,6 +32,7 @@ forge <command> [options]
 | `forge project-tag` | Add, remove, or list meta / assignee Finder tags on a project folder |
 | `forge archive` | Apply due `Completed` meta tags on Shipped projects (after the delay) |
 | `forge status` | Summary dashboard of all projects (column counts, active, URGENT) |
+| `forge dashboard` | GTD dashboard — projects, calendar, due tasks from task index (`--json` for Forge.app) |
 | `forge calendar` / `forge events` | List upcoming Calendar events (read-only; same command) |
 | `forge omnifocus` | Optional OmniFocus bridge (`doctor`, `align`, `refresh`, …) |
 | `forge reminders` | Optional Apple Reminders bridge (`list`, `status`, `show`, `refresh`, `doctor`, `align`, `paint-colours`, `paint-priorities`) |
@@ -210,22 +211,81 @@ forge status
 
 ---
 
+## forge dashboard
+
+Unified GTD overview: kanban load, URGENT/stuck projects, today's calendar, and due tasks from `.forge/world.db` (via `scripts/forge-dashboard.py`).
+
+```
+forge dashboard
+forge dashboard --layout split --show 10
+forge dashboard --json
+forge dashboard --refresh
+```
+
+Left-click the menubar hammer in **Forge.app** to open the same snapshot in a popover. Right-click for the menu (**Dashboard…** is also ⌘⇧D).
+
+---
+
 ## scripts/forge-brief.py
 
-Read-only operational brief built from `forge board --json` (and optionally
-`forge calendar --json`). Surfaces URGENT items, neglected projects, stuck
+Read-only operational brief built from `forge board --json`, optional
+`forge calendar --json`, and the **task index** (`.forge/world.db`).
+Surfaces due/overdue tasks, URGENT items, neglected projects, stuck
 in-flight work, column load, and hygiene notes.
 
 ```bash
 python3 scripts/forge-brief.py
 python3 scripts/forge-brief.py --stale-days 5 --show 8
+python3 scripts/forge-brief.py --due-days 7
 python3 scripts/forge-brief.py --calendar-calendars "Work,Teaching"
 ```
 
 With an empty `--calendar-calendars` (the default), all calendars returned by
 `forge calendar` are included. Restrict titles with a comma-separated list when needed.
 
+Populate the task index first with `bash scripts/morning-review-pull.sh` (sync + brief bundle), or
+`python3 scripts/sync-of-tasks-from-of.py` / `python3 scripts/forge-tasks-world.py ingest`.
+
+**Morning review bundle:**
+
+```bash
+bash scripts/morning-review-pull.sh
+```
+
+Runs OF refresh, project-tasks sync, and `forge-brief.py --calendar-days 1`. GitHub checks stay with the synthesising agent.
+
 This is **not** a `forge` subcommand; it requires `forge` on your `$PATH`.
+
+---
+
+## Project tasks (TASKS.toml + task index)
+
+Per-project tasks at `<project>/TASKS.toml` (optional); canonical inbox + index at
+`Forge/.forge/tasks.db`.
+
+```bash
+forge capture "…" --source assistant          # inbox (chat / CLI / menubar)
+forge tasks inbox
+forge tasks assign <id> "Project Name"
+python3 scripts/sync-of-tasks-from-of.py          # OmniFocus → TASKS.toml + index (optional)
+python3 scripts/forge-tasks-world.py ingest     # re-ingest after hand edits
+python3 scripts/forge-tasks-world.py due --days 14
+python3 scripts/forge-tasks-world.py status
+python3 scripts/forge-tasks-world.py show "Apodemus luxury"
+python3 scripts/forge-tasks-world.py format              # rewrite all TASKS.toml
+```
+
+---
+
+## scripts/forge-dashboard.py
+
+Live terminal dashboard combining kanban, calendar, and due tasks from the task index.
+
+```bash
+python3 scripts/forge-dashboard.py --layout compact
+forge dashboard --layout split
+forge dashboard --json
+```
 
 ---
 

@@ -119,7 +119,7 @@ python3 scripts/forge-brief.py
 
 ## Notes
 
-- Track progress in this README or in `TASKS.md` within the project directory.
+- Track progress in this README or in `TASKS.toml` within the project directory.
 - Update the kanban column when the project moves to a new stage.
 - Add `#Person` tags when work is delegated.
 - Mark `URGENT ⚠️` when a project needs immediate attention (requires user approval).
