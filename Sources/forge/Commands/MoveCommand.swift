@@ -26,6 +26,9 @@ struct MoveCommand: AsyncParsableCommand {
     )
     var force: Bool = false
 
+    @Flag(name: .long, help: "Emit JSON result.")
+    var json: Bool = false
+
     mutating func run() async throws {
         let config = try ConfigLoader.load()
         let scanner = WorkspaceScanner(config: config)
@@ -34,13 +37,15 @@ struct MoveCommand: AsyncParsableCommand {
 
         guard let targetCol = findColumn(named: targetColumn, in: config) else {
             let valid = config.board.columns.map(\.name).joined(separator: ", ")
-            throw ValidationError("Unknown column '\(targetColumn)'. Valid columns: \(valid)")
+            let msg = "Unknown column '\(targetColumn)'. Valid columns: \(valid)"
+            if json { ForgeJSONError.emit(msg, command: "move") }
+            throw ValidationError(msg)
         }
 
         guard let matched = findProject(named: project, in: projects) else {
-            throw ValidationError(
-                "No project matching '\(project)'. Use 'forge board --list' to see all projects."
-            )
+            let msg = "No project matching '\(project)'. Use 'forge board --list' to see all projects."
+            if json { ForgeJSONError.emit(msg, command: "move") }
+            throw ValidationError(msg)
         }
 
         if strict {
@@ -48,24 +53,26 @@ struct MoveCommand: AsyncParsableCommand {
             case .allowed:
                 break
             case .rejected(let reason):
+                if json { ForgeJSONError.emit(reason, command: "move") }
                 throw ValidationError(reason)
             }
         }
+
+        let forgeDir = ConfigLoader.forgeDirectory(for: config)
 
         try OmniFocusMoveSync.setFinderWorkflowColumn(
             path: matched.path,
             column: targetCol.name,
             config: config,
             tagStore: tagStore,
-            forgeDir: ConfigLoader.forgeDirectory(for: config),
+            forgeDir: forgeDir,
             folderName: matched.name,
             previousColumn: matched.column
         )
 
         let from = matched.column ?? "Untagged"
-        print("\(matched.name): \(from) → \(targetCol.name)")
+        var notes: [String] = []
 
-        let forgeDir = ConfigLoader.forgeDirectory(for: config)
         let outcome = OmniFocusMoveSync.mirrorFinderColumn(
             config: config,
             forgeDir: forgeDir,
@@ -78,21 +85,22 @@ struct MoveCommand: AsyncParsableCommand {
         case .disabled:
             break
         case .skipped(let reason):
-            print("OmniFocus sync skipped: \(reason)")
+            notes.append("OmniFocus sync skipped: \(reason)")
         case .synced(let count, let alias, let missing, let projectStatusNote):
             var msg = "OmniFocus sync: \(config.omnifocus.columnTagLabel(for: targetCol.name)) on \(count) task(s)."
             if let alias { msg += " alias \(alias)" }
             if !missing.isEmpty { msg += " (missing alias: \(missing.joined(separator: ", ")))" }
-            print(msg)
+            notes.append(msg)
             if let projectStatusNote {
-                print(projectStatusNote)
+                notes.append(projectStatusNote)
             }
         }
 
         if config.reminders.enabled {
             do {
                 guard let inv = try RemindersService(config: config).loadEligibleSnapshot(forgeDir: forgeDir) else {
-                    print("Reminders sync skipped: no eligible snapshot (run forge reminders refresh).")
+                    notes.append("Reminders sync skipped: no eligible snapshot (run forge reminders refresh).")
+                    emitResult(project: matched.name, path: matched.path, from: from, to: targetCol.name, notes: notes)
                     return
                 }
                 let rem = await RemindersMoveSync.afterFinderColumnChange(
@@ -104,34 +112,48 @@ struct MoveCommand: AsyncParsableCommand {
                     force: force
                 )
                 switch rem.colour {
-                case .disabled:
-                    break
-                case .skipped(let reason):
-                    print("Reminders list colour skipped: \(reason)")
-                case .synced(let listTitle, let column):
-                    print("Reminders list colour: \(listTitle) → \(column).")
+                case .disabled: break
+                case .skipped(let reason): notes.append("Reminders list colour skipped: \(reason)")
+                case .synced(let listTitle, let column): notes.append("Reminders list colour: \(listTitle) → \(column).")
                 }
                 switch rem.sentinel {
-                case .disabled:
-                    break
-                case .skipped(let reason):
-                    print("Reminders sentinel skipped: \(reason)")
-                case .synced(let listTitle, let column):
-                    print("Reminders sentinel: \(column) on \(listTitle).")
+                case .disabled: break
+                case .skipped(let reason): notes.append("Reminders sentinel skipped: \(reason)")
+                case .synced(let listTitle, let column): notes.append("Reminders sentinel: \(column) on \(listTitle).")
                 }
                 switch rem.priority {
-                case .disabled:
-                    break
-                case .skipped(let reason):
-                    print("Reminders sentinel priority skipped: \(reason)")
-                case .synced(let listTitle, let label):
-                    print("Reminders sentinel priority: \(label) on \(listTitle).")
+                case .disabled: break
+                case .skipped(let reason): notes.append("Reminders sentinel priority skipped: \(reason)")
+                case .synced(let listTitle, let label): notes.append("Reminders sentinel priority: \(label) on \(listTitle).")
                 }
             } catch {
-                print("Reminders sync skipped: \(error.localizedDescription)")
+                notes.append("Reminders sync skipped: \(error.localizedDescription)")
             }
         }
+
+        emitResult(project: matched.name, path: matched.path, from: from, to: targetCol.name, notes: notes)
     }
+
+    private func emitResult(project: String, path: String, from: String, to: String, notes: [String]) {
+        if json {
+            let payload = MoveResultPayload(
+                project: project, path: path,
+                fromColumn: from, toColumn: to,
+                notes: notes
+            )
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            if let data = try? encoder.encode(payload),
+               let s = String(data: data, encoding: .utf8) {
+                print(s)
+            }
+        } else {
+            print("\(project): \(from) → \(to)")
+            for note in notes { print(note) }
+        }
+    }
+
+    // MARK: - Lookup helpers
 
     private func findColumn(named name: String, in config: ForgeConfig) -> ColumnConfig? {
         let lower = name.lowercased()
@@ -157,4 +179,14 @@ struct MoveCommand: AsyncParsableCommand {
         }
         return nil
     }
+}
+
+// MARK: - JSON payload
+
+private struct MoveResultPayload: Encodable {
+    let project: String
+    let path: String
+    let fromColumn: String
+    let toColumn: String
+    let notes: [String]
 }

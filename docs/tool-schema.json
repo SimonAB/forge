@@ -1,0 +1,329 @@
+{
+  "name": "forge",
+  "description": "Local kanban project manager driven by Finder tags.",
+  "version": "0.1.0",
+  "tools": [
+    {
+      "name": "forge_board",
+      "description": "Display the kanban board. Returns all projects grouped by column with metadata, tags, assignees, and activity age.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "column": {
+            "type": "string",
+            "description": "Filter by column name (e.g. Watch, Coding, Review)."
+          },
+          "assignee": {
+            "type": "string",
+            "description": "Filter by assignee tag (e.g. #Alice)."
+          },
+          "list": {
+            "type": "boolean",
+            "description": "Compact single-column list output."
+          },
+          "json": {
+            "type": "boolean",
+            "description": "Emit structured JSON payload."
+          }
+        }
+      },
+      "safe": true,
+      "cli": "forge board [--column <col>] [--assignee <tag>] [--list] [--json]"
+    },
+    {
+      "name": "forge_move",
+      "description": "Move a project to a different kanban column. Optionally syncs OmniFocus and Reminders column tags.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "project": {
+            "type": "string",
+            "description": "Project directory name or unique substring."
+          },
+          "target_column": {
+            "type": "string",
+            "description": "Target column: Plan, Watch, Coding, Write, Review, Shipped, Paused."
+          },
+          "strict": {
+            "type": "boolean",
+            "description": "Enforce left-to-right workflow rules."
+          },
+          "force": {
+            "type": "boolean",
+            "description": "Proceed even when doctor reports OmniFocus/Reminders drift."
+          },
+          "json": {
+            "type": "boolean",
+            "description": "Emit JSON result with project, path, fromColumn, toColumn, notes."
+          }
+        },
+        "required": ["project", "target_column"]
+      },
+      "safe": false,
+      "cli": "forge move <project> <target_column> [--strict] [--force] [--json]"
+    },
+    {
+      "name": "forge_project_tag_add",
+      "description": "Add a meta tag or #Person assignee tag to a project directory.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "project": {
+            "type": "string",
+            "description": "Project directory name or unique substring."
+          },
+          "tag": {
+            "type": "string",
+            "description": "Finder tag string (configured meta tag or #Name assignee)."
+          },
+          "force": {
+            "type": "boolean",
+            "description": "Allow tags not in meta_tags and not #Person."
+          },
+          "json": {
+            "type": "boolean",
+            "description": "Emit JSON result with action, tag, project, path."
+          }
+        },
+        "required": ["project", "tag"]
+      },
+      "safe": false,
+      "cli": "forge project-tag add <project> <tag> [--force] [--json]"
+    },
+    {
+      "name": "forge_project_tag_remove",
+      "description": "Remove a meta tag or #Person assignee tag from a project directory.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "project": {
+            "type": "string",
+            "description": "Project directory name or unique substring."
+          },
+          "tag": {
+            "type": "string",
+            "description": "Finder tag string to remove."
+          },
+          "force": {
+            "type": "boolean",
+            "description": "Remove tags not in meta_tags / not #Person."
+          },
+          "json": {
+            "type": "boolean",
+            "description": "Emit JSON result with action, tag, project, path."
+          }
+        },
+        "required": ["project", "tag"]
+      },
+      "safe": false,
+      "cli": "forge project-tag remove <project> <tag> [--force] [--json]"
+    },
+    {
+      "name": "forge_project_tag_list",
+      "description": "List Finder tags on a project directory with kind classification (meta, assignee, column, other).",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "project": {
+            "type": "string",
+            "description": "Project directory name or unique substring."
+          },
+          "json": {
+            "type": "boolean",
+            "description": "Emit JSON: { project, path, tags: [{ name, kind }] }."
+          }
+        },
+        "required": ["project"]
+      },
+      "safe": true,
+      "cli": "forge project-tag list <project> [--json]"
+    },
+    {
+      "name": "forge_status",
+      "description": "Summary dashboard: column counts, URGENT items, and board health.",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      },
+      "safe": true,
+      "cli": "forge status"
+    },
+    {
+      "name": "forge_capture",
+      "description": "Capture an item into the Forge inbox (zero-friction GTD). Writes to .forge/tasks.db.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Inbox item title."
+          },
+          "link": {
+            "type": "string",
+            "description": "URI (message://, file://, https://, …)."
+          },
+          "kind": {
+            "type": "string",
+            "description": "Link kind: mail, file, url, note, obsidian, bookends, other."
+          },
+          "note": {
+            "type": "string",
+            "description": "Optional note body."
+          },
+          "file": {
+            "type": "string",
+            "description": "Local file path (link-only unless --stash)."
+          },
+          "stash": {
+            "type": "boolean",
+            "description": "Copy --file into .forge/inbox/<id>/."
+          },
+          "source": {
+            "type": "string",
+            "description": "Source label: cli, menubar, assistant."
+          },
+          "json": {
+            "type": "boolean",
+            "description": "Emit JSON result."
+          }
+        },
+        "required": ["title"]
+      },
+      "safe": false,
+      "cli": "forge capture <title> [--link <uri>] [--kind <kind>] [--note <note>] [--file <path>] [--stash] [--source <source>] [--json]"
+    },
+    {
+      "name": "forge_tasks_inbox",
+      "description": "List Forge inbox items (unprocessed captures).",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "json": {
+            "type": "boolean",
+            "description": "Emit JSON."
+          }
+        }
+      },
+      "safe": true,
+      "cli": "forge tasks inbox [--json]"
+    },
+    {
+      "name": "forge_tasks_assign",
+      "description": "Assign an inbox item to a Forge project (moves it into the project's TASKS.toml).",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Inbox item ID."
+          },
+          "project": {
+            "type": "string",
+            "description": "Target Forge project name."
+          }
+        },
+        "required": ["id", "project"]
+      },
+      "safe": false,
+      "cli": "forge tasks assign <id> <project>"
+    },
+    {
+      "name": "forge_tasks_complete",
+      "description": "Mark a task as done.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Task ID."
+          }
+        },
+        "required": ["id"]
+      },
+      "safe": false,
+      "cli": "forge tasks complete <id>"
+    },
+    {
+      "name": "forge_tasks_open",
+      "description": "Open the first link on a task (Mail, file, URL).",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Task ID."
+          }
+        },
+        "required": ["id"]
+      },
+      "safe": true,
+      "cli": "forge tasks open <id>"
+    },
+    {
+      "name": "forge_calendar",
+      "description": "List Apple Calendar events (read-only). Default horizon: 7 days.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "days": {
+            "type": "integer",
+            "description": "Number of days to show."
+          },
+          "json": {
+            "type": "boolean",
+            "description": "Emit JSON."
+          }
+        }
+      },
+      "safe": true,
+      "cli": "forge calendar [--days <n>] [--json]"
+    },
+    {
+      "name": "forge_dashboard",
+      "description": "GTD dashboard: projects, calendar, inbox, and due tasks. Use --json for structured output.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "layout": {
+            "type": "string",
+            "description": "Terminal layout: tick, compact, split, full."
+          },
+          "due_days": {
+            "type": "integer",
+            "description": "Due-task horizon in days (default 14)."
+          },
+          "json": {
+            "type": "boolean",
+            "description": "Emit structured JSON."
+          }
+        }
+      },
+      "safe": true,
+      "cli": "forge dashboard [--layout <layout>] [--due-days <n>] [--json]"
+    },
+    {
+      "name": "forge_archive",
+      "description": "Apply Completed meta tags on Shipped projects after the configured delay.",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      },
+      "safe": false,
+      "cli": "forge archive"
+    }
+  ],
+  "error_schema": {
+    "type": "object",
+    "properties": {
+      "error": {
+        "type": "string",
+        "description": "Human-readable error message."
+      },
+      "command": {
+        "type": "string",
+        "description": "The forge subcommand that failed."
+      }
+    },
+    "description": "JSON error envelope emitted on stdout when --json is passed and a domain error occurs. Exit code is non-zero. ArgumentParser-level errors (missing args, unknown flags) remain plain-text on stderr."
+  }
+}
