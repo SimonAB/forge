@@ -121,8 +121,20 @@ forge omnifocus align --apply       # write after confirmation
 <td>Completed OF project → Shipped</td>
 <td>Refresh, if <code>sync_completed_project_to_shipped</code> is on</td>
 </tr>
+<tr>
+<td>Leave Shipped → reopen OF project</td>
+<td>Board/<code>forge move</code>, if <code>reopen_of_project_when_leaving_shipped</code> (default true) and <code>sync_on_move</code></td>
+</tr>
+<tr>
+<td>Enter Shipped → OF project Done</td>
+<td>Board/<code>forge move</code>, if <code>complete_of_project_when_entering_shipped</code> (default true) and <code>sync_on_move</code></td>
+</tr>
 </tbody>
 </table>
+<p>Once a folder has been shipped (or you leave <strong>Shipped</strong> on the board / in Finder),
+Refresh will <strong>not</strong> keep forcing Shipped on every sync. Move the folder back to
+<strong>Shipped</strong> yourself to clear that override. Leaving Shipped also reopens the matching
+OmniFocus project when the reopen flag is on, so OF status stays aligned with Finder.</p>
 <p>Refresh does not push Finder columns onto OmniFocus. If doctor reports drift,
 <code>sync_on_move</code> skips OF writes unless you allow sync with drift or pass
 <code>forge move --force</code>. When Reminders column pull is also on, Refresh applies

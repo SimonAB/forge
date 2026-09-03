@@ -53,10 +53,20 @@ class CaptureTests(unittest.TestCase):
             self.assertEqual(row["section"], "next")
             self.assertEqual(row["project_path"], str(project_dir))
 
+            tasks_path = project_dir / "TASKS.toml"
+            self.assertTrue(tasks_path.is_file())
+            text = tasks_path.read_text(encoding="utf-8")
+            self.assertIn("Reply to student", text)
+            self.assertIn("[[next]]", text)
+            self.assertIn(item.task_id, text)
+
             store.complete(item.task_id)
             row = store.db.get_task(item.task_id)
             assert row is not None
             self.assertEqual(row["section"], "done")
+            done_text = tasks_path.read_text(encoding="utf-8")
+            self.assertIn("[[done]]", done_text)
+            self.assertNotIn("[[next]]", done_text)
             store.close()
 
             self.assertTrue(task_db_path(forge_home).is_file())

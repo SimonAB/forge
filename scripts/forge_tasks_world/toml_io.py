@@ -22,8 +22,9 @@ SECTION_LABELS = {
     "someday": "Someday maybe",
 }
 
-TASKS_HEADER = (
-    "# Forge project tasks. Edit in Neovim; run `forge-tasks-world.py ingest` after changes."
+TASKS_HEADER_LINES = (
+    "# Forge project tasks. Edit in Neovim; run `forge-tasks-world.py ingest` after changes.",
+    "# Mark complete with checked = true (format/ingest moves the task to [[done]]).",
 )
 
 _DATE_LITERAL = re.compile(r"^\d{4}-\d{2}-\d{2}$")
@@ -44,6 +45,8 @@ class TaskRecord:
     flagged: bool = False
     links: dict[str, str] = field(default_factory=dict)
     notes: str | None = None
+    #: Transient edit flag; never written. `apply_checked_completions` moves to [[done]].
+    checked: bool = False
 
     def fingerprint(self) -> str:
         parts = [
@@ -108,7 +111,40 @@ def _parse_task_row(section: str, row: dict[str, Any]) -> TaskRecord:
         flagged=bool(row.get("flagged", False)),
         links=clean_links,
         notes=_optional_str(row.get("notes")),
+        checked=bool(row.get("checked", False)),
     )
+
+
+def apply_checked_completions(
+    project_tasks: ProjectTasks,
+    *,
+    today: date | None = None,
+) -> bool:
+    """
+    Move tasks with ``checked = true`` into ``[[done]]``.
+
+    Sets ``done`` to today when missing, clears the transient ``checked`` flag.
+    Returns True when any task changed (caller should rewrite TASKS.toml).
+    """
+    day = (today or date.today()).isoformat()
+    changed = False
+    for task in project_tasks.tasks:
+        if not task.checked:
+            continue
+        changed = True
+        if task.section != "done":
+            task.section = "done"
+            if not task.done:
+                task.done = day
+        task.checked = False
+    return changed
+
+
+def upsert_task(project_tasks: ProjectTasks, task: TaskRecord) -> None:
+    """Replace a task by id, or append when new."""
+    remaining = [item for item in project_tasks.tasks if item.id != task.id]
+    remaining.append(task)
+    project_tasks.tasks = remaining
 
 
 def _optional_str(value: Any) -> str | None:
@@ -177,7 +213,7 @@ load_leaf = load_project_tasks
 def write_project_tasks(project_tasks: ProjectTasks, path: Path) -> None:
     """Write project tasks as human-friendly TOML."""
     lines: list[str] = [
-        TASKS_HEADER,
+        *TASKS_HEADER_LINES,
         "",
         "[meta]",
         f"schema = {project_tasks.schema}",

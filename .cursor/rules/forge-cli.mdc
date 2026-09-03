@@ -19,6 +19,7 @@ Reading and reporting is always safe. The assistant may:
 - Run `forge project-tag list <project>` to inspect tags on a project.
 - Run `forge calendar --json` or `forge events --json` to inspect upcoming calendar events.
 - Run `forge status` to see a summary dashboard.
+- Run `forge edit <path>` to open a file or folder in the terminal editor (vim/Neovim; honours `terminal:`).
 - Run `python3 scripts/forge-brief.py` to generate a structured brief (due tasks, URGENT, stale, stuck, hygiene).
 - Read project directory contents (`TASKS.toml`, README.md) to understand project task state.
 
@@ -89,6 +90,16 @@ Usage:
 - `forge status`
 
 Use for a quick health check. The board `--json` provides deeper detail when needed.
+
+## forge edit
+
+Purpose: Open files or folders in the terminal editor (`vim` on `PATH`, typically Neovim).
+
+Usage:
+- `forge edit <path>…`
+- `forge edit <path> --terminal herdr`
+
+Honours `config.yaml` `terminal:` (`auto` prefers Herdr, then tmux, then a GUI terminal). Same launch path as board “open in Vim”. Finder “Open With” via **NeoVim launcher.app** should call `forge edit` (absolute `forge` path; Automator’s `PATH` is thin). Always safe.
 
 ## forge omnifocus
 

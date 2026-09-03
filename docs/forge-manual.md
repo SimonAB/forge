@@ -53,6 +53,7 @@ language models**).
   - `forge board` / `forge board --json` — kanban board (and machine-readable output for scripts).
   - `forge move` — move a project between columns.
   - `forge project-tag` — add/remove/list meta and assignee Finder tags on a project folder.
+  - `forge edit` — open files or folders in the terminal editor (vim/Neovim; honours `terminal:`).
   - `forge reminders` — optional Apple Reminders (`list`, `doctor`, `align`, `refresh`, `paint-colours`, `paint-priorities`).
 
 - **Menubar app (Forge.app)**:

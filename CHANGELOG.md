@@ -6,6 +6,7 @@ The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 ### Unreleased
 
+- **`forge edit`** — open files or directories in the terminal editor (vim/Neovim) using the same Herdr → tmux → GUI terminal path as board “open in Vim”. NeoVim launcher.app can call it for Finder “Open With”.
 - **`AGENTS.md` / morning brief** — OmniFocus task dates, inbox, completion, notes, and review go through OmniFocus directly (OmniJS / JXA, or Omni Group MCP when available); `forge omnifocus` remains the Finder join (snapshot, doctor, align, Refresh, column-tag mirroring). Morning GitHub checks cover all owned (non-fork) `SimonAB/` repos, not only the five primary packages.
 
 ### [0.9.3] – 2026-08-12

@@ -18,6 +18,7 @@ struct Forge: AsyncParsableCommand {
             CaptureCommand.self,
             TasksCommand.self,
             DashboardCommand.self,
+            EditCommand.self,
             OmniFocusCommand.self,
             RemindersCommand.self,
         ]

@@ -304,7 +304,7 @@ tag</strong> (visible in Finder and readable by Spotlight).</p>
 <li><strong><code>project_roots</code></strong> — one or more directories whose subfolders are Forge projects (legacy <code>workspace</code> still supported).</li>
 <li><strong><code>project_scan_depth</code></strong> — how many levels to scan under each root (<code>1</code> = direct children only; <code>2</code> = also inside untagged grouping folders).</li>
 <li><strong><code>board.columns</code></strong> — ordered kanban columns, each mapped to a Finder tag.</li>
-<li><strong><code>board.meta_tags</code></strong> — supplementary tags (e.g. Collab, Student, URGENT), used for per-project flags and for the board's Radar view.</li>
+<li><strong><code>board.meta_tags</code></strong> — supplementary tags (e.g. Collab, Student, URGENT, Completed), used for per-project flags and for the board's Radar view. <strong><code>Completed ✔️</code></strong> is applied automatically after <code>board.archive_after_shipped_days</code> (default 7) in Shipped; use <code>forge archive</code> or board <strong>Refresh</strong>.</li>
 <li><strong><code>terminal</code></strong> — preferred terminal app (<code>auto</code>, <code>iTerm</code>, <code>Terminal.app</code>).</li>
 </ul>
 <h2 id="multi-mac-sync">Multi-Mac sync</h2>

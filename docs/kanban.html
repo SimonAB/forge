@@ -143,6 +143,19 @@ tags or files:</p>
 </ul>
 <p>Use it to surface work that is both time-sensitive and at risk of being
 forgotten.</p>
+<h2 id="completed-after-shipped">Completed after Shipped</h2>
+<p>Projects that move to <strong>Shipped</strong> keep only the workflow tag at first. After
+<code>board.archive_after_shipped_days</code> (default <strong>7</strong>), Forge adds the <code>Completed ✔️</code>
+meta tag (must be listed under <code>board.meta_tags</code>).</p>
+<ul>
+<li>Ship date is stored in <code>.cache/shipped-at.json</code> when a folder enters Shipped.</li>
+<li>Board <strong>Refresh</strong> and <code>forge archive</code> apply due tags; <code>forge archive --dry-run</code>
+  lists countdowns without writing.</li>
+<li>Shipped cards show a <strong>complete in Nd</strong> countdown until the tag is due.</li>
+<li>Existing Shipped folders without a cache entry use folder activity age; if
+  already older than the delay, they are tagged on the next sweep.</li>
+<li>Legacy <code>Archived…</code> Finder tags on Shipped folders migrate to <code>Completed ✔️</code>.</li>
+</ul>
 <h2 id="where-to-look">Where to look</h2>
 <ul>
 <li>Terminal: <a href="cli.html#forge-board"><code>forge board</code></a> / <code>forge board --json</code></li>

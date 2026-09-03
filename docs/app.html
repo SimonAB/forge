@@ -196,7 +196,8 @@ the Dock icon when no windows are visible.</p>
 <p>Optional: keep <strong>project</strong> kanban columns in step with OmniFocus. Day-to-day
 tasks stay in the task app. Apple Reminders is the other optional backend
 (EventKit); Things is a possible later addition.</p>
-<p>Enable under <strong>Preferences → OmniFocus</strong>. With <code>sync_on_move</code>, board column moves mirror onto linked OF tasks. With <code>sync_from_omnifocus</code>, board <strong>Refresh</strong> pulls OF column tags onto Finder (and clears stacked leftover OF kanban tags on those folders). Finder→OF is not rewritten from Refresh. With <code>sync_completed_project_to_shipped</code>, a completed/dropped OF <strong>project</strong> moves the matching Finder folder to <strong>Shipped</strong> on Refresh.</p>
+<p>Enable under <strong>Preferences → OmniFocus</strong>. With <code>sync_on_move</code>, board column moves mirror onto linked OF tasks. With <code>sync_from_omnifocus</code>, board <strong>Refresh</strong> pulls OF column tags onto Finder (and clears stacked leftover OF kanban tags on those folders). Finder→OF is not rewritten from Refresh. With <code>sync_completed_project_to_shipped</code>, a completed/dropped OF <strong>project</strong> can move the matching Finder folder to <strong>Shipped</strong> on Refresh (unless you have since left Shipped — that override is remembered). With <code>sync_on_move</code>, leaving <strong>Shipped</strong> reopens the OF project (<code>reopen_of_project_when_leaving_shipped</code>, default true); entering <strong>Shipped</strong> marks it Done (<code>complete_of_project_when_entering_shipped</code>, default true).</p>
+<p>After <strong>7 days</strong> in Shipped (configurable), Forge adds the <strong><code>Completed ✔️</code></strong> meta tag via board <strong>Refresh</strong> or <code>forge archive</code>; Shipped cards show a <strong>complete in Nd</strong> countdown. See <a href="kanban.html">kanban.md</a> and <a href="cli.html#forge-archive">cli.md</a>.</p>
 <p>CLI: <code>forge omnifocus doctor</code> → <code>align</code> (dry-run) → <code>align --apply</code>. See <a href="cli.html">cli.md</a> and <code>packaging/omnifocus/README.md</code>.</p>
 <h3 id="reminders-optional">Reminders (optional)</h3>
 <p>Optional EventKit <strong>task backend</strong>. Lists match Forge project folders by title;
@@ -216,8 +217,15 @@ a single-column sentinel onto Finder (after OmniFocus, when both are on).</p>
 <p>CLI: <code>forge reminders</code> / <code>status</code> / <code>show</code> / <code>doctor</code> / <code>align</code> / <code>refresh</code> / <code>paint-colours</code> / <code>paint-priorities</code>. See <a href="reminders.html">reminders.md</a>.</p>
 <hr />
 <h2 id="quick-capture">Quick capture</h2>
-<p>There is no capture panel. Day-to-day tasks can live in OmniFocus, Reminders,
-Things, or another app.</p>
+<p>Capture into the Forge inbox (<code>.forge/tasks.db</code>) without choosing a project:</p>
+<ul>
+<li><strong>Menubar:</strong> <strong>Capture…</strong> (default ⌃⌘Space), or File → Capture…</li>
+<li><strong>Services:</strong> <strong>Capture to Forge Inbox</strong> (Finder files or selected text); <strong>Capture Mail Message to Forge</strong> (Mail)</li>
+<li><strong>CLI:</strong> <code>forge capture "…"</code>, <code>forge tasks inbox</code>, <code>forge tasks assign &lt;id&gt; &lt;project&gt;</code></li>
+<li>Clipboard URIs (<code>message://</code>, <code>https://</code>, <code>file://</code>, …) are attached as <strong>links</strong> (link-only unless <code>forge capture --file … --stash</code>)</li>
+</ul>
+<p>Assistants should run the same CLI with <code>--source assistant</code> when the user says “capture: …”.</p>
+<p>Day-to-day OmniFocus / Reminders remain optional bridges during migration.</p>
 <h2 id="permissions">Permissions</h2>
 <p>On first launch, macOS will prompt for access to:</p>
 <ul>

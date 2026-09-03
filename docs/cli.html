@@ -126,12 +126,24 @@ Reminders, Things, or similar. Commands read and write local state only.</p>
 <td>Add, remove, or list meta / assignee Finder tags on a project folder</td>
 </tr>
 <tr>
+<td><code>forge archive</code></td>
+<td>Apply due <code>Completed</code> meta tags on Shipped projects (after the delay)</td>
+</tr>
+<tr>
 <td><code>forge status</code></td>
 <td>Summary dashboard of all projects (column counts, active, URGENT)</td>
 </tr>
 <tr>
+<td><code>forge dashboard</code></td>
+<td>GTD dashboard — projects, calendar, due tasks from task index (<code>--json</code> for Forge.app)</td>
+</tr>
+<tr>
 <td><code>forge calendar</code> / <code>forge events</code></td>
 <td>List upcoming Calendar events (read-only; same command)</td>
+</tr>
+<tr>
+<td><code>forge edit</code></td>
+<td>Open files/folders in the terminal editor (vim/Neovim; honours <code>terminal:</code>)</td>
 </tr>
 <tr>
 <td><code>forge omnifocus</code></td>
@@ -175,7 +187,7 @@ and runs tag cleanup instead of overwriting the config.</p>
 <tr>
 <td><code>--json</code></td>
 <td></td>
-<td>Print JSON: <code>board.columns</code> (names and Finder tags), <code>meta_tags</code>, <code>tag_aliases</code>, and each project’s column, tags, assignees, plus <strong>Radar</strong> fields (<code>radarBucket</code>, <code>daysSinceActivity</code>, <code>activityModificationDate</code>, <code>activitySource</code>)</td>
+<td>Print JSON: <code>board.columns</code> (names and Finder tags), <code>meta_tags</code>, <code>tag_aliases</code>, <code>archiveAfterShippedDays</code>, <code>completedMetaTag</code>, and each project’s column, tags, assignees, plus <strong>Radar</strong> fields and optional <strong>completion</strong> fields (<code>archiveStatus</code>, <code>daysUntilArchive</code>, <code>shippedAt</code>)</td>
 </tr>
 <tr>
 <td><code>--column</code></td>
@@ -227,6 +239,36 @@ unblocked). Use <code>--strict</code> when you want the documented kanban transi
 <p><strong>Example:</strong></p>
 <pre><code class="language-bash">forge move manuscript Review
 forge move manuscript Write --strict
+</code></pre>
+<hr />
+<h2 id="forge-archive">forge archive</h2>
+<p>Apply the delayed <strong>Completed</strong> meta tag on <strong>Shipped</strong> projects once
+<code>board.archive_after_shipped_days</code> (default 7) have elapsed. Board <strong>Refresh</strong>
+runs the same sweep. Requires a <code>Completed…</code> entry in <code>board.meta_tags</code>.
+Legacy <code>Archived…</code> tags on Shipped folders are migrated to Completed.</p>
+<pre><code>forge archive
+forge archive --dry-run
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--dry-run</code></td>
+<td>List Shipped projects with countdown / due / already-completed status; do not write Finder tags</td>
+</tr>
+</tbody>
+</table>
+<p>Ship dates live in <code>.cache/shipped-at.json</code>. Legacy Shipped folders without a
+cache entry use folder activity age; if already older than the delay, they are
+tagged on the next sweep.</p>
+<p><strong>Examples:</strong></p>
+<pre><code class="language-bash">forge archive --dry-run
+forge archive
 </code></pre>
 <hr />
 <h2 id="forge-project-tag">forge project-tag</h2>
@@ -329,17 +371,88 @@ many projects carry an <strong>URGENT</strong>-prefixed meta tag.</p>
 <pre><code>forge status
 </code></pre>
 <hr />
+<h2 id="forge-edit">forge edit</h2>
+<p>Open files or directories in the terminal editor (<code>vim</code> on <code>PATH</code>, typically Neovim).
+Uses the same launch path as Forge board “open in Vim”: when <code>terminal:</code> is
+<code>auto</code> (or <code>herdr</code> / <code>tmux</code>), prefers a live Herdr or tmux session, otherwise
+Ghostty / kitty / iTerm / Warp / Terminal.</p>
+<pre><code>forge edit [paths…] [--terminal &lt;name&gt;]
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>paths…</code></td>
+<td>Files or directories. When omitted, opens the home directory.</td>
+</tr>
+<tr>
+<td><code>--terminal</code></td>
+<td>Override <code>config.yaml</code> <code>terminal:</code> (<code>auto</code>, <code>herdr</code>, <code>tmux</code>, <code>Ghostty</code>, …)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Examples:</strong></p>
+<pre><code class="language-bash">forge edit README.md
+forge edit ~/Documents/Software/Forge
+forge edit notes.md --terminal herdr
+</code></pre>
+<p>Finder “Open With” can use <strong>NeoVim launcher.app</strong>, which should call
+<code>forge edit</code> (absolute path recommended; Automator’s <code>PATH</code> is thin).</p>
+<hr />
+<h2 id="forge-dashboard">forge dashboard</h2>
+<p>Unified GTD overview: kanban load, URGENT/stuck projects, today's calendar, and due tasks from <code>.forge/world.db</code> (via <code>scripts/forge-dashboard.py</code>).</p>
+<pre><code>forge dashboard
+forge dashboard --layout split --show 10
+forge dashboard --json
+forge dashboard --refresh
+</code></pre>
+<p>Left-click the menubar hammer in <strong>Forge.app</strong> to open the same snapshot in a popover. Right-click for the menu (<strong>Dashboard…</strong> is also ⌘⇧D).</p>
+<hr />
 <h2 id="scriptsforge-briefpy">scripts/forge-brief.py</h2>
-<p>Read-only operational brief built from <code>forge board --json</code> (and optionally
-<code>forge calendar --json</code>). Surfaces URGENT items, neglected projects, stuck
+<p>Read-only operational brief built from <code>forge board --json</code>, optional
+<code>forge calendar --json</code>, and the <strong>task index</strong> (<code>.forge/world.db</code>).
+Surfaces due/overdue tasks, URGENT items, neglected projects, stuck
 in-flight work, column load, and hygiene notes.</p>
 <pre><code class="language-bash">python3 scripts/forge-brief.py
 python3 scripts/forge-brief.py --stale-days 5 --show 8
+python3 scripts/forge-brief.py --due-days 7
 python3 scripts/forge-brief.py --calendar-calendars &quot;Work,Teaching&quot;
 </code></pre>
 <p>With an empty <code>--calendar-calendars</code> (the default), all calendars returned by
 <code>forge calendar</code> are included. Restrict titles with a comma-separated list when needed.</p>
+<p>Populate the task index first with <code>bash scripts/morning-review-pull.sh</code> (sync + brief bundle), or
+<code>python3 scripts/sync-of-tasks-from-of.py</code> / <code>python3 scripts/forge-tasks-world.py ingest</code>.</p>
+<p><strong>Morning review bundle:</strong></p>
+<pre><code class="language-bash">bash scripts/morning-review-pull.sh
+</code></pre>
+<p>Runs OF refresh, project-tasks sync, and <code>forge-brief.py --calendar-days 1</code>. GitHub checks stay with the synthesising agent.</p>
 <p>This is <strong>not</strong> a <code>forge</code> subcommand; it requires <code>forge</code> on your <code>$PATH</code>.</p>
+<hr />
+<h2 id="project-tasks-taskstoml-task-index">Project tasks (TASKS.toml + task index)</h2>
+<p>Per-project tasks at <code>&lt;project&gt;/TASKS.toml</code> (optional); canonical inbox + index at
+<code>Forge/.forge/tasks.db</code>.</p>
+<pre><code class="language-bash">forge capture &quot;…&quot; --source assistant          # inbox (chat / CLI / menubar)
+forge tasks inbox
+forge tasks assign &lt;id&gt; &quot;Project Name&quot;
+python3 scripts/sync-of-tasks-from-of.py          # OmniFocus → TASKS.toml + index (optional)
+python3 scripts/forge-tasks-world.py ingest     # re-ingest after hand edits
+python3 scripts/forge-tasks-world.py due --days 14
+python3 scripts/forge-tasks-world.py status
+python3 scripts/forge-tasks-world.py show &quot;Apodemus luxury&quot;
+python3 scripts/forge-tasks-world.py format              # rewrite all TASKS.toml
+</code></pre>
+<hr />
+<h2 id="scriptsforge-dashboardpy">scripts/forge-dashboard.py</h2>
+<p>Live terminal dashboard combining kanban, calendar, and due tasks from the task index.</p>
+<pre><code class="language-bash">python3 scripts/forge-dashboard.py --layout compact
+forge dashboard --layout split
+forge dashboard --json
+</code></pre>
 <hr />
 <h2 id="hermes-ollama-local-assistant">Hermes + Ollama (local assistant)</h2>
 <p>Privacy-first interactive kanban assistant. Plug-and-play setup from your Forge directory:</p>

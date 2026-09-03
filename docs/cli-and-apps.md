@@ -13,6 +13,7 @@ forge board
 forge board --json
 forge move <project> <Column>
 forge status
+forge edit <path>
 forge reminders status
 forge reminders doctor
 forge reminders refresh
@@ -30,6 +31,7 @@ Guide: [Forge.app](app.md).
 
 ## Neovim
 
-Keymaps, commands, and dashboard integration via `forge-nvim.lua`.
+Keymaps, commands, dashboard integration via `forge-nvim.lua`, and Finder
+“Open With” via **NeoVim launcher.app** → `forge edit`.
 
 Guide: [Neovim](neovim.md).

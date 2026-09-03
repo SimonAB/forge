@@ -88,9 +88,43 @@
 <p>The format loosely follows <a href="https://keepachangelog.com/en/1.1.0/">Keep a Changelog</a>.</p>
 <h3 id="unreleased">Unreleased</h3>
 <ul>
-<li>Forge.app: saving Preferences no longer closes the board window (config reloads in place). <strong>Window → Board</strong> (Cmd+B) reopens it; clicking the Dock icon does the same when no windows are visible.</li>
-<li>Documentation: Forge as folder-first project kanban; optional task apps (OmniFocus bridge, Reminders EventKit backend, Things later).</li>
-<li><strong>Reminders (optional task backend):</strong> <code>forge reminders</code> / <code>status</code> / <code>show</code> / <code>refresh</code> / <code>doctor</code> / <code>align</code> / <code>paint-colours</code> / <code>paint-priorities</code> via EventKit; one list per Forge folder (optional <code>folder_aliases</code>); snapshot <code>.cache/reminders-snapshot.json</code>; Preferences → Reminders (enable, inbox list, include completed, optional sentinel sync, snapshot status, <strong>Refresh now</strong>); <code>forge board --json</code> may include a <code>reminders</code> enrichment per folder. Create missing lists with <code>align --apply</code> only. Board <strong>Refresh</strong>, Preferences <strong>Refresh now</strong>, and <code>forge reminders refresh</code> update the snapshot, paint list colours from Finder columns, and set sentinel priority from Finder <code>URGENT ⚠️</code> (background snapshot refresh does not paint). List colour also follows the Finder column on create and on <code>forge move</code>. URGENT priority also follows <code>forge project-tag</code> / <code>paint-priorities</code>. Optional sentinel reminder per list mirrors the column when sync flags are on. Doctor / align may propose Finder Shipped when a list is all-complete (never auto-moved).</li>
+<li><strong><code>forge edit</code></strong> — open files or directories in the terminal editor (vim/Neovim) using the same Herdr → tmux → GUI terminal path as board “open in Vim”. NeoVim launcher.app can call it for Finder “Open With”.</li>
+<li><strong><code>AGENTS.md</code> / morning brief</strong> — OmniFocus task dates, inbox, completion, notes, and review go through OmniFocus directly (OmniJS / JXA, or Omni Group MCP when available); <code>forge omnifocus</code> remains the Finder join (snapshot, doctor, align, Refresh, column-tag mirroring). Morning GitHub checks cover all owned (non-fork) <code>SimonAB/</code> repos, not only the five primary packages.</li>
+</ul>
+<h3 id="093-2026-08-12"><a href="https://github.com/SimonAB/forge/releases/tag/v0.9.3">0.9.3</a> – 2026-08-12</h3>
+<p>Shipped completion tagging, stronger OmniFocus ↔ Finder Shipped sync, and the
+Reminders backend that landed on <code>main</code> after <strong>0.9.2</strong>.</p>
+<h4 id="completed-after-shipped">Completed after Shipped</h4>
+<ul>
+<li><strong><code>Completed ✔️</code></strong> meta tag applied after <code>board.archive_after_shipped_days</code> (default 7).</li>
+<li>Ship dates in <code>.cache/shipped-at.json</code>; board <strong>Refresh</strong> and <strong><code>forge archive</code></strong>
+  (with <strong><code>--dry-run</code></strong>) apply or preview; Shipped cards show a <strong>complete in Nd</strong> countdown.</li>
+<li>Legacy Shipped folders use folder activity age; legacy <strong><code>Archived…</code></strong> tags migrate to Completed.</li>
+</ul>
+<h4 id="omnifocus-shipped-sync">OmniFocus Shipped sync</h4>
+<ul>
+<li><strong>Refresh respects leaving Shipped</strong> — after you move out of Shipped (board or Finder),
+  Refresh no longer re-forces Shipped until you return there yourself.</li>
+<li><strong><code>reopen_of_project_when_leaving_shipped</code></strong> (default true) — board/<code>forge move</code> reopens
+  the matching OF project when leaving Shipped.</li>
+<li><strong><code>complete_of_project_when_entering_shipped</code></strong> (default true) — entering Shipped marks
+  the OF project Done, in addition to column-tag mirroring.</li>
+</ul>
+<h4 id="reminders-optional-task-backend">Reminders (optional task backend)</h4>
+<ul>
+<li><strong><code>forge reminders</code></strong> / <code>status</code> / <code>show</code> / <code>refresh</code> / <code>doctor</code> / <code>align</code> /
+  <code>paint-colours</code> / <code>paint-priorities</code> via EventKit; one list per Forge folder.</li>
+<li>Snapshot <code>.cache/reminders-snapshot.json</code>; Preferences → Reminders; <strong><code>forge board --json</code></strong>
+  may include <code>reminders</code> enrichment. Create missing lists with <strong><code>align --apply</code></strong> only.</li>
+<li>Board <strong>Refresh</strong> / Preferences <strong>Refresh now</strong> update snapshot, list colours, URGENT
+  sentinel priority, and optional sentinel → Finder pull.</li>
+</ul>
+<h4 id="forgeapp-docs">Forge.app / docs</h4>
+<ul>
+<li>Saving Preferences no longer closes the board window (config reloads in place).
+  <strong>Window → Board</strong> (Cmd+B) or the Dock icon reopens when no windows are visible.</li>
+<li>Documentation sweep: folder-first kanban, <strong><code>forge archive</code></strong>, OmniFocus Shipped feedback,
+  <strong><code>docs/app.md</code></strong>, <strong><code>docs/kanban.md</code></strong>, <strong><code>docs/omnifocus.md</code></strong>, <strong><code>docs/cli.md</code></strong>.</li>
 </ul>
 <h3 id="092-2026-08-09"><a href="https://github.com/SimonAB/forge/releases/tag/v0.9.2">0.9.2</a> – 2026-08-09</h3>
 <p>First GitHub and Sparkle release since <strong>0.9.0</strong>. Ships Hermes + OmniFocus, the

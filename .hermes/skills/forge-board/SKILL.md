@@ -237,6 +237,7 @@ which calendars to read via `calendar.include` in `config.yaml`.
 | `forge board -a <Person>` | Filter by assignee | Yes |
 | `forge board --list` | Compact list | Yes |
 | `forge status` | Summary dashboard | Yes |
+| `forge edit` | Open in terminal vim/Neovim | Yes |
 | `forge move <Proj> <Col>` | Change column | No (approval required) |
 | `forge project-tag list <Proj>` | Show tags | Yes |
 | `forge project-tag add <Proj> <Tag>` | Add tag | No (approval required) |

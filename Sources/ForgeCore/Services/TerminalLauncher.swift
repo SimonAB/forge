@@ -15,21 +15,41 @@ public struct TerminalLauncher: Sendable {
     ]
 
     private let terminalApp: String
+    /// When true (Auto preference), try herdr then tmux before a GUI terminal.
+    private let preferMultiplexers: Bool
+    /// When set, only that multiplexer is tried before falling back to a GUI terminal.
+    private let forcedMultiplexer: TerminalMultiplexerKind?
     private let openURL: (@Sendable (URL) -> Void)?
 
     public init(config: ForgeConfig, terminalOverride: String? = nil, openURL: (@Sendable (URL) -> Void)? = nil) {
         self.openURL = openURL
-        let preferred: String?
+        let rawPreferred: String?
         if let overrideName = terminalOverride, !overrideName.isEmpty, overrideName.lowercased() != "auto" {
-            preferred = Self.normaliseTerminalName(overrideName)
+            rawPreferred = Self.normaliseTerminalName(overrideName)
         } else if let fromConfig = config.terminal, fromConfig.lowercased() != "auto" {
-            preferred = Self.normaliseTerminalName(fromConfig)
+            rawPreferred = Self.normaliseTerminalName(fromConfig)
         } else {
-            preferred = nil
+            rawPreferred = nil
         }
-        if let p = preferred {
-            self.terminalApp = p
+
+        if let rawPreferred {
+            switch rawPreferred.lowercased() {
+            case "herdr":
+                self.preferMultiplexers = true
+                self.forcedMultiplexer = .herdr
+                self.terminalApp = Self.detectTerminal()
+            case "tmux":
+                self.preferMultiplexers = true
+                self.forcedMultiplexer = .tmux
+                self.terminalApp = Self.detectTerminal()
+            default:
+                self.preferMultiplexers = false
+                self.forcedMultiplexer = nil
+                self.terminalApp = rawPreferred
+            }
         } else {
+            self.preferMultiplexers = true
+            self.forcedMultiplexer = nil
             self.terminalApp = Self.detectTerminal()
         }
     }
@@ -41,19 +61,36 @@ public struct TerminalLauncher: Sendable {
             return "Ghostty"
         case "cmux.app":
             return "cmux"
+        case "herdr":
+            return "Herdr"
+        case "tmux":
+            return "tmux"
         default:
             return name
         }
     }
 
-    /// The resolved terminal application name.
-    public var resolvedTerminal: String { terminalApp }
+    /// The resolved terminal application name (GUI fallback when multiplexers are preferred).
+    public var resolvedTerminal: String {
+        if let forcedMultiplexer {
+            return forcedMultiplexer.rawValue
+        }
+        if preferMultiplexers {
+            return "auto"
+        }
+        return terminalApp
+    }
 
     /// Open the terminal editor on `filePath` (typically `vim` on `PATH`, often aliased to Neovim).
     ///
     /// Uses each terminal’s native “run this command” hooks (Ghostty surface `command` + environment,
     /// kitty remote `launch`, etc.) so the session matches `cd dir && vim relative-file`.
+    /// When Auto / Herdr / tmux is selected, prefers a live herdr or tmux session if present.
     public func openNeovim(filePath: String, workingDirectory: String) {
+        if preferMultiplexers,
+           tryLaunchNeovimViaMultiplexer(filePath: filePath, workingDirectory: workingDirectory) {
+            return
+        }
         switch terminalApp.lowercased() {
         case "ghostty":
             launchGhosttyOpenNeovim(filePath: filePath, workingDirectory: workingDirectory)
@@ -73,6 +110,7 @@ public struct TerminalLauncher: Sendable {
     /// Run a command in a new terminal window.
     /// Writes the command to a script file and launches the terminal with that script so the command always runs correctly.
     /// After the command runs, starts an interactive shell so you can keep using the window.
+    /// When Auto / Herdr / tmux is selected, prefers a live herdr or tmux session if present.
     public func run(_ command: String, workingDirectory: String? = nil) {
         // GUI apps often lack ~/bin and ~/.local/bin; use the shared resolver layout.
         let pathLine = "export PATH=\"\(ExecutablePathResolver.augmentedPATH())\""
@@ -92,6 +130,11 @@ public struct TerminalLauncher: Sendable {
 
         """
         guard let scriptURL = Self.writeCommandScript(fullCommand) else { return }
+
+        if preferMultiplexers,
+           tryLaunchScriptViaMultiplexer(scriptURL: scriptURL, workingDirectory: workingDirectory) {
+            return
+        }
 
         switch terminalApp.lowercased() {
         case "ghostty":
@@ -770,6 +813,114 @@ public struct TerminalLauncher: Sendable {
             alert.runModal()
         }
 #endif
+    }
+
+    // MARK: - Multiplexers (herdr / tmux)
+
+    /// Try herdr then tmux (or a forced backend). Failures are silent — caller falls back to a GUI terminal.
+    private func tryLaunchScriptViaMultiplexer(scriptURL: URL, workingDirectory: String?) -> Bool {
+        let label = TerminalMultiplexerSupport.label(forWorkingDirectory: workingDirectory)
+        let command = "/opt/homebrew/bin/zsh '\(scriptURL.path.replacingOccurrences(of: "'", with: "'\\''"))'"
+        for kind in multiplexerOrder() {
+            switch kind {
+            case .herdr:
+                if launchHerdr(workingDirectory: workingDirectory, label: label, command: command) {
+                    Self.scheduleScriptDeletion(scriptURL, delay: 60)
+                    return true
+                }
+            case .tmux:
+                if launchTmux(workingDirectory: workingDirectory, label: label, command: command) {
+                    Self.scheduleScriptDeletion(scriptURL, delay: 60)
+                    return true
+                }
+            }
+        }
+        return false
+    }
+
+    private func tryLaunchNeovimViaMultiplexer(filePath: String, workingDirectory: String) -> Bool {
+        let label = TerminalMultiplexerSupport.label(forWorkingDirectory: workingDirectory, fallback: "nvim")
+        let command = Self.neovimShellInvocation(filePath: filePath, workingDirectory: workingDirectory)
+        for kind in multiplexerOrder() {
+            switch kind {
+            case .herdr:
+                if launchHerdr(workingDirectory: workingDirectory, label: label, command: command) {
+                    return true
+                }
+            case .tmux:
+                if launchTmux(workingDirectory: workingDirectory, label: label, command: command) {
+                    return true
+                }
+            }
+        }
+        return false
+    }
+
+    private func multiplexerOrder() -> [TerminalMultiplexerKind] {
+        if let forcedMultiplexer {
+            return [forcedMultiplexer]
+        }
+        return [.herdr, .tmux]
+    }
+
+    private func launchHerdr(workingDirectory: String?, label: String, command: String?) -> Bool {
+        guard let herdr = resolveHerdrBinaryPath(), isHerdrServerAvailable(herdrPath: herdr) else {
+            return false
+        }
+        var args = ["tab", "create", "--label", label, "--focus"]
+        if let workingDirectory, !workingDirectory.isEmpty {
+            args.append(contentsOf: ["--cwd", workingDirectory])
+        }
+        let created = runProcessCaptureOutputWithStatus(herdr, arguments: args)
+        guard created.status == 0,
+              let stdout = created.stdout,
+              let paneID = TerminalMultiplexerSupport.parseHerdrTabCreatePaneID(from: stdout)
+        else {
+            return false
+        }
+        guard let command, !command.isEmpty else {
+            return true
+        }
+        // New pane shell needs a brief moment before `pane run` lands at the prompt.
+        Thread.sleep(forTimeInterval: 0.35)
+        return runProcess(herdr, arguments: ["pane", "run", paneID, command])
+    }
+
+    private func launchTmux(workingDirectory: String?, label: String, command: String) -> Bool {
+        guard let tmux = resolveTmuxBinaryPath(), isTmuxSessionAvailable(tmuxPath: tmux) else {
+            return false
+        }
+        var args = ["new-window", "-n", label]
+        if let workingDirectory, !workingDirectory.isEmpty {
+            args.append(contentsOf: ["-c", workingDirectory])
+        }
+        args.append(command)
+        return runProcess(tmux, arguments: args)
+    }
+
+    private func isHerdrServerAvailable(herdrPath: String) -> Bool {
+        let result = runProcessCaptureOutputWithStatus(herdrPath, arguments: ["status"])
+        guard result.status == 0, let stdout = result.stdout else { return false }
+        return TerminalMultiplexerSupport.isHerdrServerRunning(statusOutput: stdout)
+    }
+
+    private func isTmuxSessionAvailable(tmuxPath: String) -> Bool {
+        let result = runProcessCaptureOutputWithStatus(tmuxPath, arguments: ["list-sessions"])
+        return result.status == 0
+    }
+
+    private func resolveHerdrBinaryPath() -> String? {
+        firstExecutable(in: TerminalMultiplexerSupport.herdrBinaryCandidates())
+            ?? ExecutablePathResolver.find(named: "herdr")
+    }
+
+    private func resolveTmuxBinaryPath() -> String? {
+        firstExecutable(in: TerminalMultiplexerSupport.tmuxBinaryCandidates())
+            ?? ExecutablePathResolver.find(named: "tmux")
+    }
+
+    private func firstExecutable(in candidates: [String]) -> String? {
+        candidates.first { FileManager.default.isExecutableFile(atPath: $0) }
     }
 
     // MARK: - Detection

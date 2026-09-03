@@ -232,7 +232,7 @@ private struct BoardRootView: View {
     private var revealAction: (Project) -> Void {
         { project in
             #if canImport(AppKit)
-            NSWorkspace.shared.selectFile(project.path, inFileViewerRootedAtPath: "")
+            ProjectOpenActions.revealInFinder(projectDirectory: project.path)
             #endif
         }
     }
@@ -241,9 +241,14 @@ private struct BoardRootView: View {
         let config = viewModel.config
         return { project in
             [
+                ProjectContextMenuAction(title: "Open TASKS.toml") { p in
+                    #if canImport(AppKit)
+                    ProjectOpenActions.openTasksOrRevealFolder(projectDirectory: p.path, config: config)
+                    #endif
+                },
                 ProjectContextMenuAction(title: "Reveal in Finder") { p in
                     #if canImport(AppKit)
-                    NSWorkspace.shared.selectFile(p.path, inFileViewerRootedAtPath: "")
+                    ProjectOpenActions.revealInFinder(projectDirectory: p.path)
                     #endif
                 },
                 ProjectContextMenuAction(title: "Open in Terminal") { p in

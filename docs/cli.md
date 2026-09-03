@@ -34,6 +34,7 @@ forge <command> [options]
 | `forge status` | Summary dashboard of all projects (column counts, active, URGENT) |
 | `forge dashboard` | GTD dashboard — projects, calendar, due tasks from task index (`--json` for Forge.app) |
 | `forge calendar` / `forge events` | List upcoming Calendar events (read-only; same command) |
+| `forge edit` | Open files/folders in the terminal editor (vim/Neovim; honours `terminal:`) |
 | `forge omnifocus` | Optional OmniFocus bridge (`doctor`, `align`, `refresh`, …) |
 | `forge reminders` | Optional Apple Reminders bridge (`list`, `status`, `show`, `refresh`, `doctor`, `align`, `paint-colours`, `paint-priorities`) |
 
@@ -208,6 +209,35 @@ many projects carry an **URGENT**-prefixed meta tag.
 ```
 forge status
 ```
+
+---
+
+## forge edit
+
+Open files or directories in the terminal editor (`vim` on `PATH`, typically Neovim).
+Uses the same launch path as Forge board “open in Vim”: when `terminal:` is
+`auto` (or `herdr` / `tmux`), prefers a live Herdr or tmux session, otherwise
+Ghostty / kitty / iTerm / Warp / Terminal.
+
+```
+forge edit [paths…] [--terminal <name>]
+```
+
+| Option | Description |
+|--------|-------------|
+| `paths…` | Files or directories. When omitted, opens the home directory. |
+| `--terminal` | Override `config.yaml` `terminal:` (`auto`, `herdr`, `tmux`, `Ghostty`, …) |
+
+**Examples:**
+
+```bash
+forge edit README.md
+forge edit ~/Documents/Software/Forge
+forge edit notes.md --terminal herdr
+```
+
+Finder “Open With” can use **NeoVim launcher.app**, which should call
+`forge edit` (absolute path recommended; Automator’s `PATH` is thin).
 
 ---
 

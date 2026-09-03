@@ -80,8 +80,11 @@ final class BoardWindowController: NSObject, NSWindowDelegate {
             guard let self = self else { return [] }
             let config = self.viewModel.config
             return [
+                ProjectContextMenuAction(title: "Open TASKS.toml") { p in
+                    ProjectOpenActions.openTasksOrRevealFolder(projectDirectory: p.path, config: config)
+                },
                 ProjectContextMenuAction(title: "Reveal in Finder") { p in
-                    NSWorkspace.shared.selectFile(p.path, inFileViewerRootedAtPath: "")
+                    ProjectOpenActions.revealInFinder(projectDirectory: p.path)
                 },
                 ProjectContextMenuAction(title: "Open in Terminal") { p in
                     let launcher = TerminalLauncher(config: config, terminalOverride: nil, openURL: { NSWorkspace.shared.open($0) })
@@ -99,7 +102,7 @@ final class BoardWindowController: NSObject, NSWindowDelegate {
         let rootView = BoardView(viewModel: viewModel)
             .environment(\.projectContextMenuActions, contextMenuActions)
             .environment(\.projectRevealAction) { project in
-                NSWorkspace.shared.selectFile(project.path, inFileViewerRootedAtPath: "")
+                ProjectOpenActions.revealInFinder(projectDirectory: project.path)
             }
             .environment(\.runForgeInTerminal, runForgeInTerminal)
 

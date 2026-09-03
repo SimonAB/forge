@@ -132,6 +132,8 @@ public enum EditorPreferences {
 public enum TerminalPreferences {
     public static let knownTerminals = [
         "Auto (recommended)",
+        "Herdr",
+        "tmux",
         "Ghostty",
         "kitty",
         "iTerm",
@@ -151,6 +153,8 @@ public enum TerminalPreferences {
     public static func displayTitle(forConfigValue value: String?) -> String {
         guard let value = value, !value.isEmpty else { return "Auto (recommended)" }
         if value.lowercased() == "auto" { return "Auto (recommended)" }
+        if value.lowercased() == "herdr" { return "Herdr" }
+        if value.lowercased() == "tmux" { return "tmux" }
         if value.lowercased() == "cmux" || value.lowercased() == "cmux.app" { return "cmux" }
         return knownTerminals.contains(value) ? value : value
     }

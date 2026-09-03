@@ -38,8 +38,6 @@ struct ProjectCardView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            // Intentionally no task-file shortcuts (Forge is kanban-only).
-
             if let revealAction = revealAction {
                 Button {
                     revealAction(project)

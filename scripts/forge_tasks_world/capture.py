@@ -11,6 +11,15 @@ from pathlib import Path
 import subprocess
 
 from .world_db import WorldDatabase
+from .toml_io import (
+    TaskRecord,
+    apply_checked_completions,
+    ensure_project_tasks,
+    load_project_tasks,
+    project_tasks_path,
+    upsert_task,
+    write_project_tasks,
+)
 
 LINK_KINDS = ("mail", "file", "url", "note", "obsidian", "bookends", "other")
 SOURCES = ("cli", "menubar", "assistant", "service", "import", "toml")
@@ -275,7 +284,7 @@ class CaptureStore:
         section: str = "next",
         column_name: str | None = None,
     ) -> None:
-        """Move an inbox item onto a Forge project."""
+        """Move an inbox item onto a Forge project and write TASKS.toml."""
         if section not in {"next", "waiting", "someday"}:
             raise ValueError(f"invalid section for assign: {section}")
         self.db.assign_task(
@@ -285,10 +294,12 @@ class CaptureStore:
             section=section,
             column_name=column_name,
         )
+        self._sync_task_to_project_toml(task_id)
 
     def complete(self, task_id: str) -> None:
-        """Mark a task done."""
+        """Mark a task done in the index and in TASKS.toml when project-linked."""
         self.db.complete_task(task_id)
+        self._sync_task_to_project_toml(task_id)
 
     def get_open_link(self, task_id: str) -> str | None:
         """Return the first openable URI for a task, if any."""
@@ -304,6 +315,85 @@ class CaptureStore:
                 if isinstance(item, dict) and item.get("uri"):
                     return str(item["uri"])
         return None
+
+    def _sync_task_to_project_toml(self, task_id: str) -> None:
+        """Upsert one DB task into its project's TASKS.toml and refresh the index row fingerprint."""
+        row = self.db.get_task(task_id)
+        if row is None:
+            return
+        project_path_raw = row["project_path"]
+        if not project_path_raw:
+            return
+        project_path = Path(str(project_path_raw))
+        project_name = self._project_name_for_path(project_path) or project_path.name
+        column_name = self._project_column_for_path(project_path)
+
+        ensure_project_tasks(project_path, project_name)
+        toml_path = project_tasks_path(project_path)
+        project_tasks = load_project_tasks(toml_path)
+        apply_checked_completions(project_tasks)
+        upsert_task(project_tasks, self._task_record_from_row(row))
+        write_project_tasks(project_tasks, toml_path)
+
+        # Re-ingest so the index fingerprint matches the rewritten file.
+        refreshed = load_project_tasks(toml_path)
+        self.db.ingest_project(
+            project_path=project_path,
+            project_name=project_name,
+            column_name=column_name,
+            project_tasks=refreshed,
+            tasks_path=toml_path,
+        )
+
+    def _project_name_for_path(self, project_path: Path) -> str | None:
+        row = self.db.conn.execute(
+            "SELECT name FROM projects WHERE path = ?",
+            (str(project_path),),
+        ).fetchone()
+        return str(row["name"]) if row and row["name"] else None
+
+    def _project_column_for_path(self, project_path: Path) -> str | None:
+        row = self.db.conn.execute(
+            "SELECT column_name FROM projects WHERE path = ?",
+            (str(project_path),),
+        ).fetchone()
+        if row and row["column_name"]:
+            return str(row["column_name"])
+        return None
+
+    @staticmethod
+    def _task_record_from_row(row) -> TaskRecord:
+        """Build a TaskRecord from a tasks table row."""
+        links_raw = json.loads(row["links"] or "[]")
+        links: dict[str, str] = {}
+        if isinstance(links_raw, dict):
+            links = {str(key): str(value) for key, value in links_raw.items()}
+        elif isinstance(links_raw, list):
+            for item in links_raw:
+                if isinstance(item, dict) and item.get("uri"):
+                    kind = str(item.get("kind") or "other")
+                    links[kind] = str(item["uri"])
+
+        ctx = json.loads(row["contexts"] or "[]")
+        if not isinstance(ctx, list):
+            ctx = []
+        assignees = json.loads(row["assignees"] or "[]")
+        if not isinstance(assignees, list):
+            assignees = []
+
+        return TaskRecord(
+            id=str(row["id"]),
+            title=str(row["title"]),
+            section=str(row["section"]),
+            due=row["due"],
+            defer=row["defer"],
+            done=row["done"],
+            ctx=[str(item) for item in ctx],
+            assignees=[str(item) for item in assignees],
+            flagged=bool(row["flagged"]),
+            links=links,
+            notes=row["notes"],
+        )
 
     def _stash_file(self, task_id: str, source: Path) -> Path:
         """Copy a file into `.forge/inbox/<id>/` and return the destination path."""

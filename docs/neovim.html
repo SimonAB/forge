@@ -88,6 +88,15 @@
 Reminders, Things, or similar. Keep Neovim integration on kanban and Finder-tag
 commands.</p>
 <p><strong>File:</strong> <code>~/.config/nvim/lua/plugins/forge-nvim.lua</code></p>
+<h2 id="finder-open-with-neovim-launcher">Finder “Open With” (NeoVim launcher)</h2>
+<p>macOS <strong>NeoVim launcher.app</strong> (Automator) can open dropped files or folders via:</p>
+<pre><code class="language-bash">forge edit [paths…]
+</code></pre>
+<p>That uses the same terminal path as Forge board “open in Vim”: when <code>terminal:</code> is
+<code>auto</code> (or <code>herdr</code> / <code>tmux</code>), prefers a live Herdr or tmux session, otherwise
+Ghostty / kitty / iTerm / Warp / Terminal. See <a href="cli.html#forge-edit">CLI — forge edit</a>.</p>
+<p>Install the CLI from <strong>Forge → Preferences… → Install CLI…</strong> so the launcher can
+resolve <code>~/bin/forge</code> (Automator’s <code>PATH</code> is thin).</p>
 <h2 id="dependencies">Dependencies</h2>
 <table>
 <thead>

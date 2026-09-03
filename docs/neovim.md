@@ -6,6 +6,21 @@ commands.
 
 **File:** `~/.config/nvim/lua/plugins/forge-nvim.lua`
 
+## Finder “Open With” (NeoVim launcher)
+
+macOS **NeoVim launcher.app** (Automator) can open dropped files or folders via:
+
+```bash
+forge edit [paths…]
+```
+
+That uses the same terminal path as Forge board “open in Vim”: when `terminal:` is
+`auto` (or `herdr` / `tmux`), prefers a live Herdr or tmux session, otherwise
+Ghostty / kitty / iTerm / Warp / Terminal. See [CLI — forge edit](cli.md#forge-edit).
+
+Install the CLI from **Forge → Preferences… → Install CLI…** so the launcher can
+resolve `~/bin/forge` (Automator’s `PATH` is thin).
+
 ## Dependencies
 
 | Plugin | Role |

@@ -19,6 +19,7 @@ from forge_tasks_world.of_mapping import PROJECT_FOLDER_ALIASES  # noqa: F401
 from forge_tasks_world.show import render_many  # noqa: E402
 from forge_tasks_world.toml_io import (  # noqa: E402
     ProjectTasks,
+    apply_checked_completions,
     load_project_tasks,
     project_tasks_path,
     write_project_tasks,
@@ -162,6 +163,7 @@ def cmd_format(args: argparse.Namespace) -> int:
             skipped += 1
             continue
         project_tasks = load_project_tasks(toml_path)
+        apply_checked_completions(project_tasks)
         write_project_tasks(project_tasks, toml_path)
         print(f"  formatted {toml_path}")
         formatted += 1
@@ -188,6 +190,9 @@ def cmd_ingest(args: argparse.Namespace) -> int:
                 skipped += 1
                 continue
             project_tasks = load_project_tasks(tasks_file)
+            if apply_checked_completions(project_tasks):
+                write_project_tasks(project_tasks, tasks_file)
+                project_tasks = load_project_tasks(tasks_file)
             upserted, deleted = db.ingest_project(
                 project_path=project_dir,
                 project_name=project["name"],

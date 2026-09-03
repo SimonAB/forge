@@ -62,6 +62,29 @@ public enum CaptureScriptRunner: Sendable {
         try run(forgeDir: forgeDir, arguments: ["inbox", "--json"])
     }
 
+    /// Open the first link on a task (Mail, file, URL).
+    public static func openTask(forgeDir: String, taskID: String) throws {
+        _ = try run(forgeDir: forgeDir, arguments: ["open", taskID])
+    }
+
+    /// Mark a task done (updates TASKS.toml when project-linked).
+    public static func completeTask(forgeDir: String, taskID: String) throws {
+        _ = try run(forgeDir: forgeDir, arguments: ["complete", taskID])
+    }
+
+    /// Assign an inbox item to a Forge project (writes TASKS.toml).
+    public static func assignTask(
+        forgeDir: String,
+        taskID: String,
+        project: String,
+        section: String = "next"
+    ) throws {
+        _ = try run(
+            forgeDir: forgeDir,
+            arguments: ["assign", taskID, project, "--section", section]
+        )
+    }
+
     /// Execute forge-capture.py and return stdout.
     public static func run(forgeDir: String, arguments: [String]) throws -> String {
         guard let python = ExecutablePathResolver.find(named: "python3") else {

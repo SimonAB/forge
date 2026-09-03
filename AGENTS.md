@@ -192,7 +192,7 @@ Forge's kanban model is backed by **Finder tags** on project directories. Kanban
 
 Finder tag conventions: Kanban state via `forge move`; meta tags via `forge project-tag`. `forge project-tag` never changes workflow column tags. Avoid inventing tag strings; validate against `config.yaml`.
 
-Read-only safe defaults: `forge board --json`, `forge status`, `forge project-tag list <project>`. See `@.cursor/rules/forge-cli.mdc` for command-level detail.
+Read-only safe defaults: `forge board --json`, `forge status`, `forge edit`, `forge project-tag list <project>`. See `@.cursor/rules/forge-cli.mdc` for command-level detail.
 
 ## Project Lifecycle
 
@@ -249,6 +249,7 @@ See `@.cursor/rules/forge-workflows.mdc` for stale remediation and URGENT triage
 | `forge project-tag add <proj> <tag>` | Add tag              |
 | `forge project-tag remove <proj> <tag>` | Remove tag          |
 | `forge status`                  | Summary dashboard (column counts, URGENT) |
+| `forge edit`                    | Open files/folders in terminal vim/Neovim |
 | `forge dashboard`               | GTD dashboard (terminal or `--json` for Forge.app) |
 
 ### Restricted (Require Approval)
@@ -406,6 +407,7 @@ Never invent or hand-write task IDs. IDs are OmniFocus and `forge` assigned and 
 | `forge project-tag add <proj> <tag>` | No       | Add tag                   |
 | `forge project-tag remove <proj> <tag>` | No       | Remove tag              |
 | `forge status`                   | Yes     | Summary dashboard (column counts, URGENT) |
+| `forge edit`                     | Yes     | Open files/folders in terminal vim/Neovim |
 | `forge reminders`                | Yes     | Optional Reminders list / status / show / doctor |
 | `forge reminders refresh`        | No      | Snapshot + colours + URGENT priority |
 | `forge reminders align --apply`  | No      | Create missing Reminders lists / sentinels |

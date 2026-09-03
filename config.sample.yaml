@@ -114,5 +114,8 @@ omnifocus:
   # folder_aliases:
   #   OldTagName: ActualFolderName
 
+# Preferred terminal for `forge edit` and board “open in Vim”.
+# auto = Herdr → tmux → first installed GUI (Ghostty, kitty, iTerm, Warp, cmux, Terminal).
+# Or set herdr, tmux, Ghostty, kitty, iTerm, Warp, cmux, Terminal.
 terminal: auto
 project_tag: "🔥 Forge"

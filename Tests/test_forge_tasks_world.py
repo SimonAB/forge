@@ -137,6 +137,46 @@ class ProjectTasksTests(unittest.TestCase):
         self.assertIn("@email", rendered)
         self.assertIn("☐ Draft methods", rendered)
 
+    def test_checked_moves_to_done_on_apply(self) -> None:
+        from forge_tasks_world.toml_io import apply_checked_completions
+
+        project_tasks = ProjectTasks(
+            project="Demo",
+            tasks=[
+                TaskRecord(
+                    id="c1",
+                    title="Finish spike",
+                    section="next",
+                    checked=True,
+                ),
+                TaskRecord(
+                    id="c2",
+                    title="Still open",
+                    section="next",
+                ),
+            ],
+        )
+        changed = apply_checked_completions(project_tasks, today=date(2026, 9, 3))
+        self.assertTrue(changed)
+        by_id = {task.id: task for task in project_tasks.tasks}
+        self.assertEqual(by_id["c1"].section, "done")
+        self.assertEqual(by_id["c1"].done, "2026-09-03")
+        self.assertFalse(by_id["c1"].checked)
+        self.assertEqual(by_id["c2"].section, "next")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "TASKS.toml"
+            write_project_tasks(project_tasks, path)
+            text = path.read_text(encoding="utf-8")
+            self.assertIn("[[done]]", text)
+            self.assertIn("done = 2026-09-03", text)
+            field_lines = [
+                line.strip()
+                for line in text.splitlines()
+                if line.strip() and not line.strip().startswith("#")
+            ]
+            self.assertFalse(any(line.startswith("checked") for line in field_lines))
+
 
 if __name__ == "__main__":
     unittest.main()
