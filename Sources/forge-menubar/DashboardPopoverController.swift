@@ -150,12 +150,12 @@ final class DashboardPopoverController: NSObject {
     private func openProjectTasks(named name: String) {
         guard let config else { return }
         popover.performClose(nil)
+        // Leave Forge in the background so Super Productivity (or Finder) can take focus.
         _ = ProjectOpenActions.openTasksOrRevealFolder(
             projectName: name,
             config: config,
             forgeDir: forgeDir
         )
-        NSApp.activate(ignoringOtherApps: true)
     }
 
     private func revealProject(named name: String) {

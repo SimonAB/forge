@@ -13,6 +13,7 @@ Usage::
 from __future__ import annotations
 
 import json
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -134,6 +135,12 @@ def main(argv: list[str]) -> int:
     write_focus_request(project_id)
     ws_url = ensure_cdp()
     outcome = navigate(ws_url, project_id)
+    # Bring SP to the front after navigating (CDP alone leaves Forge/Finder focused).
+    subprocess.run(
+        ["/usr/bin/open", "-a", "Super Productivity"],
+        check=False,
+        capture_output=True,
+    )
     print(json.dumps({"ok": True, "projectId": project_id, "nav": outcome}, indent=2))
     return 0
 

@@ -38,6 +38,12 @@ struct ProjectCardView: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                // Same as the tick: Open TASKS in the preferred task manager.
+                openTasksAction?(project)
+            }
+            .help(openTasksAction == nil ? "" : "Open TASKS")
 
             if openTasksAction != nil || revealAction != nil {
                 HStack(spacing: 4) {

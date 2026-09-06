@@ -122,16 +122,23 @@ public enum ProjectOpenActions {
     }
 
     private static func openSuperProductivity(projectId: String?, forgeDir: String?) {
-        if let projectId, !projectId.isEmpty {
-            // Focus the project view via CDP helper (may briefly relaunch SP with debugging).
-            DispatchQueue.global(qos: .userInitiated).async {
-                _ = SuperProductivityFocus.focusProject(projectId: projectId, forgeDir: forgeDir)
-            }
+        let spBundleIds = ["com.super-productivity.app"]
+        guard let projectId, !projectId.isEmpty else {
+            // No project_ids map for this folder — open SP without a project focus.
+            launchApplication(named: "Super Productivity", bundleIdentifiers: spBundleIds)
             return
         }
-        launchApplication(named: "Super Productivity", bundleIdentifiers: [
-            "com.super-productivity.app",
-        ])
+        // Focus the project view via CDP (may briefly relaunch SP with debugging),
+        // then bring SP to the front. Do not re-activate Forge afterward.
+        DispatchQueue.global(qos: .userInitiated).async {
+            let failure = SuperProductivityFocus.focusProject(projectId: projectId, forgeDir: forgeDir)
+            DispatchQueue.main.async {
+                launchApplication(named: "Super Productivity", bundleIdentifiers: spBundleIds)
+                if failure != nil {
+                    NSSound.beep()
+                }
+            }
+        }
     }
 
     private static func openOmniFocus(projectName: String) {

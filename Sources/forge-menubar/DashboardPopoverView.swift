@@ -362,7 +362,7 @@ struct DashboardPopoverView: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .help("Open TASKS · ⌘-click to reveal in Finder")
+        .help("Open TASKS · ⌘-click to reveal in Finder · tick on the board does the same")
     }
 
     private func beginAssign(_ item: DashboardSnapshotJSON.InboxItem) {

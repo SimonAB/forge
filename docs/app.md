@@ -91,9 +91,9 @@ the Dock icon when no windows are visible.
 
 **General → Open TASKS opens** chooses the task manager for:
 
-- Board card **tick** (checkmark) icon
+- Board card **name** click or **tick** (checkmark) icon
 - Context menu **Open TASKS**
-- Dashboard project click (⌘-click still reveals in Finder)
+- Menu bar dashboard project click (⌘-click still reveals in Finder)
 
 | Choice | Opens |
 |--------|--------|
@@ -104,7 +104,8 @@ the Dock icon when no windows are visible.
 | TASKS.toml (editor) | `<project>/TASKS.toml` in the preferred text editor |
 
 The **folder** icon on cards still reveals the project in Finder. SP focus needs
-`superproductivity.project_ids` and may briefly enable CDP on first use; see
+`superproductivity.project_ids` for that folder title, then brings Super Productivity
+to the front (a beep means the CDP focus helper failed). See
 [superproductivity.md](superproductivity.md).
 
 ### OmniFocus (optional)

@@ -117,20 +117,25 @@ final class StatusBarController: NSObject, NSMenuDelegate {
 
     private func loadConfig() {
         let home = NSHomeDirectory()
-        if let preferred = UserDefaults.standard.string(forKey: "forge.config.path"),
-           FileManager.default.fileExists(atPath: preferred),
-           let cfg = try? ForgeConfig.load(from: preferred) {
-            config = cfg
-            forgeDir = (preferred as NSString).deletingLastPathComponent
-            dashboardPopoverController?.updateForgeDir(forgeDir)
-            capturePopoverController?.updateForgeDir(forgeDir)
-            return
+        let preferredKey = "forge.config.path"
+        if let preferred = UserDefaults.standard.string(forKey: preferredKey) {
+            if FileManager.default.fileExists(atPath: preferred),
+               let cfg = try? ForgeConfig.load(from: preferred) {
+                config = cfg
+                forgeDir = (preferred as NSString).deletingLastPathComponent
+                dashboardPopoverController?.updateForgeDir(forgeDir)
+                capturePopoverController?.updateForgeDir(forgeDir)
+                return
+            }
+            // Stale path (e.g. legacy ~/Documents/Forge) — clear so search finds Software/Forge.
+            UserDefaults.standard.removeObject(forKey: preferredKey)
         }
         let candidates = ForgePaths.configCandidatePaths(home: home)
         for candidate in candidates {
             if FileManager.default.fileExists(atPath: candidate) {
                 config = try? ForgeConfig.load(from: candidate)
                 forgeDir = (candidate as NSString).deletingLastPathComponent
+                UserDefaults.standard.set(candidate, forKey: preferredKey)
                 dashboardPopoverController?.updateForgeDir(forgeDir)
                 capturePopoverController?.updateForgeDir(forgeDir)
                 return
