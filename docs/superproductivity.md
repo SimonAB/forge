@@ -178,6 +178,16 @@ This writes IndexedDB `state_cache` (same technique as menu-tree mirror). Series
 with multiple OF instances (e.g. deferred copies) collapse to one SP repeat
 config. Complex RRULEs are approximated; check warnings in the dry-run.
 
+### Eisenhower tags from OF flags / Forge URGENT
+
+```sh
+python3 scripts/of-eisenhower-tags.py          # dry-run
+python3 scripts/of-eisenhower-tags.py --apply  # write SP tagIds
+```
+
+Maps OmniFocus **flagged** pending tasks → SP tag `important` (`EM_IMPORTANT`),
+and open tasks in Forge **URGENT ⚠️** projects → SP tag `urgent` (`EM_URGENT`).
+
 ### Apple Reminders Inbox → SP Inbox
 
 Super Productivity does not watch Apple Reminders. To approximate OmniFocus’s
