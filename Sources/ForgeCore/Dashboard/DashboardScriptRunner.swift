@@ -44,7 +44,7 @@ public enum DashboardScriptRunner: Sendable {
 
     /// Execute the dashboard script and return stdout (text or JSON).
     public static func run(forgeDir: String, options: Options = Options()) throws -> String {
-        guard let python = ExecutablePathResolver.find(named: "python3") else {
+        guard let python = ExecutablePathResolver.forgePython(in: forgeDir) else {
             throw RunnerError.pythonNotFound
         }
         let script = (forgeDir as NSString).appendingPathComponent("scripts/forge-dashboard.py")

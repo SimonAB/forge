@@ -128,40 +128,28 @@ def keychain_token(*, prompt: bool = False) -> str | None:
     return token
 
 
+def _yaml_mapping(text: str) -> dict[str, Any]:
+    """Decode configuration with the shared safe YAML parser."""
+    try:
+        import yaml
+    except ImportError as exc:
+        raise ValueError("PyYAML required: install scripts/requirements.txt") from exc
+    try:
+        value = yaml.safe_load(text)
+    except yaml.YAMLError as exc:
+        raise ValueError("Invalid Forge YAML configuration") from exc
+    if value is None:
+        return {}
+    if not isinstance(value, dict):
+        raise ValueError("Forge configuration must be a mapping")
+    return value
+
+
 def board_column_tags_from_yaml(text: str) -> dict[str, str]:
-    """Return ``{column_name: tag_string}`` from Forge ``board.columns`` YAML."""
-    mapping: dict[str, str] = {}
-    in_board = False
-    in_columns = False
-    current_name: str | None = None
-    for raw_line in text.splitlines():
-        line = raw_line.rstrip()
-        if line.startswith("board:"):
-            in_board = True
-            in_columns = False
-            continue
-        if not in_board:
-            continue
-        if line and not line[0].isspace() and not line.startswith("#"):
-            break
-        stripped = line.strip()
-        if stripped.startswith("columns:"):
-            in_columns = True
-            continue
-        if not in_columns:
-            continue
-        indent = len(line) - len(line.lstrip(" "))
-        if indent < 2 and stripped and not stripped.startswith("-"):
-            break
-        if stripped.startswith("- name:"):
-            current_name = stripped.split(":", 1)[1].strip().strip("\"'")
-            continue
-        if current_name and stripped.startswith("tag:"):
-            tag = stripped.split(":", 1)[1].strip().strip("\"'")
-            # Undo common YAML unicode escapes if present as literals — leave as-is
-            mapping[current_name] = tag
-            current_name = None
-    return mapping
+    """Return configured column names and tags using the same YAML decoder as SP."""
+    board = _yaml_mapping(text).get("board") or {}
+    return {str(column["name"]): str(column["tag"])
+            for column in board.get("columns", [])}
 
 
 def mirror_column_tags(
@@ -221,12 +209,18 @@ class SuperProductivityConfig:
 
     @classmethod
     def from_mapping(cls, value: dict[str, Any] | None) -> "SuperProductivityConfig":
-        """Decode the YAML-shaped configuration without requiring PyYAML."""
-        value = value or {}
+        """Validate decoded Super Productivity settings."""
+        value = {} if value is None else value
+        if not isinstance(value, dict):
+            raise ValueError("superproductivity must be a mapping")
+        if not isinstance(value.get("enabled", False), bool):
+            raise ValueError("superproductivity.enabled must be a boolean")
         endpoint = str(value.get("endpoint", DEFAULT_ENDPOINT)).rstrip("/")
         if not _is_loopback_endpoint(endpoint):
             raise ValueError("Super Productivity endpoint must be loopback")
         project_ids = value.get("project_ids") or {}
+        if not isinstance(project_ids, dict):
+            raise ValueError("superproductivity.project_ids must be a mapping")
         return cls(
             bool(value.get("enabled", False)),
             endpoint,
@@ -246,51 +240,8 @@ def _is_loopback_endpoint(endpoint: str) -> bool:
 
 
 def config_from_yaml_text(text: str) -> SuperProductivityConfig:
-    """Parse the ``superproductivity`` section from Forge YAML text."""
-    value: dict[str, Any] = {}
-    project_ids: dict[str, str] = {}
-    in_section = False
-    in_project_ids = False
-    for raw_line in text.splitlines():
-        line = raw_line.rstrip()
-        if line.startswith("superproductivity:"):
-            in_section = True
-            in_project_ids = False
-            continue
-        if not in_section:
-            continue
-        if line and not line[0].isspace() and not line.startswith("#"):
-            break
-        stripped = line.strip()
-        if not stripped or stripped.startswith("#"):
-            continue
-        indent = len(line) - len(line.lstrip(" "))
-        if stripped.startswith("project_ids:"):
-            in_project_ids = True
-            continue
-        if in_project_ids:
-            if indent < 4:
-                in_project_ids = False
-            elif ":" in stripped:
-                key, raw = stripped.split(":", 1)
-                key = key.strip().strip("\"'")
-                raw = raw.strip().strip("\"'")
-                if key and raw:
-                    project_ids[key] = raw
-                continue
-        if in_project_ids:
-            continue
-        if ":" not in stripped:
-            continue
-        key, raw = stripped.split(":", 1)
-        raw = raw.strip().strip("\"'")
-        if raw.lower() in ("true", "false"):
-            value[key] = raw.lower() == "true"
-        elif raw:
-            value[key] = raw
-    if project_ids:
-        value["project_ids"] = project_ids
-    return SuperProductivityConfig.from_mapping(value)
+    """Parse the Super Productivity settings using safe YAML decoding."""
+    return SuperProductivityConfig.from_mapping(_yaml_mapping(text).get("superproductivity"))
 
 
 def config_from_file(path: Path) -> SuperProductivityConfig:

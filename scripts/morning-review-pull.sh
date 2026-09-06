@@ -27,6 +27,9 @@ fi
 
 mkdir -p "$cache_dir"
 cd "$forge_dir"
+if [[ -x "$forge_dir/.venv/bin/python3" ]]; then
+  export PATH="$forge_dir/.venv/bin:$PATH"
+fi
 
 stamp="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 echo "[$stamp] morning-review-pull: OF refresh"

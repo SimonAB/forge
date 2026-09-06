@@ -87,7 +87,7 @@ public enum CaptureScriptRunner: Sendable {
 
     /// Execute forge-capture.py and return stdout.
     public static func run(forgeDir: String, arguments: [String]) throws -> String {
-        guard let python = ExecutablePathResolver.find(named: "python3") else {
+        guard let python = ExecutablePathResolver.forgePython(in: forgeDir) else {
             throw RunnerError.pythonNotFound
         }
         let script = (forgeDir as NSString).appendingPathComponent("scripts/forge-capture.py")

@@ -6,6 +6,13 @@ import Foundation
 /// Homebrew and user install prefixes (`~/bin`, `~/.local/bin`). This type builds a
 /// search path that matches common interactive-shell layouts without spawning a login shell.
 public enum ExecutablePathResolver: Sendable {
+    /// Use Forge's declared Python dependencies when installed, otherwise the system interpreter.
+    public static func forgePython(in forgeDir: String) -> String? {
+        let python = (forgeDir as NSString).appendingPathComponent(".venv/bin/python")
+        if FileManager.default.isExecutableFile(atPath: python) { return python }
+        return find(named: "python3")
+    }
+
     /// Directories commonly present on an interactive macOS shell `PATH` but absent from GUI apps.
     public static func standardExtraDirectories(home: String = NSHomeDirectory()) -> [String] {
         let homeNS = home as NSString

@@ -30,6 +30,20 @@ from forge_tasks_world.toml_io import TaskRecord  # noqa: E402
 
 
 class SuperProductivityTests(unittest.TestCase):
+    def test_yaml_comments_and_quoted_colons(self):
+        config = config_from_yaml_text('''
+superproductivity:
+  enabled: false # intentionally disabled
+  project_ids:
+    "Study: phase 2": "abc" # project ID
+''')
+        self.assertFalse(config.enabled)
+        self.assertEqual(config.project_ids, {"Study: phase 2": "abc"})
+
+    def test_yaml_rejects_non_boolean_enabled(self):
+        with self.assertRaises(ValueError):
+            config_from_yaml_text('superproductivity: {enabled: "false"}')
+
     def test_due_tasks_include_inbox_even_when_projects_omit_it(self):
         client = Mock()
         client.config.endpoint = DEFAULT_ENDPOINT

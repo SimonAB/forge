@@ -35,7 +35,7 @@ struct DashboardCommand: AsyncParsableCommand {
         let forgeDir = ConfigLoader.forgeDirectory(for: config)
 
         if let interval = watch, !json {
-            guard let python = ExecutablePathResolver.find(named: "python3") else {
+            guard let python = ExecutablePathResolver.forgePython(in: forgeDir) else {
                 throw ValidationError("python3 not found on PATH.")
             }
             let script = (forgeDir as NSString).appendingPathComponent("scripts/forge-dashboard.py")

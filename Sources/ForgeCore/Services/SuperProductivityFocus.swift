@@ -25,7 +25,7 @@ public enum SuperProductivityFocus {
             return "SP focus skipped: forge-sp-focus-project.py not found"
         }
 
-        let python = preferredPython()
+        let python = preferredPython(forgeDir: forgeDir)
         let process = Process()
         if python == "/usr/bin/env" {
             process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
@@ -39,8 +39,8 @@ public enum SuperProductivityFocus {
         process.standardError = pipe
         do {
             try process.run()
-            process.waitUntilExit()
             let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            process.waitUntilExit()
             let text = String(data: data, encoding: .utf8)?
                 .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             if process.terminationStatus == 0 {
@@ -54,12 +54,8 @@ public enum SuperProductivityFocus {
         }
     }
 
-    /// Prefer the CDP venv when present (has ``websocket-client``).
-    private static func preferredPython() -> String {
-        let venv = "/tmp/sp-cdp-venv/bin/python"
-        if FileManager.default.isExecutableFile(atPath: venv) {
-            return venv
-        }
-        return "/usr/bin/env"
+    /// Prefer Forge's durable environment, installed from scripts/requirements.txt.
+    static func preferredPython(forgeDir: String) -> String {
+        ExecutablePathResolver.forgePython(in: forgeDir) ?? "/usr/bin/env"
     }
 }

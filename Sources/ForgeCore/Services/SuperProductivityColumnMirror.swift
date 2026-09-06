@@ -15,9 +15,12 @@ public enum SuperProductivityColumnMirror {
             return "SP column mirror skipped: forge-superproductivity.py not found."
         }
         let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+        guard let python = ExecutablePathResolver.forgePython(in: forgeDir) else {
+            return "SP column mirror skipped: python3 not found."
+        }
+        process.executableURL = URL(fileURLWithPath: python)
         process.arguments = [
-            "python3", script,
+            script,
             "--forge-home", forgeDir,
             "mirror-column", projectName, column.name,
             "--tag", column.tag,

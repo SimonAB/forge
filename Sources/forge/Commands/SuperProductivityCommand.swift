@@ -28,7 +28,7 @@ struct SuperProductivityCommand: AsyncParsableCommand {
     fileprivate static func runPython(_ arguments: [String]) throws {
         let config = try ConfigLoader.load()
         let forgeDir = ConfigLoader.forgeDirectory(for: config)
-        guard let python = ExecutablePathResolver.find(named: "python3") else {
+        guard let python = ExecutablePathResolver.forgePython(in: forgeDir) else {
             throw ValidationError("python3 not found on PATH.")
         }
         let script = (forgeDir as NSString).appendingPathComponent("scripts/forge-superproductivity.py")
