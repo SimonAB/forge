@@ -128,7 +128,7 @@ forge project-tag remove <Project> "URGENT \u26A0\uFE0F"
 Morning review (when the user agrees) follows Forge `.cursor/rules/morning-brief.mdc`:
 
 1. `forge omnifocus refresh --apply-finder` — sync OF snapshot + OF→Finder (orchestrator).
-2. `bash scripts/morning-review-pull.sh` — when SP is enabled, drains Reminders Inbox→SP then calendar/board/due via `forge-brief.py` (skips OF→`TASKS.toml`); otherwise OF→`TASKS.toml` + brief.
+2. `bash scripts/morning-review-pull.sh` — when SP is enabled, drains Reminders Inbox→SP, optionally mirrors board column tags onto SP (`nexus.sp_column_mirror`), then calendar/board/due via `forge-brief.py` (skips OF→`TASKS.toml`); otherwise OF→`TASKS.toml` + brief.
 3. Parallelise GitHub checks as Hephaestus judges best (or delegate to an idle **Morning Brief** Herdr pane).
    (this pane for fast CLI; Herdr helpers with a suitable `--kind` only when faster).
 4. Cap helper waits; take over locally on stall. Synthesise `## Brief` / `## Details`;

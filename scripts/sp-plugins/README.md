@@ -39,6 +39,13 @@ python3 scripts/forge-sp-menu-tree.py --forge-home .
 # or: forge superproductivity mirror-menu-tree [--dry-run]
 ```
 
+## OmniFocus → SP (of-bulk-projects)
+
+One-shot import of pending OmniFocus tasks: `python3 scripts/of-to-sp.py`.
+Unmapped OF projects and Single Action Lists become new SP projects (OF titles)
+via `of-bulk-projects.zip` (same PluginAPI pattern as forge-bulk-projects). See
+[docs/superproductivity.md](../../docs/superproductivity.md).
+
 ## Focus one SP project (Open TASKS)
 
 Used by Forge.app when **Open TASKS** targets Super Productivity:

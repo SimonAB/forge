@@ -285,9 +285,10 @@ bash scripts/morning-review-pull.sh
 ```
 
 Runs OF refresh for the kanban join; when Super Productivity is enabled, drains
-Apple Reminders **Inbox** → SP Inbox (`scripts/reminders-capture-drain.sh`) and
-skips OmniFocus → `TASKS.toml`; otherwise syncs OF→`TASKS.toml`; then
-`forge-brief.py --calendar-days 1`. GitHub checks stay with the synthesising agent.
+Apple Reminders **Inbox** → SP Inbox (`scripts/reminders-capture-drain.sh`), and
+when `nexus.sp_column_mirror` is true reconciles Finder column tags onto SP
+(`mirror-board`); skips OmniFocus → `TASKS.toml`; otherwise syncs OF→`TASKS.toml`;
+then `forge-brief.py --calendar-days 1`. GitHub checks stay with the synthesising agent.
 
 This is **not** a `forge` subcommand; it requires `forge` on your `$PATH`.
 

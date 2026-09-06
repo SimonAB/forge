@@ -11,7 +11,7 @@ owns inbox, dues, capture, completion, focus, and time tracking.
 |---------|---------------------------|
 | `forge capture` / `forge tasks` | SP Inbox (`INBOX_PROJECT`); assign moves a task onto a mapped SP project |
 | Brief and dashboard inbox + dues | Live SP REST, including Inbox deadlines; dashboard joins mapped project IDs to board columns |
-| Morning pull | OF Refresh for kanban join; drains Reminders **Inbox** → SP (`reminders-capture-drain.sh`); skips OF → `TASKS.toml` |
+| Morning pull | OF Refresh; Reminders Inbox→SP drain; when `nexus.sp_column_mirror`, board→SP column tag reconcile (`mirror-board`); skips OF→`TASKS.toml` |
 | `forge move` / board drag | Optional `nexus.sp_column_mirror`: Finder-style tags (e.g. `Coding 🤖`) on SP tasks |
 | **Open TASKS** (board) | Opens / focuses the mapped SP project (Preferences → General) |
 | `TASKS.toml` / `.forge/tasks.db` | Left on disk; **not** authoritative; not written by capture when SP is on |
@@ -143,6 +143,41 @@ python3 scripts/forge-brief.py --calendar-days 1    # inbox + dues from SP
 `forge tasks assign` fails clearly if the folder has no `project_ids` entry.
 Notes may carry `[forge:source:…]` and a URI line for `forge tasks open`.
 
+### OmniFocus → Super Productivity (one-shot)
+
+Pending OmniFocus tasks can be copied into SP with:
+
+```sh
+python3 scripts/of-to-sp.py --write-plugin   # dry-run + of-bulk-projects.zip
+# Upload scripts/sp-plugins/of-bulk-projects.zip in SP → Settings → Plugins
+python3 scripts/of-to-sp.py                  # confirm blocked → create
+python3 scripts/of-to-sp.py --apply          # create tasks (idempotent via [forge:of-id:…])
+```
+
+| Source | Destination |
+|--------|-------------|
+| Forge-linked / aliased folder with an SP project | That mapped SP project |
+| OF project or Single Action List with no SP project yet | **New** SP project titled as in OmniFocus (plugin creates it) |
+| True Inbox (no containing project) | SP Inbox |
+
+Local REST cannot create projects; the generated plugin uses `PluginAPI.addProject`.
+Re-runs skip tasks already marked `[forge:of-id:<omnifocus-id>]` in SP notes.
+
+### OmniFocus recurrence → SP repeat configs
+
+Imported pending tasks do **not** keep OmniFocus repetition via Local REST
+(upstream limitation). After import, attach SP `taskRepeatCfg` schedules from
+OF RRULEs with:
+
+```sh
+python3 scripts/of-to-sp-repeats.py          # dry-run
+.venv/bin/python scripts/of-to-sp-repeats.py --apply   # CDP write + reload
+```
+
+This writes IndexedDB `state_cache` (same technique as menu-tree mirror). Series
+with multiple OF instances (e.g. deferred copies) collapse to one SP repeat
+config. Complex RRULEs are approximated; check warnings in the dry-run.
+
 ### Apple Reminders Inbox → SP Inbox
 
 Super Productivity does not watch Apple Reminders. To approximate OmniFocus’s
@@ -179,13 +214,18 @@ is independent of Forge’s project-list Reminders bridge (`forge reminders`).
 ## Column mirror
 
 With `nexus.sp_column_mirror: true`, `forge move` and board drag paint
-Finder-style column tags onto open tasks in the mapped SP project. Create those
-tags in SP first (same strings as `board.columns[].tag`); REST cannot create
-tags. CLI mirror:
+Finder-style column tags onto open tasks in the mapped SP project. The morning
+pull also runs a full-board reconcile (`mirror-board`) so overnight drift is
+corrected before `forge-brief.py`. Create those tags in SP first (same strings
+as `board.columns[].tag`); REST cannot create tags.
 
 ```sh
+# One project
 python3 scripts/forge-superproductivity.py --forge-home . mirror-column Forge Coding \
   --tag "Coding 🤖" --kanban-tag "Watch 👁️" --kanban-tag "Plan 📐" # …
+
+# All mapped board projects (respects nexus.sp_column_mirror; --force to override)
+python3 scripts/forge-superproductivity.py --forge-home . --json mirror-board
 ```
 
 ## Optional legacy TOML bridge
