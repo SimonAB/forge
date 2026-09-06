@@ -21,7 +21,9 @@ from forge_tasks_world.superproductivity import (  # noqa: E402
     config_from_file,
     keychain_token,
     load_ledger,
+    mirror_board_column_tags,
     mirror_column_tags,
+    nexus_sp_column_mirror_enabled,
     refresh_project,
     save_ledger,
     sync_lock,
@@ -31,15 +33,13 @@ from forge_tasks_world.toml_io import load_project_tasks, project_tasks_path  # 
 from forge_tasks_world.world_db import WorldDatabase  # noqa: E402
 
 
-def _board_project_paths(forge_home: Path) -> dict[str, Path]:
-    """Resolve mapped project folders from ``forge board --json`` when available."""
-    import json
+def _board_projects(forge_home: Path) -> list[dict[str, Any]]:
+    """Return project dicts from ``forge board --json`` (name, path, column)."""
     import shutil
-    import subprocess
 
     forge_bin = shutil.which("forge")
     if not forge_bin:
-        return {}
+        return []
     try:
         result = subprocess.run(
             [forge_bin, "board", "--json"],
@@ -49,15 +49,20 @@ def _board_project_paths(forge_home: Path) -> dict[str, Path]:
             check=False,
         )
     except OSError:
-        return {}
+        return []
     if result.returncode != 0 or not result.stdout.strip():
-        return {}
+        return []
     try:
         board = json.loads(result.stdout)
     except json.JSONDecodeError:
-        return {}
+        return []
+    return list(board.get("projects") or [])
+
+
+def _board_project_paths(forge_home: Path) -> dict[str, Path]:
+    """Resolve mapped project folders from ``forge board --json`` when available."""
     paths: dict[str, Path] = {}
-    for project in board.get("projects") or []:
+    for project in _board_projects(forge_home):
         name = project.get("name")
         path = project.get("path")
         if name and path:
@@ -172,6 +177,15 @@ def main() -> int:
         default=[],
         dest="kanban_tags",
         help="Kanban tag titles to strip when switching columns (repeatable)",
+    )
+    mirror_board = sub.add_parser(
+        "mirror-board",
+        help="mirror Finder column tags onto SP tasks for all mapped board projects",
+    )
+    mirror_board.add_argument(
+        "--force",
+        action="store_true",
+        help="run even when nexus.sp_column_mirror is false",
     )
     menu_tree = sub.add_parser(
         "mirror-menu-tree",
@@ -334,6 +348,49 @@ def main() -> int:
             else:
                 print(result.get("error") or "SP column mirror failed")
                 return 1
+        return 0 if result.get("ok") else 1
+
+    if args.command == "mirror-board":
+        config_path = Path(args.config or forge_home / "config.yaml")
+        yaml_text = config_path.read_text(encoding="utf-8") if config_path.exists() else ""
+        mirror_on = nexus_sp_column_mirror_enabled(yaml_text) if yaml_text else False
+        if not args.force and not mirror_on:
+            skipped = {
+                "ok": True,
+                "skipped": True,
+                "reason": "nexus.sp_column_mirror is false (use --force to override)",
+                "mirrored": 0,
+                "updated_tasks": 0,
+                "failures": 0,
+                "projects": [],
+            }
+            _print(skipped, args.json)
+            return 0
+        column_tags = board_column_tags_from_yaml(yaml_text) if yaml_text else {}
+        board_projects = _board_projects(forge_home)
+        result = mirror_board_column_tags(
+            client,
+            board_projects=board_projects,
+            project_ids=config.project_ids or {},
+            column_tags=column_tags,
+        )
+        if args.json:
+            print(json.dumps(result, indent=2, sort_keys=True))
+        else:
+            if result.get("ok"):
+                print(
+                    f"SP board mirror: {result.get('mirrored')} project(s), "
+                    f"{result.get('updated_tasks')} task(s) updated, "
+                    f"{len(result.get('skipped') or [])} skipped"
+                )
+            else:
+                print(
+                    f"SP board mirror: {result.get('failures')} failure(s); "
+                    f"{result.get('updated_tasks')} task(s) updated"
+                )
+                for entry in result.get("projects") or []:
+                    if not entry.get("ok"):
+                        print(f"  {entry.get('project')}: {entry.get('error')}")
         return 0 if result.get("ok") else 1
 
     selected = _selected_projects(config, getattr(args, "project", []) or [])

@@ -21,6 +21,7 @@ struct SuperProductivityCommand: AsyncParsableCommand {
             Stop.self,
             SetupToken.self,
             MirrorMenuTree.self,
+            MirrorBoard.self,
         ],
         defaultSubcommand: Status.self
     )
@@ -178,6 +179,22 @@ struct SuperProductivityCommand: AsyncParsableCommand {
             if let docsRoot {
                 args.append(contentsOf: ["--docs-root", docsRoot])
             }
+            try SuperProductivityCommand.runPython(args)
+        }
+    }
+
+    struct MirrorBoard: AsyncParsableCommand {
+        static let configuration = CommandConfiguration(
+            commandName: "mirror-board",
+            abstract: "Mirror Finder column tags onto Super Productivity tasks for all mapped board projects."
+        )
+        @Flag(name: .long, help: "Run even when nexus.sp_column_mirror is false.")
+        var force = false
+        @Flag(name: .long) var json = false
+        mutating func run() async throws {
+            var args = ["mirror-board"]
+            if force { args.append("--force") }
+            if json { args.insert("--json", at: 0) }
             try SuperProductivityCommand.runPython(args)
         }
     }

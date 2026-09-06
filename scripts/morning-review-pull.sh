@@ -5,6 +5,8 @@
 # Super Productivity is not the enabled task store.
 # Phase 1b (SP only): drain Apple Reminders Inbox → SP Inbox
 #   (scripts/reminders-capture-drain.sh), then forge-brief sees the new captures.
+# Phase 1c (SP + nexus.sp_column_mirror): reconcile Finder column tags onto SP
+#   tasks for all mapped board projects (forge superproductivity mirror-board).
 # Phase 2: forge-brief.py (calendar + board + inbox/dues from SP when enabled)
 #
 # GitHub owned/fork checks stay with the synthesising agent (see morning-brief.mdc).
@@ -45,6 +47,17 @@ print("1" if config_from_file(Path("config.yaml")).enabled else "0")
 PY
 )"
 
+sp_column_mirror="$(
+  python3 - <<'PY'
+from pathlib import Path
+import sys
+sys.path.insert(0, "scripts")
+from forge_tasks_world.superproductivity import nexus_sp_column_mirror_enabled
+text = Path("config.yaml").read_text(encoding="utf-8")
+print("1" if nexus_sp_column_mirror_enabled(text) else "0")
+PY
+)"
+
 if [[ "$sp_enabled" == "1" ]]; then
   echo "[$stamp] morning-review-pull: skip OF→TASKS (Super Productivity is task store)" | tee "$cache_dir/sync-tasks.txt"
   echo "[$stamp] morning-review-pull: Reminders Inbox → SP Inbox"
@@ -54,6 +67,15 @@ if [[ "$sp_enabled" == "1" ]]; then
     :
   else
     echo "[$stamp] morning-review-pull: reminders drain failed (continuing brief)" | tee -a "$cache_dir/reminders-drain.json" >&2
+  fi
+  if [[ "$sp_column_mirror" == "1" ]]; then
+    echo "[$stamp] morning-review-pull: SP column tag mirror (board → SP)"
+    if python3 scripts/forge-superproductivity.py --forge-home "$forge_dir" --json mirror-board \
+      | tee "$cache_dir/sp-column-mirror.json"; then
+      :
+    else
+      echo "[$stamp] morning-review-pull: SP column mirror failed (continuing brief)" | tee -a "$cache_dir/sp-column-mirror.json" >&2
+    fi
   fi
 else
   echo "[$stamp] morning-review-pull: project tasks sync"
@@ -67,4 +89,7 @@ echo "[$stamp] morning-review-pull: done"
 echo "  brief: $cache_dir/forge-brief.txt"
 if [[ "$sp_enabled" == "1" ]]; then
   echo "  reminders drain: $cache_dir/reminders-drain.json"
+  if [[ "$sp_column_mirror" == "1" ]]; then
+    echo "  sp column mirror: $cache_dir/sp-column-mirror.json"
+  fi
 fi

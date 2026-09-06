@@ -152,6 +152,81 @@ def board_column_tags_from_yaml(text: str) -> dict[str, str]:
             for column in board.get("columns", [])}
 
 
+def nexus_sp_column_mirror_enabled(text: str) -> bool:
+    """Return whether ``nexus.sp_column_mirror`` is enabled in config YAML."""
+    nexus = _yaml_mapping(text).get("nexus") or {}
+    value = nexus.get("sp_column_mirror", False)
+    if not isinstance(value, bool):
+        raise ValueError("nexus.sp_column_mirror must be a boolean")
+    return value
+
+
+def mirror_board_column_tags(
+    client: "SuperProductivityClient",
+    *,
+    board_projects: list[dict[str, Any]],
+    project_ids: dict[str, str],
+    column_tags: dict[str, str],
+) -> dict[str, Any]:
+    """Mirror Finder column tags onto SP tasks for every mapped board project.
+
+    Skips unmapped folders, projects with no column, and unknown column names.
+    Reuses ``mirror_column_tags`` per project (one tag list fetch shared via
+    repeated ``client.tags()`` calls — acceptable for morning reconcile size).
+    """
+    kanban_titles = list(column_tags.values())
+    results: list[dict[str, Any]] = []
+    skipped: list[dict[str, Any]] = []
+    updated_tasks = 0
+    failures = 0
+
+    for project in board_projects:
+        name = str(project.get("name") or "").strip()
+        column = str(project.get("column") or "").strip()
+        if not name:
+            continue
+        project_id = project_ids.get(name)
+        if not project_id:
+            skipped.append({"project": name, "reason": "unmapped"})
+            continue
+        if not column or column == "(none)":
+            skipped.append({"project": name, "reason": "no_column"})
+            continue
+        tag_title = column_tags.get(column)
+        if not tag_title:
+            skipped.append({"project": name, "column": column, "reason": "unknown_column"})
+            continue
+        result = mirror_column_tags(
+            client,
+            project_id=project_id,
+            column=column,
+            tag_title=tag_title,
+            kanban_tag_titles=kanban_titles,
+        )
+        entry = {
+            "project": name,
+            "column": column,
+            "ok": bool(result.get("ok")),
+            "tag": result.get("tag"),
+            "updated": int(result.get("updated") or 0),
+        }
+        if result.get("error"):
+            entry["error"] = result["error"]
+            failures += 1
+        else:
+            updated_tasks += entry["updated"]
+        results.append(entry)
+
+    return {
+        "ok": failures == 0,
+        "mirrored": len(results),
+        "updated_tasks": updated_tasks,
+        "failures": failures,
+        "skipped": skipped,
+        "projects": results,
+    }
+
+
 def mirror_column_tags(
     client: "SuperProductivityClient",
     *,
