@@ -123,7 +123,9 @@ CLI: `forge reminders` / `status` / `show` / `doctor` / `align` / `refresh` / `p
 
 ## Quick capture
 
-Capture into the Forge inbox (`.forge/tasks.db`) without choosing a project:
+With `superproductivity.enabled`, capture goes to the **Super Productivity
+Inbox** (see [superproductivity.md](superproductivity.md)). Otherwise capture
+uses the legacy Forge inbox (`.forge/tasks.db`).
 
 - **Menubar:** **Capture…** (default ⌃⌘Space), or File → Capture…
 - **Services:** **Capture to Forge Inbox** (Finder files or selected text); **Capture Mail Message to Forge** (Mail)
@@ -132,7 +134,8 @@ Capture into the Forge inbox (`.forge/tasks.db`) without choosing a project:
 
 Assistants should run the same CLI with `--source assistant` when the user says “capture: …”.
 
-Day-to-day OmniFocus / Reminders remain optional bridges during migration.
+Day-to-day OmniFocus / Reminders remain optional bridges for kanban join; they are
+not the task store when Super Productivity is enabled.
 
 ## Permissions
 

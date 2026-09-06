@@ -46,13 +46,16 @@ These read `forge board --json` and use the same column model as Forge.app.
 
 ## Super Productivity
 
-Install the desktop app, enable local REST (`127.0.0.1:3876`), map
+SP is the **task** plane when `superproductivity.enabled` is true (capture,
+inbox, dues, briefs). Install the desktop app, enable local REST
+(`127.0.0.1:3876`), create projects with **exact** Forge folder titles (in-app
+or Plugin API — Local REST cannot create projects), map
 `superproductivity.project_ids`, and store the token with
-`forge superproductivity setup-token` (Keychain on macOS; `secret-tool` or
+`forge superproductivity setup-token` (`secret-tool` or
 `~/.config/forge/superproductivity.token` on Linux).
 
-SP is the **task** plane. Do not use SP’s task kanban as the portfolio board of
-record.
+Do not use SP’s task kanban as the portfolio board of record. Details:
+[superproductivity.md](superproductivity.md).
 
 ## Sharing folders
 

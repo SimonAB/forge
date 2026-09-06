@@ -13,7 +13,7 @@ not competing boards of record.
 | Finder tags (macOS) | Local projection |
 | `user.xdg.tags` (Linux) | Local projection (same tag strings as `config.yaml`) |
 | OmniFocus | macOS column mirror on linked tasks (`sync_on_move` / Refresh pull) |
-| Super Productivity | Task execution for mapped `project_ids`; optional `Forge/<Column>` tag mirror |
+| Super Productivity | Sole task store when enabled; optional Finder-style column tag mirror |
 
 ## Sidecar schema (v1)
 
@@ -71,9 +71,17 @@ nexus:
 
 ## Task backends
 
-One execution backend per project: Super Productivity–mapped folders are skipped by
-the OmniFocus task importer. See [superproductivity.md](superproductivity.md) and
-[omnifocus.md](omnifocus.md).
+With `superproductivity.enabled`, **Super Productivity is the sole task store**
+(inbox, dues, capture, briefs). Forge stays the **kanban nexus**. Map folder
+names to SP project ids in `config.yaml`. Local REST cannot create projects
+(`POST /projects` → 404); create them in the app or via Plugin API
+`addProject` (see [superproductivity.md](superproductivity.md) and
+`scripts/sp-plugins/`). Optional `nexus.sp_column_mirror` paints Finder-style
+column tags onto SP tasks on `forge move` / board drag.
+
+Legacy `TASKS.toml` / `.forge/tasks.db` remain on disk when SP is enabled but are
+not authoritative. OmniFocus task import skips mapped SP projects. Full cutover
+notes and planned retirement of the TOML path: [superproductivity.md](superproductivity.md).
 
 ## Visual board
 

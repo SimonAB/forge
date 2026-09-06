@@ -1,80 +1,147 @@
-# Super Productivity pilot
+# Super Productivity
 
-Forge is the project kanban **nexus** ([nexus.md](nexus.md)). Super Productivity
-is a local **task execution** backend for explicitly mapped projects—not the
-portfolio board of record. One task backend per project: enabled SP pilots are
-skipped by the OmniFocus task importer. Optional `nexus.sp_column_mirror` mirrors
-`forge move` onto SP tags `Forge/<Column>` (tags must already exist in SP).
+Forge is the project kanban **nexus** ([nexus.md](nexus.md)). When
+`superproductivity.enabled` is true, **Super Productivity is the sole task
+store**. Forge owns portfolio columns (sidecar + Finder / `user.xdg.tags`); SP
+owns inbox, dues, capture, completion, focus, and time tracking.
 
-The integration is disabled until the desktop app has been installed, its local
-REST API enabled, and the generated project IDs have been placed in `config.yaml`.
+## Current behaviour
 
-Install the stable desktop release (validated against 18.x local REST API),
-create projects named `Forge` and `CausalDynamics.jl`, and enable the local API
-in Super Productivity. Store the API token without putting it in shell history:
+| Concern | Behaviour when SP enabled |
+|---------|---------------------------|
+| `forge capture` / `forge tasks` | SP Inbox (`INBOX_PROJECT`); assign moves a task onto a mapped SP project |
+| `forge-brief.py` inbox + dues | Live SP REST (`GET /tasks`), not `.forge/tasks.db` |
+| Morning pull | Skips OmniFocus → `TASKS.toml` import; still runs OF Refresh for kanban join |
+| `forge move` / board drag | Optional `nexus.sp_column_mirror`: Finder-style tags (e.g. `Coding 🤖`) on SP tasks |
+| `TASKS.toml` / `.forge/tasks.db` | Left on disk; **not** authoritative; not written by capture when SP is on |
+| OmniFocus task import | Skips folders listed in `superproductivity.project_ids` |
+
+When `superproductivity.enabled` is false, capture and briefs fall back to the
+legacy task index (`.forge/tasks.db` / `TASKS.toml`).
+
+## Setup
+
+1. Install the stable desktop app (validated against 18.x local REST).
+2. Enable **Settings → Misc → Local REST API** (`http://127.0.0.1:3876`).
+3. Store the token (never put it in `config.yaml` or shell history):
 
 ```sh
 python3 scripts/forge-superproductivity.py --forge-home . setup-token
 # or: forge superproductivity setup-token
 ```
 
-Then add this configuration, replacing the IDs with the values returned by the
-app:
+4. Ensure every Forge board folder has an SP project with the **exact** folder
+   title, then map ids under `superproductivity.project_ids`.
 
 ```yaml
 superproductivity:
   enabled: true
   endpoint: http://127.0.0.1:3876
+  timeout: 5
   project_ids:
-    Forge: "..."
-    CausalDynamics.jl: "..."
+    Forge: "…"
+    CausalDynamics.jl: "…"
 ```
 
-The adapter talks to the official local REST routes (`/health`, `/projects`,
-`/tasks`, `/focus`, `/task-control/stop`). Durations are stored in Super
-Productivity as milliseconds and in `TASKS.toml` as whole minutes. Date-only
-deadlines use `dueDay`; timed deadlines use `dueWithTime`; planned dates use
-`plannedAt`.
+### Creating SP projects (Local REST cannot)
 
-## Safe checks
+Local REST exposes `GET /projects` only. `POST /projects` returns **404**.
+Create projects:
+
+- **In the app** (exact folder titles), or
+- **Plugin API** `addProject` (e.g. one-shot Forge plugin below).
+
+Bulk helper (rebuilds the missing-title list from the live board):
+
+```sh
+python3 scripts/sp-plugins/build_forge_bulk_projects.py
+# Upload scripts/sp-plugins/forge-bulk-projects.zip
+#   Super Productivity → Settings → Plugins → Upload Plugin → enable
+```
+
+See [sp-plugins/README.md](../scripts/sp-plugins/README.md). After projects
+exist, copy ids into `project_ids` (or re-run a title→id match against
+`forge superproductivity list`).
+
+Do **not** use a full SP backup JSON to invent projects unless you intend a
+**full replace** of SP state.
+
+### Project folders (sidebar hierarchy)
+
+Local REST has no folder API. SP nests projects in `menuTree.projectTree`.
+Nesting simply mirrors Finder paths under `~/Documents` (e.g.
+`Work/Projects/Apodemus/…`). Re-apply after you rearrange folders:
+
+```sh
+# Preview
+forge superproductivity mirror-menu-tree --dry-run
+# or: python3 scripts/forge-sp-menu-tree.py --forge-home . --dry-run
+
+# Apply (relaunches SP briefly with CDP; needs websocket-client)
+python3 -m venv /tmp/sp-cdp-venv && /tmp/sp-cdp-venv/bin/pip -q install websocket-client
+/tmp/sp-cdp-venv/bin/python scripts/forge-sp-menu-tree.py --forge-home .
+# or: forge superproductivity mirror-menu-tree
+```
+
+Then quit and reopen Super Productivity normally. `project_ids` still match on
+**folder name**, not path.
+
+## Capture, assign, briefs
+
+```sh
+forge capture "Reply to Rivka" --source assistant   # → SP Inbox
+forge tasks inbox
+forge tasks assign <sp-id> "Forge"                  # requires project_ids entry
+forge tasks complete <sp-id>
+python3 scripts/forge-brief.py --calendar-days 1    # inbox + dues from SP
+```
+
+`forge tasks assign` fails clearly if the folder has no `project_ids` entry.
+Notes may carry `[forge:source:…]` and a URI line for `forge tasks open`.
+
+## Column mirror
+
+With `nexus.sp_column_mirror: true`, `forge move` and board drag paint
+Finder-style column tags onto open tasks in the mapped SP project. Create those
+tags in SP first (same strings as `board.columns[].tag`); REST cannot create
+tags. CLI mirror:
+
+```sh
+python3 scripts/forge-superproductivity.py --forge-home . mirror-column Forge Coding \
+  --tag "Coding 🤖" --kanban-tag "Watch 👁️" --kanban-tag "Plan 📐" # …
+```
+
+## Optional legacy TOML bridge
+
+Mapped pilots can still three-way sync against `TASKS.toml` for migration:
 
 ```sh
 python3 scripts/forge-superproductivity.py --forge-home . --json status
 python3 scripts/forge-superproductivity.py --forge-home . --json doctor
-python3 scripts/forge-superproductivity.py --forge-home . --json align
-python3 scripts/forge-superproductivity.py --forge-home . --json refresh Forge CausalDynamics.jl
-python3 scripts/forge-superproductivity.py --forge-home . --json sync Forge CausalDynamics.jl
+python3 scripts/forge-superproductivity.py --forge-home . --json sync --apply Forge
 ```
 
-## Apply (explicit)
+Durations are milliseconds in SP and whole minutes in `TASKS.toml`. Date-only
+deadlines use `dueDay`; timed deadlines use `dueWithTime`; planned dates use
+`plannedAt`. Sync never auto-deletes. Prefer **one task backend per project**.
 
-One-way import from Super Productivity:
+## Planned (not yet shipped)
 
-```sh
-python3 scripts/forge-superproductivity.py --forge-home . --json refresh --apply Forge CausalDynamics.jl
-```
+Agreed direction; do not assume these exist until implemented:
 
-Three-way synchronisation (local ↔ SP ↔ ledger baseline). Conflicts are reported
-and left untouched; tasks are never deleted automatically:
-
-```sh
-python3 scripts/forge-superproductivity.py --forge-home . --json sync --apply Forge CausalDynamics.jl
-```
-
-After cutover, `sync-of-tasks-from-of.py` skips enabled Super Productivity pilot
-projects so OmniFocus cannot overwrite them. Prefer **one task backend per
-project**. With `nexus.sp_column_mirror: true`, `forge move` mirrors
-`Forge/<Column>` tags onto SP tasks (create those tags in SP first; REST cannot
-create tags).
+1. **Retire day-to-day `TASKS.toml` use** — stop recommending ingest/due for active
+   work; leave existing files on disk until explicitly deleted.
+2. **Soft-deprecate** `forge-tasks-world.py` due/ingest paths when SP is enabled
+   (or thin shims that read SP).
+3. **Dashboard due strip** — ensure `forge-dashboard.py` / `forge dashboard`
+   prefer SP dues the same way `forge-brief.py` does (brief already does).
+4. **No mass-delete** of `TASKS.toml` without an explicit request.
 
 ## Safety notes
 
-The token is kept in the macOS Keychain under the service
-`forge-superproductivity` (on Linux: `secret-tool` or
-`~/.config/forge/superproductivity.token`). The adapter refuses non-loopback
-endpoints and HTTP redirects, redacts request failures, writes a local ledger at
-`.forge/superproductivity.json`, and stores SP identities separately from Forge
-task IDs. A Forge identity marker (`<!-- forge:id:... -->`) is maintained in a
-narrow portion of SP notes. A missing or stopped app leaves local task files
-unchanged. Unsupported SP semantics (waiting/someday export, defer hiding,
-recurrence) are reported and excluded rather than approximated.
+- Token: macOS Keychain service `forge-superproductivity`; Linux `secret-tool` or
+  `~/.config/forge/superproductivity.token`.
+- Loopback-only endpoint; redirects refused; failures redacted.
+- SP must be running for capture and SP-backed briefs.
+- SP supports only one-level subtasks.
+- Rotate the API token if it was ever pasted into chat or logs.

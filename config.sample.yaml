@@ -75,9 +75,12 @@ nexus:
   sync_sidecar_on_refresh: false
   sp_column_mirror: false
 
-# Optional Super Productivity local REST backend. Projects are created in the
-# app first; use their generated IDs here. The token is stored in macOS Keychain
-# (or a local token file / secret-tool on Linux).
+# Optional Super Productivity local REST backend. When enabled, SP is the sole
+# task store (capture, inbox, dues, briefs); Forge remains kanban-only.
+# Local REST cannot create projects (POST /projects → 404); create them in the
+# app or via Plugin API / scripts/sp-plugins/forge-bulk-projects.zip, then map
+# ids here. Token: Keychain / secret-tool / ~/.config/forge/superproductivity.token.
+# See docs/superproductivity.md.
 superproductivity:
   enabled: false
   endpoint: http://127.0.0.1:3876

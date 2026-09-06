@@ -118,16 +118,13 @@ When the user says **capture:** or **inbox:** followed by text, run
 provided). Do not invent due dates or task IDs; process later with
 `forge tasks assign`.
 
-### 1. Sync Forge ↔ OmniFocus + project tasks
+### 1. Sync Forge ↔ OmniFocus (kanban join)
 
 ```bash
 forge omnifocus refresh --apply-finder
-python3 scripts/sync-of-tasks-from-of.py
 ```
 
-The OF refresh updates `.cache/omnifocus-snapshot.json` and pulls OF columns onto Finder (same OF half of board Refresh). **`sync-of-tasks-from-of.py`** imports Forge-linked OmniFocus tasks into per-project **`TASKS.toml`** and refreshes the SQLite **task index** at **`.forge/world.db`**. Report any apply-finder or sync errors briefly; continue the brief even if doctor still reports drift.
-
-If you edited `TASKS.toml` by hand instead, run `python3 scripts/forge-tasks-world.py ingest` to refresh the task index without re-exporting OmniFocus.
+The OF refresh updates `.cache/omnifocus-snapshot.json` and pulls OF columns onto Finder (same OF half of board Refresh). With **Super Productivity** as the task store, skip `sync-of-tasks-from-of.py` unless deliberately refreshing legacy `TASKS.toml`. Report apply-finder errors briefly; continue the brief even if doctor still reports drift.
 
 If Reminders is also enabled, do **not** invent a second sync unless asked; OF refresh comes first.
 
@@ -141,31 +138,21 @@ Or, step by step:
 
 ```bash
 forge omnifocus refresh --apply-finder
-python3 scripts/sync-of-tasks-from-of.py
 python3 scripts/forge-brief.py --calendar-days 1
 ```
 
-`forge-brief.py` includes **Calendar**, **Inbox**, **Due tasks**, column load, URGENT, Neglected, stuck in-flight, Paused, and Hygiene. Do not re-run `forge calendar` or `forge-tasks-world.py due` when you already have that output.
+`forge-brief.py` includes **Calendar**, **Inbox**, **Due tasks** (from Super Productivity when enabled), column load, URGENT, Neglected, stuck in-flight, Paused, and Hygiene. Do not re-run `forge calendar` when you already have that output.
 
 Use today’s events as fixed points in `## Brief` and the `### Schedule` table.
 
 ### 3. Due tasks — parsing only
 
-When using `morning-review-pull.sh` or `forge-brief.py`, due tasks come from the **Due tasks** section (`.forge/world.db` ← `TASKS.toml`).
+When using `morning-review-pull.sh` or `forge-brief.py`, due tasks come from the **Due tasks** section (**Super Productivity** when `superproductivity.enabled`, else the legacy task index).
 
-If you hand-edited TASKS.toml without re-syncing OmniFocus:
-
-```bash
-python3 scripts/forge-tasks-world.py ingest
-python3 scripts/forge-tasks-world.py due --days 14
-```
-
-- Include open tasks (`next`, `waiting`) whose `due` is **today**, plus **overdue**, and upcoming within the horizon.
-- Group by project; show title, due, kanban column, and `[waiting]` when applicable.
+- Include open tasks whose due is **today**, plus **overdue**, and upcoming within the horizon.
+- Group by project; show title, due, kanban column.
 - Never invent task IDs; cite titles and columns only.
 - If almost no tasks have `due` set, say so briefly and do not invent “today” membership.
-
-Project tasks live at `<project>/TASKS.toml`; the task index is gitignored at `Forge/.forge/world.db`.
 
 ### 4. Project review (board)
 

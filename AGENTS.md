@@ -280,48 +280,35 @@ See `@.cursor/rules/forge-cli.mdc` for full command specs.
 
 ## Briefs (neglect + URGENT + tasks)
 
-Read-only brief generator for many concurrent projects. Run `python3 scripts/forge-brief.py` (variants: `--stale-days`, `--show`, `--overdue-active-days`, `--due-days`, `--calendar-timeout-seconds`, `--calendar-calendars`). See `@.cursor/rules/forge-cli.mdc` for section meanings (URGENT, Neglected, stuck in-flight, Hygiene, due tasks from task index).
+Read-only brief generator for many concurrent projects. Run `python3 scripts/forge-brief.py` (variants: `--stale-days`, `--show`, `--overdue-active-days`, `--due-days`, `--calendar-timeout-seconds`, `--calendar-calendars`). See `@.cursor/rules/forge-cli.mdc` for section meanings (URGENT, Neglected, stuck in-flight, Hygiene, due tasks).
 
-### Project tasks (TASKS.toml + task index)
+### Tasks (Super Productivity) and kanban (Forge)
 
-Forge task data uses **per-project files** and a **cross-project index**:
+With `superproductivity.enabled: true`, **Super Productivity is the sole task store** (inbox, dues, capture, completion). **Forge is the project kanban nexus** only (sidecar + Finder / `user.xdg.tags`). Existing `TASKS.toml` files may remain on disk unused; do not treat them as authoritative.
 
-| Layer | Path | Role |
-|-------|------|------|
-| **Project tasks** | `<project>/TASKS.toml` | Human-editable tasks per project (Neovim-friendly) |
-| **Task index** | `Forge/.forge/tasks.db` | SQLite inbox + cross-project due/search (migrates from `world.db`) |
+| Layer | Path / system | Role |
+|-------|---------------|------|
+| **Tasks** | Super Productivity (local REST) | Inbox, due dates, execution, time tracking |
+| **Kanban** | `<project>/.forge/kanban.toml` + tags | Column, meta, assignees |
+| **Legacy** | `<project>/TASKS.toml`, `.forge/tasks.db` | Retired for day-to-day use when SP is enabled |
 
-**Capture (inbox-first):**
+**Capture (inbox-first → SP Inbox):**
 
 ```bash
 forge capture "Reply to Rivka" --source assistant
 forge capture "Review budget" --file ~/Desktop/budget.xlsx   # link only
 forge capture "Keep a copy" --file ~/Desktop/budget.xlsx --stash
 forge tasks inbox
-forge tasks assign <id> "Apodemus luxury"
+forge tasks assign <id> "Apodemus luxury"   # requires project_ids map for that folder
 forge tasks open <id>
 forge tasks complete <id>
 ```
 
-When the user says **capture:** / **inbox:** something, run `forge capture "…" --source assistant` (add `--link` / `--file` when a URI or path is given). Do not invent due dates or task IDs.
+When the user says **capture:** / **inbox:** something, run `forge capture "…" --source assistant` (add `--link` / `--file` when a URI or path is given). Do not invent due dates or task IDs (SP assigns ids).
 
-**Sync from OmniFocus** (optional morning path while migrating):
+Map Forge folder names to SP projects in `config.yaml` (`superproductivity.project_ids`). Local REST cannot create SP projects (`POST /projects` → 404); create them in the app or upload `scripts/sp-plugins/forge-bulk-projects.zip` (see `docs/superproductivity.md`).
 
-```bash
-python3 scripts/sync-of-tasks-from-of.py
-```
-
-**After hand-editing TASKS.toml:**
-
-```bash
-python3 scripts/forge-tasks-world.py ingest
-python3 scripts/forge-tasks-world.py show <Project>   # readable checklist
-python3 scripts/forge-tasks-world.py format [Project] # rewrite TASKS.toml layout
-python3 scripts/forge-tasks-world.py due --days 14
-python3 scripts/forge-tasks-world.py status
-```
-
-Legacy `TASKS.md` is retired on the board; `forge-tasks-world.py convert` remains for one-off migration.
+Optional legacy path when SP is disabled: `TASKS.toml` + `forge-tasks-world.py` / `.forge/tasks.db`. OmniFocus task import remains available for non-SP projects only.
 
 ### Brief output format (must be consistent)
 
@@ -338,7 +325,7 @@ for board writes.
 - Tone: discreet “classic valet” manner (no filler acknowledgements; no managerial language).
 - Content (keep to a few sentences):
   - Today’s calendar fixed points (and tomorrow’s earliest constraints when useful).
-  - Inbox count from **task index** (`.forge/tasks.db`), plus due today / overdue, in one short clause.
+  - Inbox count from **Super Productivity** (when enabled), plus due today / overdue, in one short clause.
   - **URGENT ⚠️** items first (column + smallest next nudge).
   - Most stale in-flight item(s) (Watch/Coding/Write/Review), then Paused.
   - GitHub: open issues/PRs on owned (non-fork) repos, and any forks behind/ahead of upstream.
@@ -352,7 +339,7 @@ for board writes.
 - Prefer compact tables:
   - `### Schedule` — Today (and Tomorrow if needed), plus Warnings.
   - `### Inbox` — unprocessed captures (title, source).
-  - `### Tasks` — due today / overdue / horizon from task index (title, project, column).
+  - `### Tasks` — due today / overdue / horizon from Super Productivity (title, project, column).
   - `### Board` — Column load, URGENT, Neglected, Stuck in-flight, Hygiene.
   - `### GitHub` — owned repos with open issues / PRs; forks vs upstream (drift only).
 
@@ -370,7 +357,7 @@ Morning `forge omnifocus refresh --apply-finder` is part of the agreed morning s
 
 ### Never-Invent-ID Rule
 
-Never invent or hand-write task IDs. IDs are OmniFocus and `forge` assigned and opaque. When creating tasks, let OmniFocus/forge assign the ID.
+Never invent or hand-write task IDs. IDs are Super Productivity (or legacy Forge/OmniFocus) assigned and opaque. When creating tasks, let the task backend assign the ID.
 
 ### Approval Gate
 
@@ -435,7 +422,7 @@ For full specs: `@.cursor/rules/forge-cli.mdc`, `@.cursor/rules/forge-workflows.
 - Schedule OmniFocus with GTD: the calendar is the hard landscape (time-specific events only). Due dates are for genuine deadlines (external, or an explicit personal commitment), kept on weekdays, typically the preceding Friday. Planned dates are when to engage; defer dates hide work until it can start. Do not use due dates to mean “do this on Thursday”. A missed planned date is re-planned, not rolled as an overdue due. Time-specific actions may match the calendar start/end. Do not put planned dates on action groups (OmniFocus inherits them onto children and clutters Forecast Past); plan only the next leaf action.
 - In briefs, list Paused projects in their own section; do not include them in Neglected or Stuck in-flight.
 - Prefer agent-facing CLI JSON (`--json` on writes, structured JSON errors, `docs/tool-schema.json`) over a full Forge MCP server for agentic integration.
-- Super Productivity project titles should match Forge folder names for `project_ids` mapping.
+- Super Productivity project titles should match Forge folder names for `project_ids` mapping; create missing SP projects in-app or via Plugin API `addProject` (Local REST `POST /projects` returns 404).
 - Keep CDCS book work (`causal-dynamics-concept-notes`) separate from the `CausalDynamics.jl` package in Super Productivity; do not mix book chapters into the package project.
 - Prefer one shared kanban model on macOS and Omarchy Linux: Finder tags and Linux `user.xdg.tags` stay aligned via the portable sidecar and file sync (git, LocalSend, Dropbox), with `forge fs sync --apply` after transfers.
 
@@ -447,5 +434,5 @@ For full specs: `@.cursor/rules/forge-cli.mdc`, `@.cursor/rules/forge-workflows.
 - **AgeSCM** (`~/Documents/Work/Projects/Mozzies-MIRS-AI_Gates Deep Surveillance/AgeSCM`): Julia age-structured causal modelling project; private repo `SimonAB/AgeSCM` on GitHub.
 - `forge move` and `forge project-tag add|remove` support `--json` result and `ForgeJSONError` envelopes; agent tool definitions live in `docs/tool-schema.json`.
 - Forge is the project kanban nexus: portable sidecar `<project>/.forge/kanban.toml` when `nexus.sidecar_enabled`, Finder tags on macOS and `user.xdg.tags` on Linux as projections; `forge fs doctor|sync|migrate`; doctrine in `docs/nexus.md` / Omarchy notes in `docs/omarchy.md`.
-- Super Productivity is an optional local REST task backend for explicitly mapped projects (`superproductivity` in config; loopback `127.0.0.1:3876`; CLI `forge superproductivity` / `scripts/forge-superproductivity.py`); API token lives in Keychain service `forge-superproductivity` (or Linux `secret-tool` / `~/.config/forge/superproductivity.token`); three-way sync never auto-deletes; enabled pilots are skipped by `sync-of-tasks-from-of.py`; optional `nexus.sp_column_mirror` paints Finder-style column tags on SP tasks (e.g. `Coding 🤖`, not `Forge/Coding`) on both `forge move` and board drag; SP supports only one-level subtasks and Forge sync does not yet mirror parent/subtask links into `TASKS.toml`.
+- Super Productivity is the sole task store when `superproductivity.enabled` (local REST on loopback `127.0.0.1:3876`; CLI `forge superproductivity` / `scripts/forge-superproductivity.py`); Forge remains kanban nexus only; `forge capture` / `forge tasks` and `forge-brief` inbox/dues use SP; API token lives in Keychain service `forge-superproductivity` (or Linux `secret-tool` / `~/.config/forge/superproductivity.token`); map folder titles via `project_ids` (Local REST cannot create projects — `POST /projects` 404; use in-app or Plugin API `addProject` / `scripts/sp-plugins/forge-bulk-projects.zip`); optional `nexus.sp_column_mirror` paints Finder-style column tags on SP tasks on `forge move` and board drag; SP supports only one-level subtasks; leave legacy `TASKS.toml` untouched for now (not authoritative when SP is enabled); see `docs/superproductivity.md`.
 - Forge.app / OmniFocus / Reminders remain macOS-native; Linux CLI targets Omarchy via `XattrTagStore` and the same nexus sidecar.

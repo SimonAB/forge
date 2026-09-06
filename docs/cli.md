@@ -38,7 +38,7 @@ forge <command> [options]
 | `forge omnifocus` | Optional OmniFocus bridge (`doctor`, `align`, `refresh`, …) |
 | `forge reminders` | Optional Apple Reminders bridge (`list`, `status`, `show`, `refresh`, `doctor`, `align`, `paint-colours`, `paint-priorities`) |
 | `forge fs` | Nexus sidecar ↔ local tags (`doctor`, `sync`, `migrate`) — see [nexus.md](nexus.md) |
-| `forge superproductivity` | Optional Super Productivity task backend |
+| `forge superproductivity` | Optional Super Productivity task backend (`mirror-menu-tree` mirrors Finder folders into the SP sidebar) |
 
 Read-only brief (Python helper, not a `forge` subcommand):
 
@@ -284,34 +284,49 @@ Populate the task index first with `bash scripts/morning-review-pull.sh` (sync +
 bash scripts/morning-review-pull.sh
 ```
 
-Runs OF refresh, project-tasks sync, and `forge-brief.py --calendar-days 1`. GitHub checks stay with the synthesising agent.
+Runs OF refresh for the kanban join, skips OmniFocus → `TASKS.toml` when Super
+Productivity is the enabled task store, then `forge-brief.py --calendar-days 1`.
+GitHub checks stay with the synthesising agent.
 
 This is **not** a `forge` subcommand; it requires `forge` on your `$PATH`.
 
 ---
 
-## Project tasks (TASKS.toml + task index)
+## Tasks (Super Productivity) + legacy TASKS.toml
 
-Per-project tasks at `<project>/TASKS.toml` (optional); canonical inbox + index at
-`Forge/.forge/tasks.db`.
+With `superproductivity.enabled`, capture and inbox go to **Super Productivity**;
+briefs read inbox/dues from SP. Forge remains kanban-only. Full behaviour and
+planned retirement of `TASKS.toml`: [superproductivity.md](superproductivity.md).
+
+Map folder names in `project_ids` (exact SP project titles). Create missing
+projects in the app or via `scripts/sp-plugins/forge-bulk-projects.zip` (Local
+REST cannot create projects). Sidebar folders mirror Finder paths:
 
 ```bash
-forge capture "…" --source assistant          # inbox (chat / CLI / menubar)
+forge superproductivity mirror-menu-tree --dry-run
+python3 scripts/forge-sp-menu-tree.py --forge-home .   # apply (needs websocket-client)
+```
+
+```bash
+forge capture "…" --source assistant          # → SP Inbox when enabled
 forge tasks inbox
-forge tasks assign <id> "Project Name"
-python3 scripts/sync-of-tasks-from-of.py          # OmniFocus → TASKS.toml + index (optional)
-python3 scripts/forge-tasks-world.py ingest     # re-ingest after hand edits
+forge tasks assign <id> "Project Name"        # needs project_ids
+python3 scripts/forge-brief.py --calendar-days 1
+```
+
+Legacy (SP disabled): `<project>/TASKS.toml` and `.forge/tasks.db`.
+
+```bash
+python3 scripts/sync-of-tasks-from-of.py          # OmniFocus → TASKS.toml + index
+python3 scripts/forge-tasks-world.py ingest
 python3 scripts/forge-tasks-world.py due --days 14
-python3 scripts/forge-tasks-world.py status
-python3 scripts/forge-tasks-world.py show "Apodemus luxury"
-python3 scripts/forge-tasks-world.py format              # rewrite all TASKS.toml
 ```
 
 ---
 
 ## scripts/forge-dashboard.py
 
-Live terminal dashboard combining kanban, calendar, and due tasks from the task index.
+Live terminal dashboard combining kanban, calendar, and due tasks (SP when enabled).
 
 ```bash
 python3 scripts/forge-dashboard.py --layout compact

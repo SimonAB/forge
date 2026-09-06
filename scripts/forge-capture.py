@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Forge GTD capture — inbox write/read against `.forge/tasks.db`."""
+"""Forge GTD capture — inbox write/read against Super Productivity (or legacy tasks.db)."""
 
 from __future__ import annotations
 
@@ -18,6 +18,11 @@ from forge_tasks_world.capture import (  # noqa: E402
     sniff_clipboard_link,
     task_db_path,
 )
+from forge_tasks_world.superproductivity import (  # noqa: E402
+    SpTaskStore,
+    SuperProductivityError,
+    config_from_file,
+)
 
 
 def resolve_forge_home() -> Path:
@@ -32,6 +37,18 @@ def resolve_forge_home() -> Path:
         if (candidate / "config.yaml").exists() or (candidate / "config.sample.yaml").exists():
             return candidate
     return candidates[0]
+
+
+def sp_enabled(forge_home: Path) -> bool:
+    """Return True when Super Productivity is the configured task store."""
+    return config_from_file(forge_home / "config.yaml").enabled
+
+
+def open_store(forge_home: Path):
+    """Return SpTaskStore when SP is enabled, otherwise legacy CaptureStore."""
+    if sp_enabled(forge_home):
+        return SpTaskStore(forge_home), "super-productivity"
+    return CaptureStore(forge_home), "tasks.db"
 
 
 def load_board_projects(forge_home: Path) -> list[dict]:
@@ -62,7 +79,11 @@ def match_project(projects: list[dict], needle: str) -> dict:
 
 def cmd_capture(args: argparse.Namespace) -> int:
     forge_home = Path(args.forge_home).expanduser()
-    store = CaptureStore(forge_home)
+    try:
+        store, backend = open_store(forge_home)
+    except SuperProductivityError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
     try:
         link = args.link
         kind = args.kind
@@ -81,28 +102,27 @@ def cmd_capture(args: argparse.Namespace) -> int:
             stash=args.stash,
             source=args.source,
         )
-    except (ValueError, FileNotFoundError) as exc:
+    except (ValueError, FileNotFoundError, SuperProductivityError, KeyError) as exc:
         print(str(exc), file=sys.stderr)
         return 1
     finally:
-        store.close()
+        if hasattr(store, "close"):
+            store.close()
 
     if args.json:
-        print(
-            json.dumps(
-                {
-                    "id": item.task_id,
-                    "title": item.title,
-                    "section": item.section,
-                    "source": item.source,
-                    "links": item.links,
-                    "notes": item.notes,
-                    "created_at": item.created_at,
-                    "db_path": str(task_db_path(forge_home)),
-                },
-                indent=2,
-            )
-        )
+        payload = {
+            "id": item.task_id,
+            "title": item.title,
+            "section": getattr(item, "section", "inbox"),
+            "source": item.source,
+            "links": item.links,
+            "notes": item.notes,
+            "created_at": item.created_at,
+            "backend": backend,
+        }
+        if backend == "tasks.db":
+            payload["db_path"] = str(task_db_path(forge_home))
+        print(json.dumps(payload, indent=2))
     else:
         link_note = ""
         if item.links:
@@ -114,11 +134,19 @@ def cmd_capture(args: argparse.Namespace) -> int:
 
 def cmd_inbox(args: argparse.Namespace) -> int:
     forge_home = Path(args.forge_home).expanduser()
-    store = CaptureStore(forge_home)
+    try:
+        store, _backend = open_store(forge_home)
+    except SuperProductivityError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
     try:
         items = store.list_inbox()
+    except SuperProductivityError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
     finally:
-        store.close()
+        if hasattr(store, "close"):
+            store.close()
 
     if args.json:
         print(
@@ -164,45 +192,66 @@ def cmd_assign(args: argparse.Namespace) -> int:
     forge_home = Path(args.forge_home).expanduser()
     projects = load_board_projects(forge_home)
     project = match_project(projects, args.project)
-    store = CaptureStore(forge_home)
     try:
-        store.assign(
-            args.task_id,
-            Path(project["path"]),
-            project["name"],
-            section=args.section,
-            column_name=project.get("column"),
-        )
-    except KeyError as exc:
+        store, backend = open_store(forge_home)
+    except SuperProductivityError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    try:
+        if backend == "super-productivity":
+            store.assign(args.task_id, project["name"])
+        else:
+            store.assign(
+                args.task_id,
+                Path(project["path"]),
+                project["name"],
+                section=args.section,
+                column_name=project.get("column"),
+            )
+    except (KeyError, SuperProductivityError) as exc:
         print(str(exc), file=sys.stderr)
         return 1
     finally:
-        store.close()
+        if hasattr(store, "close"):
+            store.close()
     print(f"Assigned {args.task_id} → {project['name']} [{args.section}]")
     return 0
 
 
 def cmd_complete(args: argparse.Namespace) -> int:
     forge_home = Path(args.forge_home).expanduser()
-    store = CaptureStore(forge_home)
+    try:
+        store, _backend = open_store(forge_home)
+    except SuperProductivityError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
     try:
         store.complete(args.task_id)
-    except KeyError as exc:
+    except (KeyError, SuperProductivityError) as exc:
         print(str(exc), file=sys.stderr)
         return 1
     finally:
-        store.close()
+        if hasattr(store, "close"):
+            store.close()
     print(f"Completed {args.task_id}")
     return 0
 
 
 def cmd_open(args: argparse.Namespace) -> int:
     forge_home = Path(args.forge_home).expanduser()
-    store = CaptureStore(forge_home)
+    try:
+        store, _backend = open_store(forge_home)
+    except SuperProductivityError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
     try:
         uri = store.get_open_link(args.task_id)
+    except SuperProductivityError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
     finally:
-        store.close()
+        if hasattr(store, "close"):
+            store.close()
     if not uri:
         print(f"No link on task {args.task_id}", file=sys.stderr)
         return 1
@@ -216,7 +265,11 @@ def cmd_open(args: argparse.Namespace) -> int:
 def cmd_service(args: argparse.Namespace) -> int:
     """Capture from a macOS Service (text, files, and/or Mail selection)."""
     forge_home = Path(args.forge_home).expanduser()
-    store = CaptureStore(forge_home)
+    try:
+        store, _backend = open_store(forge_home)
+    except SuperProductivityError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
     captured: list[dict] = []
     try:
         files = [Path(path).expanduser() for path in (args.file or [])]
@@ -267,11 +320,12 @@ def cmd_service(args: argparse.Namespace) -> int:
             captured.append({"id": item.task_id, "title": item.title})
         elif args.text and (files or args.mail):
             pass
-    except (ValueError, FileNotFoundError) as exc:
+    except (ValueError, FileNotFoundError, SuperProductivityError) as exc:
         print(str(exc), file=sys.stderr)
         return 1
     finally:
-        store.close()
+        if hasattr(store, "close"):
+            store.close()
 
     if not captured:
         print("Nothing to capture.", file=sys.stderr)
@@ -286,7 +340,7 @@ def cmd_service(args: argparse.Namespace) -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Forge capture — zero-friction inbox for tasks, mail, files, notes.",
+        description="Forge capture — zero-friction inbox (Super Productivity when enabled).",
     )
     parser.add_argument(
         "--forge-home",
@@ -333,7 +387,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--section",
         default="next",
         choices=["next", "waiting", "someday"],
-        help="Target section (default: next)",
+        help="Legacy TASKS.toml section (ignored for Super Productivity)",
     )
     assign.set_defaults(func=cmd_assign)
 
@@ -363,9 +417,9 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     return args.func(args)
 
 

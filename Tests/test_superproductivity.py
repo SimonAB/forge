@@ -47,6 +47,18 @@ superproductivity:
         self.assertEqual(config.project_ids["Forge"], "abc")
         self.assertEqual(config.project_ids["CausalDynamics.jl"], "def")
 
+    def test_config_parses_quoted_project_ids(self):
+        text = """
+superproductivity:
+  enabled: true
+  project_ids:
+    "Forge": "abc"
+    "CausalDynamics.jl": "def"
+"""
+        config = config_from_yaml_text(text)
+        self.assertEqual(config.project_ids["Forge"], "abc")
+        self.assertEqual(config.project_ids["CausalDynamics.jl"], "def")
+
     def test_remote_task_preserves_dates_and_external_identity(self):
         task = task_from_remote(
             {

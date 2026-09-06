@@ -3,7 +3,7 @@
 Generate a concise Forge kanban brief from `forge board --json`.
 
 Focus:
-- Due tasks from task index (`.forge/world.db` ← `TASKS.toml`)
+- Due tasks and inbox from Super Productivity when enabled (else legacy task index)
 - URGENT-tagged projects
 - neglected (stale) projects by days since activity
 - overloaded columns and obvious board hygiene issues (e.g. missing column tag)
@@ -119,7 +119,27 @@ def _task_index_path() -> Path:
 
 
 def _load_inbox() -> tuple[list[InboxRow], str | None]:
-    """Return inbox items from the task database."""
+    """Return inbox items from Super Productivity when enabled, else tasks.db."""
+    forge_home = Path(FORGE_DIR).expanduser()
+    try:
+        from forge_tasks_world.superproductivity import SpTaskStore, config_from_file
+
+        if config_from_file(forge_home / "config.yaml").enabled:
+            store = SpTaskStore(forge_home)
+            rows = store.list_inbox()
+            items = [
+                InboxRow(
+                    task_id=row.task_id,
+                    title=row.title,
+                    source=row.source,
+                    created_at=row.created_at,
+                )
+                for row in rows
+            ]
+            return (items, None)
+    except Exception as exc:  # pragma: no cover
+        return ([], f"Super Productivity inbox unreadable: {exc}")
+
     db_path = _task_index_path()
     if not db_path.is_file():
         return ([], None)
@@ -153,16 +173,40 @@ def _load_due_tasks_from_index(
     projects: Sequence[Project],
 ) -> tuple[list[DueTaskRow], dict[str, int | str] | None, str | None]:
     """
-    Return due tasks and index status from `.forge/world.db`.
+    Return due tasks from Super Productivity when enabled, else `.forge/tasks.db`.
 
     Returns (due_rows, status_dict, error_message).
     """
 
+    forge_home = Path(FORGE_DIR).expanduser()
+    column_by_name = {p.name: p.column for p in projects}
+    column_by_path = {p.path: p.column for p in projects}
+
+    try:
+        from forge_tasks_world.superproductivity import SpTaskStore, config_from_file
+
+        if config_from_file(forge_home / "config.yaml").enabled:
+            store = SpTaskStore(forge_home)
+            raw_due, status = store.due_tasks(horizon_days=max(0, due_days), include_overdue=True)
+            rows = [
+                DueTaskRow(
+                    task_id=item.task_id,
+                    title=item.title,
+                    project_name=item.project_name,
+                    project_path=item.project_name,
+                    section=item.section,
+                    due=item.due,
+                    column=column_by_name.get(item.project_name),
+                )
+                for item in raw_due
+            ]
+            return (rows, status, None)
+    except Exception as exc:  # pragma: no cover - defensive for brief generation
+        return ([], None, f"Super Productivity dues unreadable: {exc}")
+
     db_path = _task_index_path()
     if not db_path.is_file():
-        return ([], None, f"task index not found ({db_path}); run sync-of-tasks-from-of.py")
-
-    column_by_path = {p.path: p.column for p in projects}
+        return ([], None, f"task index not found ({db_path}); enable Super Productivity or run ingest")
 
     try:
         from forge_tasks_world.world_db import WorldDatabase
@@ -535,7 +579,8 @@ def build_brief(
         else:
             if index_status:
                 out.append(
-                    f"- Index: {index_status['projects']} project(s), "
+                    f"- Backend: {index_status.get('backend', 'tasks.db')}; "
+                    f"{index_status['projects']} project(s), "
                     f"{index_status['open_tasks']} open task(s) "
                     f"({index_status['db_path']})"
                 )

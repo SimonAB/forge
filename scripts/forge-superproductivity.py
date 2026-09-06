@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -172,6 +173,21 @@ def main() -> int:
         dest="kanban_tags",
         help="Kanban tag titles to strip when switching columns (repeatable)",
     )
+    menu_tree = sub.add_parser(
+        "mirror-menu-tree",
+        help="mirror Finder folder paths into SP sidebar project folders",
+    )
+    menu_tree.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="print planned tree only; do not write Super Productivity state",
+    )
+    menu_tree.add_argument(
+        "--docs-root",
+        type=Path,
+        default=None,
+        help="path root for nesting (default: ~/Documents)",
+    )
 
     args = parser.parse_args()
     forge_home = Path(args.forge_home).expanduser().resolve()
@@ -179,6 +195,16 @@ def main() -> int:
         keychain_token(prompt=True)
         print("Super Productivity token saved")
         return 0
+    if args.command == "mirror-menu-tree":
+        script = SCRIPT_DIR / "forge-sp-menu-tree.py"
+        cmd = [sys.executable, str(script), "--forge-home", str(forge_home)]
+        if args.dry_run:
+            cmd.append("--dry-run")
+        if args.docs_root is not None:
+            cmd.extend(["--docs-root", str(args.docs_root)])
+        if args.json:
+            cmd.append("--json")
+        raise SystemExit(subprocess.call(cmd))
 
     config = config_from_file(args.config or forge_home / "config.yaml")
     if args.command == "status":

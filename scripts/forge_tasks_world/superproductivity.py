@@ -1,9 +1,9 @@
-"""Super Productivity REST integration for Forge task files.
+"""Super Productivity REST integration for Forge.
 
-Forge remains the durable source for project identity. Super Productivity is an
-execution backend for explicitly mapped pilot projects. Synchronisation is a
-three-way merge against a local ledger baseline; conflicts are reported and left
-untouched. The adapter never deletes tasks or projects.
+When ``superproductivity.enabled`` is true, Super Productivity is the sole task
+store (inbox, dues, capture). Forge remains the project kanban nexus. A legacy
+three-way ``TASKS.toml`` sync remains available for mapped pilots; capture and
+briefs prefer live SP. The adapter never deletes tasks or projects.
 """
 
 from __future__ import annotations
@@ -28,7 +28,9 @@ from .toml_io import ProjectTasks, TaskRecord, load_project_tasks, project_tasks
 BACKEND = "super-productivity"
 DEFAULT_ENDPOINT = "http://127.0.0.1:3876"
 TOKEN_SERVICE = "forge-superproductivity"
+INBOX_PROJECT_ID = "INBOX_PROJECT"
 FORGE_ID_MARKER_RE = re.compile(r"<!--\s*forge:id:([A-Za-z0-9_-]+)\s*-->")
+FORGE_SOURCE_RE = re.compile(r"\[forge:source:([a-z0-9_-]+)\]", re.IGNORECASE)
 SYNC_FIELDS = ("title", "section_open", "due", "planned", "estimate_minutes", "recorded_minutes", "notes")
 
 
@@ -271,9 +273,10 @@ def config_from_yaml_text(text: str) -> SuperProductivityConfig:
                 in_project_ids = False
             elif ":" in stripped:
                 key, raw = stripped.split(":", 1)
+                key = key.strip().strip("\"'")
                 raw = raw.strip().strip("\"'")
-                if raw:
-                    project_ids[key.strip()] = raw
+                if key and raw:
+                    project_ids[key] = raw
                 continue
         if in_project_ids:
             continue
@@ -393,6 +396,273 @@ class SuperProductivityClient:
     def delete_task(self, task_id: str) -> Any:
         """Delete a task only when an explicit caller requests it."""
         return self.request("DELETE", f"/tasks/{task_id}")
+
+
+def open_client(forge_home: Path, *, prompt_token: bool = False) -> SuperProductivityClient:
+    """Build an authenticated client from Forge home ``config.yaml``."""
+    config = config_from_file(forge_home / "config.yaml")
+    if not config.enabled:
+        raise SuperProductivityError("superproductivity.enabled is false")
+    token = keychain_token(prompt=prompt_token)
+    if not token:
+        raise SuperProductivityError(
+            "Super Productivity API token missing; run forge superproductivity setup-token"
+        )
+    return SuperProductivityClient(config, token)
+
+
+def _created_task_id(created: Any) -> str:
+    """Extract the SP task id from a create response."""
+    if isinstance(created, dict):
+        for key in ("id", "taskId"):
+            value = created.get(key)
+            if value:
+                return str(value)
+        task = created.get("task")
+        if isinstance(task, dict) and task.get("id"):
+            return str(task["id"])
+    if isinstance(created, str) and created.strip():
+        return created.strip()
+    raise SuperProductivityError("Super Productivity create-task response lacked an id")
+
+
+def _task_due_day(task: dict[str, Any]) -> str | None:
+    """Return YYYY-MM-DD due day from an SP task, if any."""
+    due_day = task.get("dueDay")
+    if isinstance(due_day, str) and due_day.strip():
+        return due_day.strip()[:10]
+    due_with_time = task.get("dueWithTime")
+    if due_with_time is None:
+        return None
+    try:
+        millis = int(due_with_time)
+    except (TypeError, ValueError):
+        return None
+    return datetime.fromtimestamp(millis / 1000.0, tz=timezone.utc).date().isoformat()
+
+
+def _parse_source_from_notes(notes: str | None) -> str | None:
+    """Read an optional ``[forge:source:…]`` marker from SP notes."""
+    if not notes:
+        return None
+    match = FORGE_SOURCE_RE.search(notes)
+    return match.group(1).lower() if match else None
+
+
+def _first_uri_from_notes(notes: str | None) -> str | None:
+    """Return the first http(s)/file/message URI found in notes."""
+    if not notes:
+        return None
+    for line in notes.splitlines():
+        candidate = line.strip()
+        if candidate.startswith(("http://", "https://", "file:", "message:", "obsidian:")):
+            return candidate
+    return None
+
+
+@dataclass(frozen=True)
+class SpInboxItem:
+    """One open Super Productivity Inbox task."""
+
+    task_id: str
+    title: str
+    source: str | None
+    created_at: str | None
+    notes: str | None
+    links: list[dict[str, str]]
+
+
+@dataclass(frozen=True)
+class SpDueItem:
+    """One open Super Productivity task with a due date."""
+
+    task_id: str
+    title: str
+    project_name: str
+    project_id: str
+    due: str
+    section: str
+
+
+class SpTaskStore:
+    """Capture / inbox / assign / complete / due against live Super Productivity."""
+
+    def __init__(self, forge_home: Path, client: SuperProductivityClient | None = None) -> None:
+        """Initialise against Forge home; optionally inject a client (tests)."""
+        self.forge_home = forge_home
+        self.client = client or open_client(forge_home)
+        self.inbox_dir = forge_home / ".forge" / "inbox"
+
+    def capture(
+        self,
+        title: str,
+        *,
+        link: str | None = None,
+        kind: str | None = None,
+        note: str | None = None,
+        file_path: Path | None = None,
+        stash: bool = False,
+        source: str = "cli",
+    ) -> SpInboxItem:
+        """Create an Inbox task in Super Productivity."""
+        clean_title = title.strip()
+        if not clean_title:
+            raise ValueError("capture title must not be empty")
+
+        source_key = (source or "cli").strip().lower() or "cli"
+        note_parts: list[str] = [f"[forge:source:{source_key}]"]
+        if note and note.strip():
+            note_parts.append(note.strip())
+
+        uri = (link or "").strip() or None
+        resolved_file: Path | None = None
+        if file_path is not None:
+            resolved_file = file_path.expanduser().resolve()
+            if not resolved_file.exists():
+                raise FileNotFoundError(f"file not found: {resolved_file}")
+            uri = resolved_file.as_uri()
+            kind = "file"
+
+        if uri:
+            note_parts.append(uri)
+
+        payload: dict[str, Any] = {"title": clean_title, "notes": "\n".join(note_parts)}
+        created = self.client.create_task(INBOX_PROJECT_ID, payload)
+        task_id = _created_task_id(created)
+
+        links: list[dict[str, str]] = []
+        if uri:
+            links.append({"kind": (kind or "link"), "uri": uri})
+
+        if stash and resolved_file is not None:
+            stashed = self._stash_file(task_id, resolved_file)
+            stashed_uri = stashed.as_uri()
+            payload_notes = "\n".join(
+                part if part != uri else stashed_uri for part in note_parts
+            )
+            self.client.update_task(task_id, {"notes": payload_notes})
+            links = [{"kind": "file", "uri": stashed_uri}]
+            note_parts = [payload_notes]
+
+        return SpInboxItem(
+            task_id=task_id,
+            title=clean_title,
+            source=source_key,
+            created_at=None,
+            notes="\n".join(note_parts),
+            links=links,
+        )
+
+    def list_inbox(self) -> list[SpInboxItem]:
+        """Return open Inbox tasks from Super Productivity."""
+        items: list[SpInboxItem] = []
+        for task in self.client.tasks(INBOX_PROJECT_ID, include_done=False):
+            if task.get("isDone"):
+                continue
+            notes = task.get("notes")
+            notes_s = str(notes) if notes else None
+            uri = _first_uri_from_notes(notes_s)
+            links = [{"kind": "link", "uri": uri}] if uri else []
+            created = task.get("created") or task.get("createdAt")
+            created_s = None
+            if isinstance(created, (int, float)):
+                created_s = datetime.fromtimestamp(created / 1000.0, tz=timezone.utc).isoformat()
+            elif isinstance(created, str):
+                created_s = created
+            items.append(
+                SpInboxItem(
+                    task_id=str(task.get("id") or ""),
+                    title=str(task.get("title") or ""),
+                    source=_parse_source_from_notes(notes_s),
+                    created_at=created_s,
+                    notes=notes_s,
+                    links=links,
+                )
+            )
+        return [item for item in items if item.task_id]
+
+    def assign(self, task_id: str, project_name: str) -> None:
+        """Move an Inbox (or any) task onto a mapped Super Productivity project."""
+        project_id = self.client.config.project_ids.get(project_name)
+        if not project_id:
+            raise KeyError(
+                f"No Super Productivity project_ids entry for '{project_name}'. "
+                "Create the SP project with that exact title and map it in config.yaml."
+            )
+        self.client.update_task(task_id, {"projectId": project_id})
+
+    def complete(self, task_id: str) -> None:
+        """Mark a Super Productivity task done."""
+        self.client.update_task(task_id, {"isDone": True})
+
+    def get_open_link(self, task_id: str) -> str | None:
+        """Return the first URI embedded in the task notes, if any."""
+        task = self.client.request("GET", f"/tasks/{task_id}")
+        if not isinstance(task, dict):
+            return None
+        return _first_uri_from_notes(str(task.get("notes") or "") or None)
+
+    def due_tasks(
+        self,
+        *,
+        horizon_days: int,
+        include_overdue: bool = True,
+    ) -> tuple[list[SpDueItem], dict[str, Any]]:
+        """Return open due tasks across all SP projects within the horizon."""
+        today = date.today()
+        horizon = today.toordinal() + max(0, horizon_days)
+        projects = self.client.projects()
+        title_by_id = {
+            str(project.get("id")): str(project.get("title") or "")
+            for project in projects
+            if project.get("id")
+        }
+        rows: list[SpDueItem] = []
+        open_count = 0
+        for project_id, project_name in title_by_id.items():
+            if project_id == INBOX_PROJECT_ID:
+                continue
+            for task in self.client.tasks(project_id, include_done=False):
+                if task.get("isDone"):
+                    continue
+                open_count += 1
+                due = _task_due_day(task)
+                if not due:
+                    continue
+                try:
+                    due_day = date.fromisoformat(due)
+                except ValueError:
+                    continue
+                if due_day.toordinal() > horizon:
+                    continue
+                if due_day < today and not include_overdue:
+                    continue
+                rows.append(
+                    SpDueItem(
+                        task_id=str(task.get("id") or ""),
+                        title=str(task.get("title") or ""),
+                        project_name=project_name or project_id,
+                        project_id=project_id,
+                        due=due,
+                        section="next",
+                    )
+                )
+        rows.sort(key=lambda row: (row.due, row.project_name, row.title))
+        status = {
+            "projects": len(title_by_id),
+            "open_tasks": open_count,
+            "db_path": self.client.config.endpoint,
+            "backend": BACKEND,
+        }
+        return rows, status
+
+    def _stash_file(self, task_id: str, source: Path) -> Path:
+        """Copy a file into ``.forge/inbox/<id>/`` for durable local capture."""
+        target_dir = self.inbox_dir / task_id
+        target_dir.mkdir(parents=True, exist_ok=True)
+        target = target_dir / source.name
+        target.write_bytes(source.read_bytes())
+        return target
 
 
 class NoRedirectHandler(urllib.request.HTTPRedirectHandler):

@@ -20,6 +20,7 @@ struct SuperProductivityCommand: AsyncParsableCommand {
             Start.self,
             Stop.self,
             SetupToken.self,
+            MirrorMenuTree.self,
         ],
         defaultSubcommand: Status.self
     )
@@ -157,6 +158,27 @@ struct SuperProductivityCommand: AsyncParsableCommand {
         )
         mutating func run() async throws {
             try SuperProductivityCommand.runPython(["setup-token"])
+        }
+    }
+
+    struct MirrorMenuTree: AsyncParsableCommand {
+        static let configuration = CommandConfiguration(
+            commandName: "mirror-menu-tree",
+            abstract: "Mirror Finder folder paths into Super Productivity project folders."
+        )
+        @Flag(name: .long, help: "Print the planned tree only.")
+        var dryRun = false
+        @Flag(name: .long) var json = false
+        @Option(name: .long, help: "Path root used to derive nesting (default: ~/Documents).")
+        var docsRoot: String?
+        mutating func run() async throws {
+            var args = ["mirror-menu-tree"]
+            if dryRun { args.append("--dry-run") }
+            if json { args.insert("--json", at: 0) }
+            if let docsRoot {
+                args.append(contentsOf: ["--docs-root", docsRoot])
+            }
+            try SuperProductivityCommand.runPython(args)
         }
     }
 }
