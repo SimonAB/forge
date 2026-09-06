@@ -145,6 +145,23 @@ python3 scripts/forge-brief.py --calendar-days 1    # inbox + dues from SP
 `forge tasks assign` fails clearly if the folder has no `project_ids` entry.
 Notes may carry `[forge:source:…]` and a URI line for `forge tasks open`.
 
+### Context capture (Services + CLI)
+
+Forge.app ships a macOS Service **Capture to Forge Inbox** that resolves by
+context: Finder files → Mail selection (`message://`) → browser tab URL
+(Safari / Chrome family) → selected text. Selected text is stored as a **note**
+when a richer primary exists. **Capture Mail Message to Forge** is the same
+engine with `--prefer mail` (for old shortcuts).
+
+Portable CLI (works on Linux without Mail/browser frontmost detection):
+
+```sh
+python3 scripts/forge-capture.py service --prefer auto --file ~/doc.pdf
+python3 scripts/forge-capture.py service --prefer auto --text "https://example.com"
+```
+
+See [app.md](app.md) and [omarchy.md](omarchy.md).
+
 ### OmniFocus → Super Productivity (one-shot)
 
 Pending OmniFocus tasks can be copied into SP with:
