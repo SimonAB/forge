@@ -11,8 +11,10 @@ owns inbox, dues, capture, completion, focus, and time tracking.
 |---------|---------------------------|
 | `forge capture` / `forge tasks` | SP Inbox (`INBOX_PROJECT`); assign moves a task onto a mapped SP project |
 | Brief and dashboard inbox + dues | Live SP REST, including Inbox deadlines; dashboard joins mapped project IDs to board columns |
-| Morning pull | OF Refresh; Reminders Inbox→SP drain; when `nexus.sp_column_mirror`, board→SP column tag reconcile (`mirror-board`); skips OF→`TASKS.toml` |
+| Morning pull | OF Refresh (kanban); Reminders Inbox→SP drain; `mirror-board` when `sp_column_mirror`; skips OF→`TASKS.toml` |
+| `superproductivity.primary` | OF frozen for day-to-day tasks; OF kept for column join + rollback ([of-frozen-sp-primary.md](of-frozen-sp-primary.md)) |
 | `forge move` / board drag | Optional `nexus.sp_column_mirror`: Finder-style tags (e.g. `Coding 🤖`) on SP tasks |
+
 | **Open TASKS** (board) | Opens / focuses the mapped SP project (Preferences → General) |
 | `TASKS.toml` / `.forge/tasks.db` | Left on disk; **not** authoritative; not written by capture when SP is on |
 | OmniFocus task import | Skips folders listed in `superproductivity.project_ids` |
@@ -153,6 +155,10 @@ python3 scripts/of-to-sp.py --write-plugin   # dry-run + of-bulk-projects.zip
 python3 scripts/of-to-sp.py                  # confirm blocked → create
 python3 scripts/of-to-sp.py --apply          # create tasks (idempotent via [forge:of-id:…])
 ```
+
+While `superproductivity.primary` is true, `--apply` is refused unless you pass
+`--allow-while-primary` (dogfood: do not re-import on a schedule). See
+[of-frozen-sp-primary.md](of-frozen-sp-primary.md).
 
 | Source | Destination |
 |--------|-------------|

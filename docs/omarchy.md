@@ -54,6 +54,17 @@ or Plugin API — Local REST cannot create projects), map
 `forge superproductivity setup-token` (`secret-tool` or
 `~/.config/forge/superproductivity.token` on Linux).
 
+Capture on Linux (no macOS Services / Mail.app):
+
+```bash
+forge capture "Reply to Rivka" --source cli
+python3 scripts/forge-capture.py service --file ~/notes.pdf --text "page 3"
+python3 scripts/forge-capture.py service --text "https://example.com/doc"
+```
+
+`--prefer auto` skips Mail/browser frontmost detection off macOS; use explicit
+`--file` / `--text` / `forge capture --link`. See [app.md](app.md) Quick capture.
+
 Do not use SP’s task kanban as the portfolio board of record. Details:
 [superproductivity.md](superproductivity.md).
 

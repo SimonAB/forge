@@ -314,6 +314,8 @@ python3 scripts/forge-sp-menu-tree.py --forge-home .          # apply menu tree
 ```bash
 forge capture "…" --source assistant          # → SP Inbox when enabled
 bash scripts/reminders-capture-drain.sh       # Apple Reminders Inbox → SP
+# Context capture (Finder/Mail/browser/text on macOS; files/text/URI on Linux):
+python3 scripts/forge-capture.py service --prefer auto --json
 forge tasks inbox
 forge tasks assign <id> "Project Name"        # needs project_ids
 python3 scripts/forge-brief.py --calendar-days 1

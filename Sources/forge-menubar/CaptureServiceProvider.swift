@@ -2,14 +2,11 @@ import AppKit
 import ForgeCore
 import UserNotifications
 
-/// macOS Services entry point: selected text, Finder files, or Mail messages → inbox.
+/// macOS Services entry: context capture (files / Mail / browser / text) → inbox.
 final class CaptureServiceProvider: NSObject {
 
-    func handlePasteboard(_ pboard: NSPasteboard) -> String {
-        guard let forgeDir = Self.resolveForgeDir() else {
-            return "No Forge config loaded."
-        }
-
+    /// Build ``forge-capture.py service`` arguments from the Service pasteboard.
+    func serviceArguments(from pboard: NSPasteboard, prefer: String = "auto") -> [String] {
         var files: [String] = []
         if let urls = pboard.readObjects(forClasses: [NSURL.self], options: [
             .urlReadingFileURLsOnly: true
@@ -19,21 +16,21 @@ final class CaptureServiceProvider: NSObject {
 
         let text = pboard.string(forType: .string)?.trimmingCharacters(in: .whitespacesAndNewlines)
 
-        var args = ["service", "--source", "service", "--json"]
+        var args = ["service", "--source", "service", "--json", "--prefer", prefer]
         for path in files {
             args += ["--file", path]
         }
-
-        let frontApp = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
-        let mailFront = frontApp == "com.apple.mail"
-        if files.isEmpty && (mailFront || text == nil || text?.isEmpty == true) {
-            args.append("--mail")
-        } else if let text, !text.isEmpty, files.isEmpty {
+        if let text, !text.isEmpty {
             args += ["--text", text]
-        } else if files.isEmpty {
-            args.append("--mail")
         }
+        return args
+    }
 
+    func runService(prefer: String = "auto", pboard: NSPasteboard) -> String {
+        guard let forgeDir = Self.resolveForgeDir() else {
+            return "No Forge config loaded."
+        }
+        let args = serviceArguments(from: pboard, prefer: prefer)
         do {
             let output = try CaptureScriptRunner.run(forgeDir: forgeDir, arguments: args)
             Self.notify(output)
@@ -48,7 +45,7 @@ final class CaptureServiceProvider: NSObject {
         userData: String,
         error errorPointer: AutoreleasingUnsafeMutablePointer<NSString?>
     ) {
-        let result = handlePasteboard(pboard)
+        let result = runService(prefer: "auto", pboard: pboard)
         if result.lowercased().contains("nothing to capture")
             || result.lowercased().contains("failed")
             || result.lowercased().contains("not found") {
@@ -56,23 +53,17 @@ final class CaptureServiceProvider: NSObject {
         }
     }
 
+    /// Alias for the same context engine with Mail preference (existing shortcuts).
     @objc func captureMailToForgeInbox(
         _ pboard: NSPasteboard,
         userData: String,
         error errorPointer: AutoreleasingUnsafeMutablePointer<NSString?>
     ) {
-        guard let forgeDir = Self.resolveForgeDir() else {
-            errorPointer.pointee = "No Forge config loaded." as NSString
-            return
-        }
-        do {
-            let output = try CaptureScriptRunner.run(
-                forgeDir: forgeDir,
-                arguments: ["service", "--mail", "--source", "service", "--json"]
-            )
-            Self.notify(output)
-        } catch let failure {
-            errorPointer.pointee = failure.localizedDescription as NSString
+        let result = runService(prefer: "mail", pboard: pboard)
+        if result.lowercased().contains("nothing to capture")
+            || result.lowercased().contains("failed")
+            || result.lowercased().contains("not found") {
+            errorPointer.pointee = result as NSString
         }
     }
 
@@ -102,11 +93,14 @@ final class CaptureServiceProvider: NSObject {
            FileManager.default.fileExists(atPath: preferred) {
             return (preferred as NSString).deletingLastPathComponent
         }
-        for candidate in ForgePaths.configCandidatePaths(home: home) {
-            if FileManager.default.fileExists(atPath: candidate) {
-                return (candidate as NSString).deletingLastPathComponent
-            }
+        let candidates = [
+            "\(home)/Documents/Software/Forge",
+            "\(home)/Documents/Forge",
+            "\(home)/Documents/Work/Projects/Forge",
+        ]
+        return candidates.first {
+            FileManager.default.fileExists(atPath: "\($0)/config.yaml")
+                || FileManager.default.fileExists(atPath: "\($0)/config.sample.yaml")
         }
-        return nil
     }
 }

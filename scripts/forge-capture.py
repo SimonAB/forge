@@ -14,10 +14,10 @@ sys.path.insert(0, str(SCRIPT_DIR))
 
 from forge_tasks_world.capture import (  # noqa: E402
     CaptureStore,
-    selected_mail_messages,
     sniff_clipboard_link,
     task_db_path,
 )
+from forge_tasks_world.context_capture import resolve_captures  # noqa: E402
 from forge_tasks_world.superproductivity import (  # noqa: E402
     SpTaskStore,
     SuperProductivityError,
@@ -263,63 +263,39 @@ def cmd_open(args: argparse.Namespace) -> int:
 
 
 def cmd_service(args: argparse.Namespace) -> int:
-    """Capture from a macOS Service (text, files, and/or Mail selection)."""
+    """Capture from a macOS Service or portable ``--context`` CLI."""
     forge_home = Path(args.forge_home).expanduser()
     try:
         store, _backend = open_store(forge_home)
     except SuperProductivityError as exc:
         print(str(exc), file=sys.stderr)
         return 1
+
+    files = [Path(path).expanduser() for path in (args.file or [])]
+    prefer = (getattr(args, "prefer", None) or "auto").strip().lower()
+    if args.mail and prefer == "auto":
+        prefer = "mail"
+
     captured: list[dict] = []
     try:
-        files = [Path(path).expanduser() for path in (args.file or [])]
-        for path in files:
-            item = store.capture(
-                f"File: {path.name}",
-                file_path=path,
+        resolved = resolve_captures(files=files, text=args.text, prefer=prefer)
+        for item in resolved:
+            captured_item = store.capture(
+                item.title,
+                link=item.link,
+                kind=item.kind,
+                note=item.note,
+                file_path=Path(item.file_path) if item.file_path else None,
                 stash=args.stash,
                 source=args.source,
             )
-            captured.append({"id": item.task_id, "title": item.title})
-
-        if args.mail:
-            try:
-                messages = selected_mail_messages()
-            except RuntimeError as exc:
-                print(str(exc), file=sys.stderr)
-                return 1
-            if not messages:
-                print("No Mail messages selected.", file=sys.stderr)
-                if not files and not args.text:
-                    return 1
-            for message in messages:
-                item = store.capture(
-                    message["title"],
-                    link=message["uri"] or None,
-                    kind="mail" if message["uri"] else None,
-                    source=args.source,
-                )
-                captured.append({"id": item.task_id, "title": item.title})
-
-        if args.text and not files and not args.mail:
-            text = args.text.strip()
-            sniffed = sniff_clipboard_link(text)
-            if sniffed:
-                kind, link = sniffed
-                title = text if kind == "other" else (args.title or text)
-                if kind in {"mail", "url", "file", "obsidian"} and not args.title:
-                    title = text if len(text) < 80 else f"{kind} capture"
-                item = store.capture(
-                    args.title or title,
-                    link=link,
-                    kind=kind,
-                    source=args.source,
-                )
-            else:
-                item = store.capture(args.title or text, note=text if args.title else None, source=args.source)
-            captured.append({"id": item.task_id, "title": item.title})
-        elif args.text and (files or args.mail):
-            pass
+            captured.append(
+                {
+                    "id": captured_item.task_id,
+                    "title": captured_item.title,
+                    "strategy": item.strategy,
+                }
+            )
     except (ValueError, FileNotFoundError, SuperProductivityError) as exc:
         print(str(exc), file=sys.stderr)
         return 1
@@ -334,7 +310,9 @@ def cmd_service(args: argparse.Namespace) -> int:
         print(json.dumps({"captured": captured}, indent=2))
     else:
         for item in captured:
-            print(f"Captured {item['id']}: {item['title']}")
+            strategy = item.get("strategy")
+            suffix = f" [{strategy}]" if strategy else ""
+            print(f"Captured {item['id']}: {item['title']}{suffix}")
     return 0
 
 
@@ -404,11 +382,24 @@ def build_parser() -> argparse.ArgumentParser:
     )
     open_cmd.set_defaults(func=cmd_open)
 
-    service = sub.add_parser("service", help="Capture from Mail/Finder/text (macOS Service)")
-    service.add_argument("--text", help="Selected text")
-    service.add_argument("--title", help="Override title when using --text")
+    service = sub.add_parser(
+        "service",
+        help="Context capture: files / Mail / browser URL / text (macOS Service + Linux CLI)",
+    )
+    service.add_argument("--text", help="Selected text (becomes note when a richer primary exists)")
+    service.add_argument("--title", help="Unused with context resolver; kept for compatibility")
     service.add_argument("--file", action="append", default=[], help="File path (repeatable)")
-    service.add_argument("--mail", action="store_true", help="Capture selected Mail.app messages")
+    service.add_argument(
+        "--mail",
+        action="store_true",
+        help="Prefer Mail selection (same as --prefer mail)",
+    )
+    service.add_argument(
+        "--prefer",
+        choices=["auto", "mail", "file", "browser", "text"],
+        default="auto",
+        help="Capture strategy (default: auto from frontmost app on macOS)",
+    )
     service.add_argument("--stash", action="store_true", help="Copy files into .forge/inbox/")
     service.add_argument("--source", default="service")
     service.add_argument("--json", action="store_true")
