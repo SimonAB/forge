@@ -143,11 +143,24 @@ python3 scripts/forge-brief.py --calendar-days 1    # inbox + dues from SP
 ```
 
 `forge tasks assign` fails clearly if the folder has no `project_ids` entry.
-Notes may carry `[forge:source:…]` and markdown links. Super Productivity
-blocks the `message://` scheme ("Link blocked: unsafe URL scheme"), so Mail
-captures use a local `.inetloc` trampoline (`file://…/.forge/mail-open/…`) plus
-`[forge:uri:message://…]` for `forge tasks open`. Ordinary `https://` links
-remain `[host](https://…)`.
+Notes may carry `[forge:source:…]`. Super Productivity blocks the `message://`
+scheme ("Link blocked: unsafe URL scheme"), so Mail captures store only:
+
+- `<!-- forge:uri:message://… -->` for the **Forge Mail Open** plugin and
+  `forge tasks open`
+- optionally a sidecar HTML under `.forge/mail-open/` for tooling (never linked
+  from notes — `.html` opens in the default browser)
+
+Install the plugin (header button **Open in Mail** on the selected task). Allow
+**Node execution** when SP prompts — it opens the Mail **message object** by
+Message-Id (no `message://` / no HTML). Without Node consent the button errors.
+
+```sh
+python3 scripts/sp-plugins/build_forge_mail_open.py
+# Upload scripts/sp-plugins/forge-mail-open.zip in SP → Settings → Plugins
+```
+
+Ordinary `https://` links remain `[host](https://…)`.
 ### Context capture (Services + CLI)
 
 Forge.app ships a macOS Service **Capture to Forge Inbox** that resolves by

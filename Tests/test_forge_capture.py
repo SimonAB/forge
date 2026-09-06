@@ -50,21 +50,20 @@ class CaptureTests(unittest.TestCase):
             "message://%3cold%3e",
         )
 
-    def test_sp_mail_uses_inetloc_trampoline(self) -> None:
+    def test_sp_mail_notes_are_uri_marker_only(self) -> None:
         mail = message_uri("id@example.com")
         with tempfile.TemporaryDirectory() as tmp:
             forge_home = Path(tmp)
             lines = format_sp_note_attachment(mail, kind="mail", forge_home=forge_home)
-            self.assertEqual(len(lines), 2)
-            self.assertTrue(lines[0].startswith("[Open in Mail](file://"))
-            self.assertTrue(lines[0].endswith(".inetloc)"))
-            self.assertEqual(lines[1], f"[forge:uri:{mail}]")
-            notes = "\n".join(lines)
-            self.assertEqual(extract_uri_from_notes(notes), mail)
-            locs = list((forge_home / ".forge" / "mail-open").glob("*.inetloc"))
-            self.assertEqual(len(locs), 1)
-            self.assertIn(mail, locs[0].read_text(encoding="utf-8"))
-            self.assertEqual(extract_uri_from_notes(lines[0]), mail)
+            self.assertEqual(lines, [f"<!-- forge:uri:{mail} -->"])
+            self.assertEqual(extract_uri_from_notes("\n".join(lines)), mail)
+            # Sidecar HTML may exist for tooling, but must not appear in notes.
+            htmls = list((forge_home / ".forge" / "mail-open").glob("*.html"))
+            self.assertEqual(len(htmls), 1)
+            self.assertIn(mail, htmls[0].read_text(encoding="utf-8"))
+            self.assertNotIn("forge:mail-html", "\n".join(lines))
+            self.assertNotIn(".html", "\n".join(lines))
+
     def test_capture_assign_complete(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             forge_home = Path(tmp)

@@ -2,7 +2,34 @@
 
 Helpers that run **inside** Super Productivity via the Plugin API. Local REST
 cannot create projects (`POST /projects` → 404); `PluginAPI.addProject` can.
-See [docs/superproductivity.md](../../docs/superproductivity.md).
+Local REST also cannot write task **Links & Files** (`attachments`); the mail
+plugin uses `PluginAPI.updateTask` for that. See
+[docs/superproductivity.md](../../docs/superproductivity.md).
+
+## forge-mail-open (standing)
+
+Header button **Open in Mail**: opens the selected task's Apple Mail message.
+
+With **Node execution** allowed (SP consent prompt on first use / re-upload), it
+decodes `<!-- forge:uri:message://… -->` to a Message-Id and tells Mail to open
+that **message object** — no `message://` URL and no `.html` trampoline (those
+flash the default browser). Without Node consent the button shows an error.
+
+```sh
+python3 scripts/sp-plugins/build_forge_mail_open.py
+# Upload scripts/sp-plugins/forge-mail-open.zip → Settings → Plugins → enable
+# Allow Node when prompted (re-upload re-asks consent)
+```
+
+Select a Mail-linked task, then click **Open in Mail** in the SP header. Capture
+must have written `<!-- forge:uri:message://… -->` (Forge does this when SP is
+enabled). Remove any leftover Links & Files **Open in Mail** `.html` rows.
+
+| File | Role |
+|------|------|
+| `forge-mail-open/` | Plugin sources |
+| `forge-mail-open.zip` | Upload this |
+| `build_forge_mail_open.py` | Rebuild zip |
 
 ## forge-bulk-projects (one-shot)
 

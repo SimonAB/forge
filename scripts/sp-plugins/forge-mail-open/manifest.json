@@ -1,0 +1,18 @@
+{
+  "id": "forge-mail-open",
+  "name": "Forge Mail Open",
+  "version": "1.4.0",
+  "manifestVersion": 1,
+  "minSupVersion": "18.0.0",
+  "description": "Header button: open the selected task in Apple Mail by Message-Id (Mail message object; no message:// / no HTML; Node required).",
+  "author": "Forge",
+  "icon": "icon.svg",
+  "permissions": [
+    "getSelectedTask",
+    "updateTask",
+    "showSnack",
+    "registerHeaderButton",
+    "nodeExecution"
+  ],
+  "hooks": []
+}
