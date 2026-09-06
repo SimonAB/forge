@@ -42,6 +42,7 @@ tasks/
 .forge/world.db
 .forge/tasks.db
 .forge/inbox/
+.forge/reminders-capture-receipts.*
 
 # Local configuration (contains machine- and person-specific paths/projects)
 config.yaml
