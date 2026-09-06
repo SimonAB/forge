@@ -194,6 +194,41 @@ def _sort_neglect(projects: list[ProjectRow]) -> list[ProjectRow]:
     return sorted(projects, key=lambda row: (-row.days_since_activity, row.name.lower()))
 
 
+def _append_due(snap: DashboardSnapshot, item: DueTaskView) -> None:
+    """Put a due task in the bucket for the snapshot's local date."""
+    due = _parse_due_day(item.due)
+    if due is None:
+        return
+    today = snap.generated_at.date()
+    bucket = snap.due_overdue if due < today else snap.due_today if due == today else snap.due_upcoming
+    bucket.append(item)
+
+
+def _load_sp_tasks(snap: DashboardSnapshot, root: Path, config, due_days: int) -> None:
+    """Read SP tasks and join project IDs to Forge folders; never fall back to stale data."""
+    from forge_tasks_world.superproductivity import SpTaskStore
+
+    store = SpTaskStore(root)
+    inbox = store.list_inbox()
+    tasks, stats = store.due_tasks(horizon_days=max(0, due_days), include_overdue=True)
+    projects_by_name = {project.name: project for project in snap.projects}
+    projects_by_id = {ident: projects_by_name[name] for name, ident in config.project_ids.items()
+                      if name in projects_by_name}
+    snap.inbox = [InboxView(item.task_id, item.title, item.source) for item in inbox]
+    snap.world_inbox = len(inbox)
+    snap.world_projects = int(stats.get("projects", 0))
+    snap.world_open_tasks = int(stats.get("open_tasks", 0))
+    for item in tasks:
+        project = projects_by_id.get(item.project_id)
+        _append_due(snap, DueTaskView(
+            item.task_id, item.title, project.name if project else item.project_name,
+            project.path if project else "", item.section, item.due,
+            project.column if project else None,
+        ))
+    for bucket in (snap.due_overdue, snap.due_today, snap.due_upcoming):
+        bucket.sort(key=lambda item: (item.due, item.project_name.lower(), item.title.lower()))
+
+
 def load_snapshot(
     *,
     forge_home: Path | None = None,
@@ -249,6 +284,16 @@ def load_snapshot(
         snap.calendar_error = str(exc)
 
     from forge_tasks_world.capture import task_db_path
+    from forge_tasks_world.superproductivity import config_from_file
+
+    try:
+        config = config_from_file(root / "config.yaml")
+        if config.enabled:
+            _load_sp_tasks(snap, root, config, due_days)
+            return snap
+    except Exception as exc:
+        snap.world_error = str(exc)
+        return snap
 
     db_path = task_db_path(root)
     if not db_path.is_file():
@@ -256,7 +301,6 @@ def load_snapshot(
         return snap
 
     column_by_path = {row.path: row.column for row in snap.projects}
-    today = now.date()
 
     def wrap(item: DueTask) -> DueTaskView:
         return DueTaskView(
@@ -285,15 +329,7 @@ def load_snapshot(
                     )
                 )
             for item in db.due_tasks(horizon_days=max(0, due_days), include_overdue=True):
-                due_day = _parse_due_day(item.due)
-                if due_day is None:
-                    continue
-                if due_day < today:
-                    snap.due_overdue.append(wrap(item))
-                elif due_day == today:
-                    snap.due_today.append(wrap(item))
-                else:
-                    snap.due_upcoming.append(wrap(item))
+                _append_due(snap, wrap(item))
         finally:
             db.close()
     except Exception as exc:  # pragma: no cover
