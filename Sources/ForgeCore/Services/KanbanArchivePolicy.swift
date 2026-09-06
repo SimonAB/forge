@@ -122,7 +122,7 @@ public enum KanbanArchivePolicy {
         newColumn: String,
         config: ForgeConfig,
         forgeDir: String,
-        tagStore: FinderTagStore = FinderTagStore(),
+        tagStore: any TagWriting = PlatformTagStore.makeDefault(),
         now: Date = Date()
     ) throws {
         guard isEnabled(config: config) else { return }
@@ -144,7 +144,7 @@ public enum KanbanArchivePolicy {
             if let tag = completedTag(in: config.board) {
                 try tagStore.removeTag(tag, at: path)
             }
-            for legacy in try tagStore.readTags(at: path).filter({
+            for legacy in tagStore.tags(at: path).filter({
                 $0.trimmingCharacters(in: .whitespacesAndNewlines).uppercased().hasPrefix("ARCHIVED")
             }) {
                 try tagStore.removeTag(legacy, at: path)

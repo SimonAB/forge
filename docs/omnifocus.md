@@ -1,11 +1,14 @@
 # OmniFocus (optional)
 
-Forge tracks **projects** with Finder-tag kanban. Day-to-day **tasks** can live in
-OmniFocus, [Reminders](reminders.md), Things, or another app.
+Forge is the project kanban **nexus** ([nexus.md](nexus.md)). Day-to-day **tasks**
+can live in OmniFocus, [Reminders](reminders.md), [Super Productivity](superproductivity.md),
+Things, or another app. OmniFocus is a **macOS-only** subordinate column join.
 
 This page is the OmniFocus bridge: it keeps *project* columns in step with
 OmniFocus via Omni Automation (OmniJS). Mutating commands default to **dry-run**.
 Apple Reminders is the other optional task backend ([reminders.md](reminders.md)).
+When `nexus.sync_sidecar_on_refresh` is on, Refresh paints sidecar → local tags
+**before** OmniFocus → Finder.
 
 ## Enable
 

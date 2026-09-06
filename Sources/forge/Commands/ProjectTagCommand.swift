@@ -34,27 +34,33 @@ struct ProjectTagAddCommand: AsyncParsableCommand {
         let config = try ConfigLoader.load()
         let trimmed = tag.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
-            let msg = "Tag must not be empty."
-            if json { ForgeJSONError.emit(msg, command: "project-tag add") }
-            throw ValidationError(msg)
+            try ForgeJSONError.throwDomainFailure(
+                "Tag must not be empty.", command: "project-tag add", json: json
+            )
         }
 
         if config.column(forTag: trimmed) != nil {
-            let msg = "Workflow column tags are set with `forge move <project> <ColumnName>`, not `forge project-tag`."
-            if json { ForgeJSONError.emit(msg, command: "project-tag add") }
-            throw ValidationError(msg)
+            try ForgeJSONError.throwDomainFailure(
+                "Workflow column tags are set with `forge move <project> <ColumnName>`, not `forge project-tag`.",
+                command: "project-tag add",
+                json: json
+            )
         }
 
         if !force {
             switch ProjectFolderTagPolicy.validationResult(tag: trimmed, config: config) {
             case .workflowColumn:
-                let msg = "That tag is a kanban column (workflow) tag. Use `forge move <project> <ColumnName>` to change columns."
-                if json { ForgeJSONError.emit(msg, command: "project-tag add") }
-                throw ValidationError(msg)
+                try ForgeJSONError.throwDomainFailure(
+                    "That tag is a kanban column (workflow) tag. Use `forge move <project> <ColumnName>` to change columns.",
+                    command: "project-tag add",
+                    json: json
+                )
             case .unrecognized:
-                let msg = "Tag must be listed under `board.meta_tags` in config.yaml, or be a #Person assignee tag (e.g. #Alice). Use --force to add other non-column tags."
-                if json { ForgeJSONError.emit(msg, command: "project-tag add") }
-                throw ValidationError(msg)
+                try ForgeJSONError.throwDomainFailure(
+                    "Tag must be listed under `board.meta_tags` in config.yaml, or be a #Person assignee tag (e.g. #Alice). Use --force to add other non-column tags.",
+                    command: "project-tag add",
+                    json: json
+                )
             case .allowed:
                 break
             }
@@ -62,14 +68,18 @@ struct ProjectTagAddCommand: AsyncParsableCommand {
 
         let scanner = WorkspaceScanner(config: config)
         let projects = try await scanner.scanProjects()
-        guard let matched = findProject(named: project, in: projects) else {
-            let msg = "No project matching '\(project)'. Use 'forge board --list' to see all projects."
-            if json { ForgeJSONError.emit(msg, command: "project-tag add") }
-            throw ValidationError(msg)
-        }
+        let matched = try resolveProject(
+            named: project, in: projects, command: "project-tag add", json: json
+        )
 
-        let tagStore = FinderTagStore()
+        let tagStore = PlatformTagStore.makeDefault()
         try tagStore.addTag(trimmed, at: matched.path)
+        try? KanbanNexus.syncSidecarFromTags(
+            path: matched.path,
+            config: config,
+            tagStore: tagStore,
+            source: KanbanNexus.Source.projectTag
+        )
 
         var meta = matched.metaTags
         if !meta.contains(where: { $0.caseInsensitiveCompare(trimmed) == .orderedSame }) {
@@ -91,7 +101,7 @@ struct ProjectTagAddCommand: AsyncParsableCommand {
             print("Added tag \(trimmed) on \(matched.name)")
         }
 
-        await syncRemindersUrgentPriority(config: config, project: updated)
+        await syncRemindersUrgentPriority(config: config, project: updated, quiet: json)
     }
 }
 
@@ -119,27 +129,33 @@ struct ProjectTagRemoveCommand: AsyncParsableCommand {
         let config = try ConfigLoader.load()
         let trimmed = tag.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
-            let msg = "Tag must not be empty."
-            if json { ForgeJSONError.emit(msg, command: "project-tag remove") }
-            throw ValidationError(msg)
+            try ForgeJSONError.throwDomainFailure(
+                "Tag must not be empty.", command: "project-tag remove", json: json
+            )
         }
 
         if config.column(forTag: trimmed) != nil {
-            let msg = "Workflow column tags are changed with `forge move`, not `forge project-tag remove`."
-            if json { ForgeJSONError.emit(msg, command: "project-tag remove") }
-            throw ValidationError(msg)
+            try ForgeJSONError.throwDomainFailure(
+                "Workflow column tags are changed with `forge move`, not `forge project-tag remove`.",
+                command: "project-tag remove",
+                json: json
+            )
         }
 
         if !force {
             switch ProjectFolderTagPolicy.validationResult(tag: trimmed, config: config) {
             case .workflowColumn:
-                let msg = "That tag is a kanban column (workflow) tag. Use `forge move` to change columns instead of removing the workflow tag here."
-                if json { ForgeJSONError.emit(msg, command: "project-tag remove") }
-                throw ValidationError(msg)
+                try ForgeJSONError.throwDomainFailure(
+                    "That tag is a kanban column (workflow) tag. Use `forge move` to change columns instead of removing the workflow tag here.",
+                    command: "project-tag remove",
+                    json: json
+                )
             case .unrecognized:
-                let msg = "Tag must be a configured meta tag or a #Person assignee tag. Use --force to remove other non-column tags."
-                if json { ForgeJSONError.emit(msg, command: "project-tag remove") }
-                throw ValidationError(msg)
+                try ForgeJSONError.throwDomainFailure(
+                    "Tag must be a configured meta tag or a #Person assignee tag. Use --force to remove other non-column tags.",
+                    command: "project-tag remove",
+                    json: json
+                )
             case .allowed:
                 break
             }
@@ -147,14 +163,18 @@ struct ProjectTagRemoveCommand: AsyncParsableCommand {
 
         let scanner = WorkspaceScanner(config: config)
         let projects = try await scanner.scanProjects()
-        guard let matched = findProject(named: project, in: projects) else {
-            let msg = "No project matching '\(project)'. Use 'forge board --list' to see all projects."
-            if json { ForgeJSONError.emit(msg, command: "project-tag remove") }
-            throw ValidationError(msg)
-        }
+        let matched = try resolveProject(
+            named: project, in: projects, command: "project-tag remove", json: json
+        )
 
-        let tagStore = FinderTagStore()
+        let tagStore = PlatformTagStore.makeDefault()
         try tagStore.removeTag(trimmed, at: matched.path)
+        try? KanbanNexus.syncSidecarFromTags(
+            path: matched.path,
+            config: config,
+            tagStore: tagStore,
+            source: KanbanNexus.Source.projectTag
+        )
 
         let meta = matched.metaTags.filter {
             $0.caseInsensitiveCompare(trimmed) != .orderedSame
@@ -175,7 +195,7 @@ struct ProjectTagRemoveCommand: AsyncParsableCommand {
             print("Removed tag \(trimmed) from \(matched.name)")
         }
 
-        await syncRemindersUrgentPriority(config: config, project: updated)
+        await syncRemindersUrgentPriority(config: config, project: updated, quiet: json)
     }
 }
 
@@ -197,14 +217,12 @@ struct ProjectTagListCommand: AsyncParsableCommand {
         let config = try ConfigLoader.load()
         let scanner = WorkspaceScanner(config: config)
         let projects = try await scanner.scanProjects()
-        guard let matched = findProject(named: project, in: projects) else {
-            throw ValidationError(
-                "No project matching '\(project)'. Use 'forge board --list' to see all projects."
-            )
-        }
+        let matched = try resolveProject(
+            named: project, in: projects, command: "project-tag list", json: json
+        )
 
-        let tagStore = FinderTagStore()
-        let tags = try tagStore.readTags(at: matched.path)
+        let tagStore = PlatformTagStore.makeDefault()
+        let tags = syncTags(from: tagStore, at: matched.path)
 
         if json {
             let rows: [ProjectTagListRow] = tags.map { name in
@@ -251,14 +269,44 @@ private struct ProjectTagListRow: Encodable {
     let kind: String
 }
 
-// MARK: - Shared lookup (same behaviour as MoveCommand)
+// MARK: - Shared helpers
 
-private func syncRemindersUrgentPriority(config: ForgeConfig, project: Project) async {
+private func resolveProject(
+    named query: String,
+    in projects: [Project],
+    command: String,
+    json: Bool
+) throws -> Project {
+    switch matchProject(named: query, in: projects) {
+    case .found(let project):
+        return project
+    case .none:
+        try ForgeJSONError.throwDomainFailure(
+            "No project matching '\(query)'. Use 'forge board --list' to see all projects.",
+            command: command,
+            json: json
+        )
+    case .ambiguous(let candidates):
+        if !json {
+            printAmbiguousProjectMatch(query: query, candidates: candidates)
+        }
+        try ForgeJSONError.throwDomainFailure(
+            "Ambiguous project '\(query)'. Refine the name.",
+            command: command,
+            json: json,
+            candidates: candidates
+        )
+    }
+}
+
+private func syncRemindersUrgentPriority(config: ForgeConfig, project: Project, quiet: Bool) async {
     guard config.reminders.enabled else { return }
     let forgeDir = ConfigLoader.forgeDirectory(for: config)
     do {
         guard let inv = try RemindersService(config: config).loadEligibleSnapshot(forgeDir: forgeDir) else {
-            print("Reminders sentinel priority skipped: no eligible snapshot (run forge reminders refresh).")
+            if !quiet {
+                print("Reminders sentinel priority skipped: no eligible snapshot (run forge reminders refresh).")
+            }
             return
         }
         let outcome = await RemindersMoveSync.paintSentinelPriority(
@@ -267,6 +315,7 @@ private func syncRemindersUrgentPriority(config: ForgeConfig, project: Project) 
             inventory: inv,
             writer: RemindersWriter()
         )
+        guard !quiet else { return }
         switch outcome {
         case .disabled:
             break
@@ -276,7 +325,9 @@ private func syncRemindersUrgentPriority(config: ForgeConfig, project: Project) 
             print("Reminders sentinel priority: \(label) on \(listTitle).")
         }
     } catch {
-        print("Reminders sentinel priority skipped: \(error.localizedDescription)")
+        if !quiet {
+            print("Reminders sentinel priority skipped: \(error.localizedDescription)")
+        }
     }
 }
 
@@ -295,20 +346,4 @@ private struct ProjectTagChangePayload: Encodable {
     let tag: String
     let project: String
     let path: String
-}
-
-private func findProject(named query: String, in projects: [Project]) -> Project? {
-    let lower = query.lowercased()
-    if let exact = projects.first(where: { $0.name.lowercased() == lower }) {
-        return exact
-    }
-    let matches = projects.filter { $0.name.lowercased().contains(lower) }
-    if matches.count == 1 {
-        return matches.first
-    }
-    if matches.count > 1 {
-        print("Ambiguous match for '\(query)':")
-        for m in matches { print("  • \(m.name)") }
-    }
-    return nil
 }

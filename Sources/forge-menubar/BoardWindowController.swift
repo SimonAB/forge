@@ -119,10 +119,17 @@ final class BoardWindowController: NSObject, NSWindowDelegate {
         }
 
         let moveProject: @Sendable (Project, ColumnConfig) async throws -> Void = { project, column in
+            // Re-read config so nexus.sp_column_mirror and backends stay current.
+            let activeConfig: ForgeConfig = {
+                guard let forgeDir else { return config }
+                let path = (forgeDir as NSString).appendingPathComponent("config.yaml")
+                return (try? ForgeConfig.load(from: path)) ?? config
+            }()
+
             try OmniFocusMoveSync.setFinderWorkflowColumn(
                 path: project.path,
                 column: column.name,
-                config: config,
+                config: activeConfig,
                 tagStore: tagStore,
                 forgeDir: forgeDir,
                 folderName: project.name,
@@ -131,10 +138,10 @@ final class BoardWindowController: NSObject, NSWindowDelegate {
 
             guard let resolvedForgeDir = forgeDir else { return }
 
-            if config.omnifocus.enabled, config.omnifocus.syncOnMove {
+            if activeConfig.omnifocus.enabled, activeConfig.omnifocus.syncOnMove {
                 let projects = try await scanner.scanProjects()
                 let outcome = OmniFocusMoveSync.mirrorFinderColumn(
-                    config: config,
+                    config: activeConfig,
                     forgeDir: resolvedForgeDir,
                     projects: projects,
                     project: project,
@@ -145,16 +152,24 @@ final class BoardWindowController: NSObject, NSWindowDelegate {
                 }
             }
 
-            if config.reminders.enabled {
-                guard let inv = try RemindersService(config: config).loadEligibleSnapshot(forgeDir: resolvedForgeDir) else {
-                    return
+            if activeConfig.reminders.enabled {
+                if let inv = try RemindersService(config: activeConfig).loadEligibleSnapshot(forgeDir: resolvedForgeDir) {
+                    _ = await RemindersMoveSync.afterFinderColumnChange(
+                        config: activeConfig,
+                        project: project,
+                        column: column.name,
+                        inventory: inv,
+                        writer: RemindersWriter()
+                    )
                 }
-                _ = await RemindersMoveSync.afterFinderColumnChange(
-                    config: config,
-                    project: project,
-                    column: column.name,
-                    inventory: inv,
-                    writer: RemindersWriter()
+            }
+
+            if activeConfig.nexus.spColumnMirror {
+                _ = SuperProductivityColumnMirror.mirrorColumn(
+                    projectName: project.name,
+                    column: column,
+                    config: activeConfig,
+                    forgeDir: resolvedForgeDir
                 )
             }
         }

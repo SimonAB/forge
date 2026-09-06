@@ -21,6 +21,8 @@ struct Forge: AsyncParsableCommand {
             EditCommand.self,
             OmniFocusCommand.self,
             RemindersCommand.self,
+            SuperProductivityCommand.self,
+            FsCommand.self,
         ]
     )
 }

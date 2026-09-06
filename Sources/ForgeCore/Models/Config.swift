@@ -235,11 +235,13 @@ public struct ForgeConfig: Codable, Sendable {
         case newest
     }
     public let dueConflictPolicy: DueConflictPolicy
+    public let nexus: NexusConfig
 
     enum CodingKeys: String, CodingKey {
         case workspace
         case board, calendar, omnifocus, reminders
         case gtd
+        case nexus
         case projectRoots = "project_roots"
         case workspaceTags = "workspace_tags"
         case projectAreas = "project_areas"
@@ -257,6 +259,7 @@ public struct ForgeConfig: Codable, Sendable {
         try container.encode(omnifocus, forKey: .omnifocus)
         try container.encode(reminders, forKey: .reminders)
         try container.encode(gtd, forKey: .gtd)
+        try container.encode(nexus, forKey: .nexus)
         try container.encode(workspaceTags, forKey: .workspaceTags)
         try container.encode(projectAreas, forKey: .projectAreas)
         try container.encodeIfPresent(terminal, forKey: .terminal)
@@ -272,6 +275,7 @@ public struct ForgeConfig: Codable, Sendable {
         omnifocus: OmniFocusConfig = OmniFocusConfig(),
         reminders: RemindersConfig = RemindersConfig(),
         gtd: GTDConfig = GTDConfig(),
+        nexus: NexusConfig = NexusConfig(),
         workspaceTags: [String] = ["work"],
         projectAreas: [String: [String]] = [:],
         terminal: String? = nil,
@@ -285,6 +289,7 @@ public struct ForgeConfig: Codable, Sendable {
         self.omnifocus = omnifocus
         self.reminders = reminders
         self.gtd = gtd
+        self.nexus = nexus
         self.workspaceTags = workspaceTags
         self.projectAreas = projectAreas
         self.terminal = terminal
@@ -347,6 +352,7 @@ extension ForgeConfig {
         workspaceTags = try container.decodeIfPresent([String].self, forKey: .workspaceTags) ?? ["work"]
         projectAreas = try container.decodeIfPresent([String: [String]].self, forKey: .projectAreas) ?? [:]
         dueConflictPolicy = try container.decodeIfPresent(DueConflictPolicy.self, forKey: .dueConflictPolicy) ?? .newest
+        nexus = (try? container.decode(NexusConfig.self, forKey: .nexus)) ?? NexusConfig()
 
         // Backwards compatibility: allow reading Calendar allowlist from legacy `gtd.calendar_include`.
         if decodedCalendar.include.isEmpty, !gtd.calendarInclude.isEmpty {

@@ -1,4 +1,5 @@
 # Forge project tasks. Edit in Neovim; run `forge-tasks-world.py ingest` after changes.
+# Mark complete with checked = true (format/ingest moves the task to [[done]]).
 
 [meta]
 schema = 1
@@ -7,19 +8,26 @@ project = "Forge"
 # Next
 [[next]]
 title = "Check out mixtape.scunning.com"
+external_id = "3IB2wNM_jRu3etvsfLJ8P"
+external_backend = "super-productivity"
 id = "ao9Ss40Blvt"  # Forge-assigned; do not edit
-
-[[next]]
-title = "Omarchy: show keyboard shortcuts when could have been used"
-notes = "https://github.com/omacom/omarchy/discussions/9447"
-id = "dlZL7x2JkJa"  # Forge-assigned; do not edit
 
 [[next]]
 title = "Try Omalaunch"
 notes = "https://x.com/daniellemky/status/2094552017574248888?s=12"
+external_id = "OOUX4lxfIoT5jG6yNFXYw"
+external_backend = "super-productivity"
 id = "fsoyAVBhiTV"  # Forge-assigned; do not edit
 
 [[next]]
 title = "Try realtime news browser (gods-eye-view)"
 notes = "https://github.com/bilawalsidhu/gods-eye-view"
+external_id = "OST1X1VWZDU4gYqkDZ-Md"
+external_backend = "super-productivity"
 id = "iRIuL0W_b7Y"  # Forge-assigned; do not edit
+
+# Done
+[[done]]
+title = "Omarchy: show keyboard shortcuts when could have been used"
+notes = "https://github.com/omacom/omarchy/discussions/9447"
+id = "dlZL7x2JkJa"  # Forge-assigned; do not edit

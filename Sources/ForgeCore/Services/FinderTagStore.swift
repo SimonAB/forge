@@ -78,7 +78,7 @@ public struct FinderTagStore: Sendable {
             setxattr(path, Self.tagXattrName, buffer.baseAddress, buffer.count, 0, 0)
         }
         guard result == 0 else {
-            throw TagError.writeFailed(path: path, errno: errno)
+            throw TagStoreError.writeFailed(path: path, errno: errno)
         }
     }
 
@@ -146,6 +146,18 @@ public struct FinderTagStore: Sendable {
             case .writeFailed(let path, let code):
                 return "Failed to write tags to '\(path)': \(String(cString: strerror(code)))"
             }
+        }
+    }
+}
+
+/// Shared tag I/O error (Finder and xattr painters).
+public enum TagStoreError: Error, CustomStringConvertible, Sendable {
+    case writeFailed(path: String, errno: Int32)
+
+    public var description: String {
+        switch self {
+        case .writeFailed(let path, let code):
+            return "Failed to write tags to '\(path)': \(String(cString: strerror(code)))"
         }
     }
 }

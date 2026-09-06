@@ -62,6 +62,7 @@ public enum OmniFocusMoveSync {
     ///
     /// When `forgeDir` and `folderName` are provided and a `Completed…` meta tag is configured,
     /// records or clears the ship-date cache and strips Completed (and legacy Archived) on leave-Shipped.
+    /// When `nexus.sidecar_enabled` is true, also writes `<project>/.forge/kanban.toml`.
     public static func setFinderWorkflowColumn(
         path: String,
         column: String,
@@ -69,38 +70,19 @@ public enum OmniFocusMoveSync {
         tagStore: FinderTagStore = FinderTagStore(),
         forgeDir: String? = nil,
         folderName: String? = nil,
-        previousColumn: String? = nil
+        previousColumn: String? = nil,
+        source: String = KanbanNexus.Source.forgeMove
     ) throws {
-        guard let colConfig = config.board.columns.first(where: { $0.name == column }) else {
-            throw OmniJSBridgeError.evaluationFailed("Unknown board column \(column)")
-        }
-        var inferredPrevious = previousColumn
-        if let values = try? tagStore.readTags(at: path) {
-            if inferredPrevious == nil {
-                for tag in values {
-                    if let col = config.column(forTag: tag) {
-                        inferredPrevious = col.name
-                        break
-                    }
-                }
-            }
-            for tag in values where config.column(forTag: tag) != nil {
-                try tagStore.removeTag(tag, at: path)
-            }
-        }
-        try tagStore.addTag(colConfig.tag, at: path)
-
-        if let forgeDir, let folderName {
-            try KanbanArchivePolicy.noteColumnTransition(
-                folderName: folderName,
-                path: path,
-                previousColumn: inferredPrevious,
-                newColumn: column,
-                config: config,
-                forgeDir: forgeDir,
-                tagStore: tagStore
-            )
-        }
+        try KanbanNexus.setWorkflowColumn(
+            path: path,
+            column: column,
+            config: config,
+            tagStore: tagStore,
+            forgeDir: forgeDir,
+            folderName: folderName,
+            previousColumn: previousColumn,
+            source: source
+        )
     }
 
     /// Mirror a Finder workflow column onto linked OmniFocus tasks (flat aliases or nested root).
@@ -285,7 +267,8 @@ public enum OmniFocusMoveSync {
                     tagStore: tagStore,
                     forgeDir: forgeDir,
                     folderName: project.name,
-                    previousColumn: project.column
+                    previousColumn: project.column,
+                    source: KanbanNexus.Source.ofRefresh
                 )
                 updated.append(project.name)
             } catch {
@@ -476,10 +459,26 @@ public enum OmniFocusMoveSync {
         tagStore: FinderTagStore = FinderTagStore()
     ) throws -> (pulledFolders: [String], pushedFolders: Int, errors: [String]) {
         let of = config.omnifocus
-        guard of.enabled else { return ([], 0, []) }
-
         var errors: [String] = []
         var pulled: [String] = []
+
+        // Nexus: portable sidecar → local tags before OF → Finder.
+        if config.nexus.sidecarEnabled, config.nexus.syncSidecarOnRefresh {
+            do {
+                let painted = try KanbanFsSync.paintAllFromSidecar(
+                    projects: projects,
+                    config: config,
+                    tagStore: tagStore
+                )
+                pulled.append(contentsOf: painted.map(\.project))
+            } catch {
+                errors.append("sidecar paint: \(error.localizedDescription)")
+            }
+        }
+
+        guard of.enabled else {
+            return (Array(Set(pulled)).sorted(), 0, errors)
+        }
 
         let service = OmniFocusService(config: config)
         let inventory = try service.fetchInventory()

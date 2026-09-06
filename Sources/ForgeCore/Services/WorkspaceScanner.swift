@@ -127,6 +127,7 @@ public struct WorkspaceScanner: Sendable {
     }
 
     /// Classify a directory's tags into workflow column and meta tags.
+    /// When `nexus.prefer_sidecar` and a sidecar exist, sidecar column/meta win for classification.
     private func classify(name: String, path: String, tags: [String]) -> Project {
         var workflowTag: String?
         var columnName: String?
@@ -149,6 +150,23 @@ public struct WorkspaceScanner: Sendable {
             if workflowTag == nil, let col = config.column(forTag: tag) {
                 workflowTag = col.tag
                 columnName = col.name
+            }
+        }
+
+        if config.nexus.sidecarEnabled, config.nexus.preferSidecar,
+           let sidecar = try? KanbanSidecarStore.load(projectPath: path) {
+            if let col = sidecar.column {
+                columnName = col
+                workflowTag = sidecar.workflowTag
+                    ?? config.board.columns.first(where: { $0.name == col })?.tag
+            }
+            if !sidecar.meta.isEmpty {
+                metaTags = sidecar.meta
+            }
+            if !sidecar.assignees.isEmpty {
+                assignees = sidecar.assignees.map {
+                    AssigneeTag.normalisedIdentifier(fromRawTag: $0.hasPrefix("#") ? $0 : "#\($0)") ?? $0
+                }
             }
         }
 

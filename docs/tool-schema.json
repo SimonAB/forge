@@ -310,6 +310,107 @@
       },
       "safe": false,
       "cli": "forge archive"
+    },
+    {
+      "name": "forge_superproductivity_status",
+      "description": "Show Super Productivity connection, token, health, and mapped pilot projects.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "json": {
+            "type": "boolean",
+            "description": "Emit structured JSON."
+          }
+        }
+      },
+      "safe": true,
+      "cli": "forge superproductivity status [--json]"
+    },
+    {
+      "name": "forge_superproductivity_sync",
+      "description": "Preview or apply three-way synchronisation for mapped Super Productivity pilot projects. Requires confirmation before --apply.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "apply": {
+            "type": "boolean",
+            "description": "Apply non-conflicting changes and rebuild the task index."
+          },
+          "projects": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Optional mapped project folder names."
+          },
+          "json": {
+            "type": "boolean",
+            "description": "Emit structured JSON."
+          }
+        }
+      },
+      "safe": false,
+      "cli": "forge superproductivity sync [--apply] [--json] [project…]"
+    },
+    {
+      "name": "forge_fs_doctor",
+      "description": "Report drift between portable .forge/kanban.toml sidecars and local folder tags.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "json": {
+            "type": "boolean",
+            "description": "Emit structured JSON."
+          }
+        }
+      },
+      "safe": true,
+      "cli": "forge fs doctor [--json]"
+    },
+    {
+      "name": "forge_fs_sync",
+      "description": "Reconcile kanban sidecars and local tags. Dry-run unless apply is true. Prefer sidecar after Dropbox/git/LocalSend.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "prefer": {
+            "type": "string",
+            "enum": ["sidecar", "finder"],
+            "description": "Authority when column disagrees."
+          },
+          "apply": {
+            "type": "boolean",
+            "description": "Write changes."
+          },
+          "json": {
+            "type": "boolean",
+            "description": "Emit structured JSON."
+          }
+        }
+      },
+      "safe": false,
+      "cli": "forge fs sync [--prefer sidecar|finder] [--apply] [--json]"
+    },
+    {
+      "name": "forge_fs_migrate",
+      "description": "Bootstrap .forge/kanban.toml from local tags. Dry-run unless apply is true.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "apply": {
+            "type": "boolean",
+            "description": "Write sidecars."
+          },
+          "overwrite": {
+            "type": "boolean",
+            "description": "Replace existing sidecars."
+          },
+          "json": {
+            "type": "boolean",
+            "description": "Emit structured JSON."
+          }
+        }
+      },
+      "safe": false,
+      "cli": "forge fs migrate [--apply] [--overwrite] [--json]"
     }
   ],
   "error_schema": {
@@ -322,8 +423,13 @@
       "command": {
         "type": "string",
         "description": "The forge subcommand that failed."
+      },
+      "candidates": {
+        "type": "array",
+        "items": { "type": "string" },
+        "description": "Optional project names when the lookup was ambiguous."
       }
     },
-    "description": "JSON error envelope emitted on stdout when --json is passed and a domain error occurs. Exit code is non-zero. ArgumentParser-level errors (missing args, unknown flags) remain plain-text on stderr."
+    "description": "JSON error envelope emitted on stdout when --json is passed and a domain error occurs. Exit code is 1. No ArgumentParser Usage reprint on stderr for these failures. ArgumentParser-level errors (missing args, unknown flags) remain plain-text on stderr."
   }
 }

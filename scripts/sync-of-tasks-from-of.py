@@ -23,6 +23,7 @@ from forge_tasks_world.of_mapping import (  # noqa: E402
     keep_task,
     resolve_folder,
 )
+from forge_tasks_world.superproductivity import config_from_file  # noqa: E402
 from forge_tasks_world.toml_io import (  # noqa: E402
     ProjectTasks,
     TaskRecord,
@@ -63,6 +64,7 @@ function() {
       flagged: !!t.flagged,
       due: iso(t.dueDate),
       defer: iso(t.deferDate),
+      planned: iso(t.plannedDate),
       ofProjectName: proj,
       forgeFolder: forgeFolderFromTags(t)
     };
@@ -176,6 +178,7 @@ def of_task_to_record(task: dict) -> TaskRecord:
         section=section,
         due=fmt_date(task.get("due")),
         defer=fmt_date(task.get("defer")),
+        planned=fmt_date(task.get("planned")),
         flagged=bool(task.get("flagged")),
         links=links,
         notes=task_notes,
@@ -304,13 +307,19 @@ def main() -> int:
 
     forge_home = Path(args.forge_home).expanduser()
     forge_paths, columns = load_forge_board(forge_home)
+    sp_config = config_from_file(forge_home / "config.yaml")
+    sp_owned = set(sp_config.project_ids) if sp_config.enabled else set()
     of_data = export_omnifocus()
     folder_tasks = build_folder_tasks(of_data, forge_paths)
 
     updated: list[tuple[str, ProjectTasks, Path]] = []
     retired = 0
+    skipped_sp = []
 
     for folder in sorted(folder_tasks):
+        if folder in sp_owned:
+            skipped_sp.append(folder)
+            continue
         tasks = list(folder_tasks[folder].values())
         if not tasks:
             continue
@@ -322,6 +331,11 @@ def main() -> int:
             retired += 1
 
     print(f"Updated {len(updated)} TASKS.toml file(s)")
+    if skipped_sp:
+        print(
+            "Skipped Super Productivity pilot project(s): "
+            + ", ".join(sorted(skipped_sp))
+        )
     for folder, project_tasks, toml_path in updated:
         counts = {
             section: len(project_tasks.tasks_in(section))

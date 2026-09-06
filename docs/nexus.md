@@ -1,0 +1,81 @@
+# Forge as nexus
+
+Forge is the **project kanban nexus**: one column (and meta/assignee tags) per
+project folder. Portable state travels with the folder; each OS paints native
+attributes locally. OmniFocus and Super Productivity are **subordinate** joins,
+not competing boards of record.
+
+## Authority
+
+| Layer | Role |
+|-------|------|
+| `<project>/.forge/kanban.toml` | Portable canonical column + meta + assignees (git / Dropbox / LocalSend) |
+| Finder tags (macOS) | Local projection |
+| `user.xdg.tags` (Linux) | Local projection (same tag strings as `config.yaml`) |
+| OmniFocus | macOS column mirror on linked tasks (`sync_on_move` / Refresh pull) |
+| Super Productivity | Task execution for mapped `project_ids`; optional `Forge/<Column>` tag mirror |
+
+## Sidecar schema (v1)
+
+```toml
+schema = 1
+column = "Coding"
+workflow_tag = "Coding 🤖"
+meta = ["URGENT ⚠️"]
+assignees = ["#Alice"]
+updated_at = "2026-09-06T10:00:00Z"
+source = "forge-move"
+```
+
+`source` is one of: `forge-move`, `project-tag`, `fs-import`, `of-refresh`, `migrate`, `fs-sync`.
+
+## Write path
+
+`forge move` and board drag go through **KanbanNexus**: when `nexus.sidecar_enabled`
+is true, Forge writes the sidecar and local tags together, then runs OF / Reminders /
+optional SP column mirror hooks.
+
+## After sharing folders
+
+Dropbox, git, and LocalSend do **not** translate Finder tags ↔ Linux xattrs.
+After sync settles:
+
+```bash
+forge fs doctor          # sidecar ↔ tags drift
+forge fs sync --apply    # paint local tags from sidecar (default)
+forge fs sync --prefer finder --apply   # promote local tags into sidecar
+forge fs migrate         # bootstrap sidecars from current tags (dry-run default)
+```
+
+## Refresh order (when sidecar sync on refresh is on)
+
+1. Sidecar → local tags (`forge fs` paint)
+2. OmniFocus → Finder (existing)
+3. Reminders (existing; skips folders OF already updated)
+
+## Dual OS
+
+- **macOS:** Forge.app + CLI; Finder tags; optional OF / Reminders.
+- **Omarchy / Linux:** CLI (`forge board`, `forge move`, `forge fs`, dashboard script);
+  `user.xdg.tags`; SP via local REST. No OmniFocus/Reminders.
+
+Enable in `config.yaml`:
+
+```yaml
+nexus:
+  sidecar_enabled: true
+  prefer_sidecar: true
+  sync_sidecar_on_refresh: true
+  sp_column_mirror: false
+```
+
+## Task backends
+
+One execution backend per project: Super Productivity–mapped folders are skipped by
+the OmniFocus task importer. See [superproductivity.md](superproductivity.md) and
+[omnifocus.md](omnifocus.md).
+
+## Visual board
+
+macOS keeps Forge.app. On Linux use `forge board` / `python3 scripts/forge-dashboard.py`.
+Do not treat SP’s task kanban as the portfolio board of record.

@@ -67,6 +67,25 @@ reminders:
   # folder_aliases:
   #   "VHP2 ms": VHP2_manuscript
 
+# Forge as nexus: portable kanban sidecar + local tag painters.
+# See docs/nexus.md. Defaults keep Finder-only behaviour until enabled.
+nexus:
+  sidecar_enabled: false
+  prefer_sidecar: true
+  sync_sidecar_on_refresh: false
+  sp_column_mirror: false
+
+# Optional Super Productivity local REST backend. Projects are created in the
+# app first; use their generated IDs here. The token is stored in macOS Keychain
+# (or a local token file / secret-tool on Linux).
+superproductivity:
+  enabled: false
+  endpoint: http://127.0.0.1:3876
+  timeout: 5
+  # project_ids:
+  #   Forge: "project-id-from-super-productivity"
+  #   CausalDynamics.jl: "project-id-from-super-productivity"
+
 # Legacy keys (kept for backwards compatibility).
 # Prefer `calendar.include` and `reminders.list` above.
 # These may emit deprecation notes in future releases.

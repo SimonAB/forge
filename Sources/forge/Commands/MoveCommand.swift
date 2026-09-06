@@ -33,19 +33,28 @@ struct MoveCommand: AsyncParsableCommand {
         let config = try ConfigLoader.load()
         let scanner = WorkspaceScanner(config: config)
         let projects = try await scanner.scanProjects()
-        let tagStore = FinderTagStore()
 
         guard let targetCol = findColumn(named: targetColumn, in: config) else {
             let valid = config.board.columns.map(\.name).joined(separator: ", ")
             let msg = "Unknown column '\(targetColumn)'. Valid columns: \(valid)"
-            if json { ForgeJSONError.emit(msg, command: "move") }
-            throw ValidationError(msg)
+            try ForgeJSONError.throwDomainFailure(msg, command: "move", json: json)
         }
 
-        guard let matched = findProject(named: project, in: projects) else {
+        let matched: Project
+        switch matchProject(named: project, in: projects) {
+        case .found(let project):
+            matched = project
+        case .none:
             let msg = "No project matching '\(project)'. Use 'forge board --list' to see all projects."
-            if json { ForgeJSONError.emit(msg, command: "move") }
-            throw ValidationError(msg)
+            try ForgeJSONError.throwDomainFailure(msg, command: "move", json: json)
+        case .ambiguous(let candidates):
+            if !json {
+                printAmbiguousProjectMatch(query: project, candidates: candidates)
+            }
+            let msg = "Ambiguous project '\(project)'. Refine the name."
+            try ForgeJSONError.throwDomainFailure(
+                msg, command: "move", json: json, candidates: candidates
+            )
         }
 
         if strict {
@@ -53,25 +62,36 @@ struct MoveCommand: AsyncParsableCommand {
             case .allowed:
                 break
             case .rejected(let reason):
-                if json { ForgeJSONError.emit(reason, command: "move") }
-                throw ValidationError(reason)
+                try ForgeJSONError.throwDomainFailure(reason, command: "move", json: json)
             }
         }
 
         let forgeDir = ConfigLoader.forgeDirectory(for: config)
+        let tagStore = PlatformTagStore.makeDefault()
 
-        try OmniFocusMoveSync.setFinderWorkflowColumn(
+        try KanbanNexus.setWorkflowColumn(
             path: matched.path,
             column: targetCol.name,
             config: config,
             tagStore: tagStore,
             forgeDir: forgeDir,
             folderName: matched.name,
-            previousColumn: matched.column
+            previousColumn: matched.column,
+            source: KanbanNexus.Source.forgeMove
         )
 
         let from = matched.column ?? "Untagged"
         var notes: [String] = []
+
+        if config.nexus.spColumnMirror {
+            let mirrorNote = SuperProductivityColumnMirror.mirrorColumn(
+                projectName: matched.name,
+                column: targetCol,
+                config: config,
+                forgeDir: forgeDir
+            )
+            if let mirrorNote { notes.append(mirrorNote) }
+        }
 
         let outcome = OmniFocusMoveSync.mirrorFinderColumn(
             config: config,
@@ -159,25 +179,6 @@ struct MoveCommand: AsyncParsableCommand {
         let lower = name.lowercased()
         return config.board.columns.first { $0.name.lowercased() == lower }
             ?? config.board.columns.first { $0.name.lowercased().hasPrefix(lower) }
-    }
-
-    private func findProject(named query: String, in projects: [Project]) -> Project? {
-        let lower = query.lowercased()
-        if let exact = projects.first(where: { $0.name.lowercased() == lower }) {
-            return exact
-        }
-        let matches = projects.filter { $0.name.lowercased().contains(lower) }
-        if matches.count == 1 {
-            return matches.first
-        }
-        if matches.count > 1 {
-            print("Ambiguous match for '\(query)':")
-            for match in matches {
-                print("  - \(match.name)")
-            }
-            return nil
-        }
-        return nil
     }
 }
 

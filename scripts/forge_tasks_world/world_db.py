@@ -34,12 +34,17 @@ CREATE TABLE IF NOT EXISTS tasks (
     title TEXT NOT NULL,
     due TEXT,
     defer TEXT,
+    planned TEXT,
     done TEXT,
     contexts TEXT,
     assignees TEXT,
     flagged INTEGER NOT NULL DEFAULT 0,
     links TEXT,
     notes TEXT,
+    external_id TEXT,
+    external_backend TEXT,
+    estimate_minutes INTEGER,
+    recorded_minutes INTEGER,
     fingerprint TEXT NOT NULL,
     source TEXT,
     created_at TEXT,
@@ -86,7 +91,7 @@ class WorldDatabase:
         self.conn.executescript(SCHEMA_SQL)
         self._migrate_schema()
         self.conn.execute(
-            "INSERT OR REPLACE INTO meta(key, value) VALUES ('schema', '2')"
+            "INSERT OR REPLACE INTO meta(key, value) VALUES ('schema', '3')"
         )
         self.conn.commit()
 
@@ -113,6 +118,11 @@ class WorldDatabase:
             self.conn.execute("ALTER TABLE tasks ADD COLUMN source TEXT")
         if "created_at" not in task_cols:
             self.conn.execute("ALTER TABLE tasks ADD COLUMN created_at TEXT")
+        for name, sql_type in (("planned", "TEXT"), ("external_id", "TEXT"),
+                               ("external_backend", "TEXT"), ("estimate_minutes", "INTEGER"),
+                               ("recorded_minutes", "INTEGER")):
+            if name not in task_cols:
+                self.conn.execute(f"ALTER TABLE tasks ADD COLUMN {name} {sql_type}")
 
         # Recreate tasks table when project_path is still NOT NULL (pre-inbox schema).
         project_col = task_cols.get("project_path")
@@ -126,25 +136,31 @@ class WorldDatabase:
                     title TEXT NOT NULL,
                     due TEXT,
                     defer TEXT,
+                    planned TEXT,
                     done TEXT,
                     contexts TEXT,
                     assignees TEXT,
                     flagged INTEGER NOT NULL DEFAULT 0,
                     links TEXT,
                     notes TEXT,
+                    external_id TEXT,
+                    external_backend TEXT,
+                    estimate_minutes INTEGER,
+                    recorded_minutes INTEGER,
                     fingerprint TEXT NOT NULL,
                     source TEXT,
                     created_at TEXT,
                     updated_at TEXT NOT NULL
                 );
                 INSERT INTO tasks_new(
-                    id, project_path, section, title, due, defer, done,
-                    contexts, assignees, flagged, links, notes, fingerprint,
+                    id, project_path, section, title, due, defer, planned, done,
+                    contexts, assignees, flagged, links, notes, external_id, external_backend,
+                    estimate_minutes, recorded_minutes, fingerprint,
                     source, created_at, updated_at
                 )
                 SELECT
-                    id, project_path, section, title, due, defer, done,
-                    contexts, assignees, flagged, links, notes, fingerprint,
+                    id, project_path, section, title, due, defer, NULL, done,
+                    contexts, assignees, flagged, links, notes, NULL, NULL, NULL, NULL, fingerprint,
                     source, created_at, updated_at
                 FROM tasks;
                 DROP TABLE tasks;
@@ -376,22 +392,28 @@ class WorldDatabase:
         self.conn.execute(
             """
             INSERT INTO tasks(
-                id, project_path, section, title, due, defer, done,
-                contexts, assignees, flagged, links, notes, fingerprint,
+                id, project_path, section, title, due, defer, planned, done,
+                contexts, assignees, flagged, links, notes, external_id,
+                external_backend, estimate_minutes, recorded_minutes, fingerprint,
                 source, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
                 project_path = excluded.project_path,
                 section = excluded.section,
                 title = excluded.title,
                 due = excluded.due,
                 defer = excluded.defer,
+                planned = excluded.planned,
                 done = excluded.done,
                 contexts = excluded.contexts,
                 assignees = excluded.assignees,
                 flagged = excluded.flagged,
                 links = excluded.links,
                 notes = excluded.notes,
+                external_id = excluded.external_id,
+                external_backend = excluded.external_backend,
+                estimate_minutes = excluded.estimate_minutes,
+                recorded_minutes = excluded.recorded_minutes,
                 fingerprint = excluded.fingerprint,
                 updated_at = excluded.updated_at
             """,
@@ -402,12 +424,17 @@ class WorldDatabase:
                 task.title,
                 task.due,
                 task.defer,
+                task.planned,
                 task.done,
                 json.dumps(task.ctx),
                 json.dumps(task.assignees),
                 1 if task.flagged else 0,
                 json.dumps(links_payload),
                 task.notes,
+                task.external_id,
+                task.external_backend,
+                task.estimate_minutes,
+                task.recorded_minutes,
                 task.fingerprint(),
                 source,
                 created_at,

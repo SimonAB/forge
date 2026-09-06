@@ -37,6 +37,8 @@ forge <command> [options]
 | `forge edit` | Open files/folders in the terminal editor (vim/Neovim; honours `terminal:`) |
 | `forge omnifocus` | Optional OmniFocus bridge (`doctor`, `align`, `refresh`, …) |
 | `forge reminders` | Optional Apple Reminders bridge (`list`, `status`, `show`, `refresh`, `doctor`, `align`, `paint-colours`, `paint-priorities`) |
+| `forge fs` | Nexus sidecar ↔ local tags (`doctor`, `sync`, `migrate`) — see [nexus.md](nexus.md) |
+| `forge superproductivity` | Optional Super Productivity task backend |
 
 Read-only brief (Python helper, not a `forge` subcommand):
 
@@ -329,6 +331,22 @@ hermes skills list | grep forge-board
 ```
 
 See **`docs/hermes.md`**. Forge.app → Preferences → **Hermes** runs the same checks.
+
+---
+
+## forge fs
+
+Portable kanban sidecar (`<project>/.forge/kanban.toml`) ↔ local folder tags.
+See [nexus.md](nexus.md) and [omarchy.md](omarchy.md).
+
+```
+forge fs doctor [--json]
+forge fs sync [--prefer sidecar|finder] [--apply] [--json]
+forge fs migrate [--apply] [--overwrite] [--json]
+```
+
+`sync` and `migrate` are dry-run unless `--apply`. After Dropbox/git/LocalSend,
+run `forge fs sync --apply` so each OS paints its native tags from the sidecar.
 
 ---
 

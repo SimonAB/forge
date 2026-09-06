@@ -39,12 +39,17 @@ class TaskRecord:
     section: str
     due: str | None = None
     defer: str | None = None
+    planned: str | None = None
     done: str | None = None
     ctx: list[str] = field(default_factory=list)
     assignees: list[str] = field(default_factory=list)
     flagged: bool = False
     links: dict[str, str] = field(default_factory=dict)
     notes: str | None = None
+    external_id: str | None = None
+    external_backend: str | None = None
+    estimate_minutes: int | None = None
+    recorded_minutes: int | None = None
     #: Transient edit flag; never written. `apply_checked_completions` moves to [[done]].
     checked: bool = False
 
@@ -54,10 +59,15 @@ class TaskRecord:
             self.title,
             self.due or "",
             self.defer or "",
+            self.planned or "",
             self.done or "",
             ",".join(self.ctx),
             ",".join(self.assignees),
             str(self.flagged),
+            self.external_backend or "",
+            self.external_id or "",
+            str(self.estimate_minutes or ""),
+            str(self.recorded_minutes or ""),
         ]
         return "|".join(parts)
 
@@ -105,12 +115,17 @@ def _parse_task_row(section: str, row: dict[str, Any]) -> TaskRecord:
         section=section,
         due=_optional_str(row.get("due")),
         defer=_optional_str(row.get("defer")),
+        planned=_optional_str(row.get("planned")),
         done=_optional_str(row.get("done")),
         ctx=[str(item) for item in ctx],
         assignees=[str(item) for item in assignees],
         flagged=bool(row.get("flagged", False)),
         links=clean_links,
         notes=_optional_str(row.get("notes")),
+        external_id=_optional_str(row.get("external_id")),
+        external_backend=_optional_str(row.get("external_backend")),
+        estimate_minutes=_optional_int(row.get("estimate_minutes")),
+        recorded_minutes=_optional_int(row.get("recorded_minutes")),
         checked=bool(row.get("checked", False)),
     )
 
@@ -156,6 +171,16 @@ def _optional_str(value: Any) -> str | None:
     return text or None
 
 
+def _optional_int(value: Any) -> int | None:
+    """Return a non-negative integer or ``None`` for an absent value."""
+    if value is None or value == "":
+        return None
+    number = int(value)
+    if number < 0:
+        raise ValueError("task duration values cannot be negative")
+    return number
+
+
 def _toml_quote_string(value: str) -> str:
     return '"' + value.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n") + '"'
 
@@ -163,8 +188,8 @@ def _toml_quote_string(value: str) -> str:
 def _toml_scalar(value: str) -> str:
     """Emit a bare date or quoted string as appropriate."""
     stripped = value.strip()
-    if _DATE_LITERAL.fullmatch(stripped[:10]):
-        return stripped[:10]
+    if _DATE_LITERAL.fullmatch(stripped):
+        return stripped
     return _toml_quote_string(value)
 
 
@@ -229,7 +254,7 @@ def write_project_tasks(project_tasks: ProjectTasks, path: Path) -> None:
         for task in section_tasks:
             lines.append(f"[[{section}]]")
             lines.append(f"title = {_toml_quote_string(task.title)}")
-            for key in ("due", "defer", "done"):
+            for key in ("due", "defer", "planned", "done"):
                 value = getattr(task, key)
                 if value:
                     lines.append(f"{key} = {_toml_scalar(value)}")
@@ -247,6 +272,14 @@ def write_project_tasks(project_tasks: ProjectTasks, path: Path) -> None:
                 lines.append(f"links = {{ {links_parts} }}")
             if task.notes:
                 lines.append(f"notes = {_toml_multiline_string(task.notes)}")
+            for key in ("external_id", "external_backend"):
+                value = getattr(task, key)
+                if value:
+                    lines.append(f"{key} = {_toml_quote_string(value)}")
+            for key in ("estimate_minutes", "recorded_minutes"):
+                value = getattr(task, key)
+                if value is not None:
+                    lines.append(f"{key} = {value}")
             lines.append(f'id = "{task.id}"  # Forge-assigned; do not edit')
             lines.append("")
 

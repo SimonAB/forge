@@ -16,6 +16,14 @@ In this workspace, act as **Hephaestus** (Heph): a Forge-literate assistant help
 
 When this workspace is used with a language model, **prefer local inference for privacy**. The recommended stack is **[Hermes Agent](https://hermes-agent.nousresearch.com/)** with **[Ollama](https://ollama.com)**; see **`docs/hermes.md`** and **`PRIVACY.md`** (**AI assistants and local language models**). Run `python3 scripts/setup-hermes-forge.py` for plug-and-play wiring of the `forge-board` skill.
 
+## Forge as nexus
+
+Forge owns **project** kanban (column, meta, assignees). Portable state lives in
+`<project>/.forge/kanban.toml` when `nexus.sidecar_enabled` is on; Finder tags
+(macOS) and `user.xdg.tags` (Linux) are local projections. OmniFocus and Super
+Productivity are subordinate joins. After Dropbox/git/LocalSend, run
+`forge fs sync --apply`. Full doctrine: **`docs/nexus.md`**.
+
 ## OmniFocus Integration
 
 When OmniFocus.app is running and `omnifocus.enabled` is true, treat OmniFocus as the task-level source. Task dates (defer, planned, due), inbox, completion, notes, and review go through OmniFocus directly (OmniJS / JXA, or Omni Group MCP when available). **`forge omnifocus`** covers the project join: snapshot, `doctor` / `align` / `show`, Refresh onto Finder, and column-tag mirroring on `forge move`. Only Forge writes kanban column tags and `🔥 Forge:` link tags. When `reminders.enabled` is true, use `forge reminders` for Apple Reminders (EventKit; lists match folders by title; `doctor` / `align --apply` for missing lists; list colour follows Finder column; Finder URGENT sets sentinel priority; optional sentinel column sync). Forge remains project kanban. Tasks may also live in Things or another app:
@@ -426,9 +434,18 @@ For full specs: `@.cursor/rules/forge-cli.mdc`, `@.cursor/rules/forge-workflows.
 - OmniFocus task dates and inbox may be written directly (OmniJS; later Omni’s MCP). Forge stays the kanban and link-tag join. Leave community OmniFocus MCP servers uninstalled while that join lives in Forge.
 - Schedule OmniFocus with GTD: the calendar is the hard landscape (time-specific events only). Due dates are for genuine deadlines (external, or an explicit personal commitment), kept on weekdays, typically the preceding Friday. Planned dates are when to engage; defer dates hide work until it can start. Do not use due dates to mean “do this on Thursday”. A missed planned date is re-planned, not rolled as an overdue due. Time-specific actions may match the calendar start/end. Do not put planned dates on action groups (OmniFocus inherits them onto children and clutters Forecast Past); plan only the next leaf action.
 - In briefs, list Paused projects in their own section; do not include them in Neglected or Stuck in-flight.
+- Prefer agent-facing CLI JSON (`--json` on writes, structured JSON errors, `docs/tool-schema.json`) over a full Forge MCP server for agentic integration.
+- Super Productivity project titles should match Forge folder names for `project_ids` mapping.
+- Keep CDCS book work (`causal-dynamics-concept-notes`) separate from the `CausalDynamics.jl` package in Super Productivity; do not mix book chapters into the package project.
+- Prefer one shared kanban model on macOS and Omarchy Linux: Finder tags and Linux `user.xdg.tags` stay aligned via the portable sidecar and file sync (git, LocalSend, Dropbox), with `forge fs sync --apply` after transfers.
 
 ## Learned Workspace Facts
 
 - Default Forge home is `~/Documents/Software/Forge`; config search still includes legacy `~/Documents/Forge` and `~/Documents/Work/Projects/Forge`.
 - Reminders is the OmniFocus-alternative task inbox: one EventKit **list** per Forge-tagged folder (title match); kanban stays on Finder (not column-lists or list tags). EventKit cannot maintain list groups, sections, icons, or hashtags; user-created Reminders.app groups are layout-only and do not affect Forge visibility. List colour follows the Finder column (paint only). Optional sentinel reminder (`Forge · <Column>`) for column sync. Finder `URGENT ⚠️` sets sentinel EventKit priority (high / none); there is no Flagged API. Board Refresh / Preferences Refresh now / `forge reminders refresh` snapshot + colour + URGENT priority (never delete unmatched lists; do not create lists). Background snapshot refresh does not paint. Create lists with `align --apply`. Forge does not create or complete ordinary reminder items.
 - `Completed ✔️` is applied after `board.archive_after_shipped_days` (default 7) via board Refresh / `forge archive`; ship dates live in `.cache/shipped-at.json`; Shipped cards may show a complete countdown; legacy Shipped folders use activity age; legacy `Archived…` tags migrate to Completed.
+- **AgeSCM** (`~/Documents/Work/Projects/Mozzies-MIRS-AI_Gates Deep Surveillance/AgeSCM`): Julia age-structured causal modelling project; private repo `SimonAB/AgeSCM` on GitHub.
+- `forge move` and `forge project-tag add|remove` support `--json` result and `ForgeJSONError` envelopes; agent tool definitions live in `docs/tool-schema.json`.
+- Forge is the project kanban nexus: portable sidecar `<project>/.forge/kanban.toml` when `nexus.sidecar_enabled`, Finder tags on macOS and `user.xdg.tags` on Linux as projections; `forge fs doctor|sync|migrate`; doctrine in `docs/nexus.md` / Omarchy notes in `docs/omarchy.md`.
+- Super Productivity is an optional local REST task backend for explicitly mapped projects (`superproductivity` in config; loopback `127.0.0.1:3876`; CLI `forge superproductivity` / `scripts/forge-superproductivity.py`); API token lives in Keychain service `forge-superproductivity` (or Linux `secret-tool` / `~/.config/forge/superproductivity.token`); three-way sync never auto-deletes; enabled pilots are skipped by `sync-of-tasks-from-of.py`; optional `nexus.sp_column_mirror` paints Finder-style column tags on SP tasks (e.g. `Coding 🤖`, not `Forge/Coding`) on both `forge move` and board drag; SP supports only one-level subtasks and Forge sync does not yet mirror parent/subtask links into `TASKS.toml`.
+- Forge.app / OmniFocus / Reminders remain macOS-native; Linux CLI targets Omarchy via `XattrTagStore` and the same nexus sidecar.
