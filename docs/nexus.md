@@ -79,6 +79,10 @@ names to SP project ids in `config.yaml`. Local REST cannot create projects
 `scripts/sp-plugins/`). Optional `nexus.sp_column_mirror` paints Finder-style
 column tags onto SP tasks on `forge move` / board drag.
 
+Forge.app **Open TASKS** (board tick icon / context menu) opens the preferred
+task manager and, for SP, focuses the mapped project
+([app.md](app.md), [superproductivity.md](superproductivity.md)).
+
 Legacy `TASKS.toml` / `.forge/tasks.db` remain on disk when SP is enabled but are
 not authoritative. OmniFocus task import skips mapped SP projects. Full cutover
 notes and planned retirement of the TOML path: [superproductivity.md](superproductivity.md).

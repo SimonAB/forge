@@ -31,7 +31,7 @@ Afterward, map titles to ids in `config.yaml` (`superproductivity.project_ids`).
 
 ## Finder → SP project folders
 
-Moved to the permanent adapter script (not a plugin):
+Permanent adapter (not a plugin):
 
 ```sh
 python3 scripts/forge-sp-menu-tree.py --forge-home . --dry-run
@@ -39,8 +39,16 @@ python3 scripts/forge-sp-menu-tree.py --forge-home .
 # or: forge superproductivity mirror-menu-tree [--dry-run]
 ```
 
+## Focus one SP project (Open TASKS)
+
+Used by Forge.app when **Open TASKS** targets Super Productivity:
+
+```sh
+/tmp/sp-cdp-venv/bin/python scripts/forge-sp-focus-project.py '<sp-project-id>'
+```
+
 See [docs/superproductivity.md](../../docs/superproductivity.md). The old path
-`scripts/sp-plugins/apply_finder_menu_tree.py` forwards to that script.
+`scripts/sp-plugins/apply_finder_menu_tree.py` forwards to the menu-tree script.
 
 ## Full-backup JSON (avoid unless intentional)
 

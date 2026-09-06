@@ -209,7 +209,7 @@
     },
     {
       "name": "forge_tasks_assign",
-      "description": "Assign an inbox item to a Forge project (moves it into the project's TASKS.toml).",
+      "description": "Assign an inbox item to a Forge project (SP project when superproductivity.enabled; else TASKS.toml).",
       "parameters": {
         "type": "object",
         "properties": {

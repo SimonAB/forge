@@ -13,6 +13,7 @@ owns inbox, dues, capture, completion, focus, and time tracking.
 | `forge-brief.py` inbox + dues | Live SP REST (`GET /tasks`), not `.forge/tasks.db` |
 | Morning pull | Skips OmniFocus → `TASKS.toml` import; still runs OF Refresh for kanban join |
 | `forge move` / board drag | Optional `nexus.sp_column_mirror`: Finder-style tags (e.g. `Coding 🤖`) on SP tasks |
+| **Open TASKS** (board) | Opens / focuses the mapped SP project (Preferences → General) |
 | `TASKS.toml` / `.forge/tasks.db` | Left on disk; **not** authoritative; not written by capture when SP is on |
 | OmniFocus task import | Skips folders listed in `superproductivity.project_ids` |
 
@@ -42,6 +43,35 @@ superproductivity:
     Forge: "…"
     CausalDynamics.jl: "…"
 ```
+
+### Open TASKS (board → SP project)
+
+Forge.app **Open TASKS** (board card **tick** icon, context menu, or dashboard
+project click) opens the preferred task manager. Preference:
+**Forge → Preferences… → General → Open TASKS opens** (UserDefaults; Auto by
+default).
+
+| Preference | Behaviour |
+|------------|-----------|
+| Auto | SP if enabled → Reminders if enabled → OmniFocus if enabled → `TASKS.toml` |
+| Super Productivity | Focus mapped project in SP (see below) |
+| OmniFocus / Reminders | Activate that app |
+| TASKS.toml (editor) | Open `<project>/TASKS.toml` in the preferred editor |
+
+With Super Productivity selected (or Auto while `superproductivity.enabled`),
+Forge focuses `#/project/<id>/tasks` via `scripts/forge-sp-focus-project.py`
+(Chrome DevTools Protocol). That needs a `project_ids` entry for the folder.
+
+```sh
+# Manual focus (same helper the app uses)
+/tmp/sp-cdp-venv/bin/python scripts/forge-sp-focus-project.py '<sp-project-id>'
+```
+
+The first focus in a session may briefly relaunch SP with
+`--remote-debugging-port=9222` if CDP is not already available; later focuses
+reuse that session. SP has no public URL scheme for opening an existing project.
+
+See [app.md](app.md).
 
 ### Creating SP projects (Local REST cannot)
 

@@ -80,7 +80,9 @@ nexus:
 # Local REST cannot create projects (POST /projects → 404); create them in the
 # app or via Plugin API / scripts/sp-plugins/forge-bulk-projects.zip, then map
 # ids here. Token: Keychain / secret-tool / ~/.config/forge/superproductivity.token.
-# See docs/superproductivity.md.
+# Forge.app Open TASKS (Preferences → General) focuses mapped projects via
+# scripts/forge-sp-focus-project.py. Sidebar folders: forge superproductivity
+# mirror-menu-tree. See docs/superproductivity.md and docs/app.md.
 superproductivity:
   enabled: false
   endpoint: http://127.0.0.1:3876

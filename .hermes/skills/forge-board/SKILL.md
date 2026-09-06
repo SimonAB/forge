@@ -128,12 +128,12 @@ forge project-tag remove <Project> "URGENT \u26A0\uFE0F"
 Morning review (when the user agrees) follows Forge `.cursor/rules/morning-brief.mdc`:
 
 1. `forge omnifocus refresh --apply-finder` — sync OF snapshot + OF→Finder (orchestrator).
-2. `bash scripts/morning-review-pull.sh` — OF → `TASKS.toml` + `world.db`, then calendar/board/due via `forge-brief.py`.
+2. `bash scripts/morning-review-pull.sh` — calendar/board/due via `forge-brief.py` (skips OF→`TASKS.toml` when SP is enabled).
 3. Parallelise GitHub checks as Hephaestus judges best (or delegate to an idle **Morning Brief** Herdr pane).
    (this pane for fast CLI; Herdr helpers with a suitable `--kind` only when faster).
-3. Cap helper waits; take over locally on stall. Synthesise `## Brief` / `## Details`;
+4. Cap helper waits; take over locally on stall. Synthesise `## Brief` / `## Details`;
    no column/tag writes without approval.
-4. Fallback: run all steps in this session if Herdr is unavailable.
+5. Fallback: run all steps in this session if Herdr is unavailable.
 
 Board-only brief generator:
 
@@ -144,7 +144,7 @@ python3 scripts/forge-brief.py
 The board brief includes:
 
 1. **Calendar** — today's events, upcoming events, warnings (events due within N hours).
-2. **Due tasks** — overdue, due today, and upcoming from `.forge/tasks.db` (fed by capture + `TASKS.toml`).
+2. **Due tasks** — overdue, due today, and upcoming from **Super Productivity** when enabled (else `.forge/tasks.db`).
 3. **Column load** — project count per column.
 4. **URGENT** — projects tagged `URGENT ⚠️`, sorted by staleness.
 5. **Neglected** — projects ≥7 days inactive (excludes Paused; list Paused separately).

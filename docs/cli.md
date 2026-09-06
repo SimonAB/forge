@@ -300,11 +300,13 @@ planned retirement of `TASKS.toml`: [superproductivity.md](superproductivity.md)
 
 Map folder names in `project_ids` (exact SP project titles). Create missing
 projects in the app or via `scripts/sp-plugins/forge-bulk-projects.zip` (Local
-REST cannot create projects). Sidebar folders mirror Finder paths:
+REST cannot create projects). Sidebar folders mirror Finder paths; **Open TASKS**
+in Forge.app focuses the mapped SP project (see [app.md](app.md)):
 
 ```bash
 forge superproductivity mirror-menu-tree --dry-run
-python3 scripts/forge-sp-menu-tree.py --forge-home .   # apply (needs websocket-client)
+python3 scripts/forge-sp-menu-tree.py --forge-home .          # apply menu tree
+/tmp/sp-cdp-venv/bin/python scripts/forge-sp-focus-project.py '<id>'  # focus one project
 ```
 
 ```bash

@@ -21,7 +21,7 @@ Reading and reporting is always safe. The assistant may:
 - Run `forge status` to see a summary dashboard.
 - Run `forge edit <path>` to open a file or folder in the terminal editor (vim/Neovim; honours `terminal:`).
 - Run `python3 scripts/forge-brief.py` to generate a structured brief (due tasks, URGENT, stale, stuck, hygiene).
-- Read project directory contents (`TASKS.toml`, README.md) to understand project task state.
+- Read project directory contents (`README.md`, optional legacy `TASKS.toml`) for context. With Super Productivity enabled, tasks live in SP; use `forge tasks` / SP UI (Open TASKS), not TASKS.toml as authority.
 
 ## Restricted operations (require explicit user approval)
 
@@ -170,31 +170,30 @@ Outputs sections: Calendar (today, upcoming, warnings), **Inbox**, **Due tasks**
 
 Never modify project state with forge-brief; it is always read-only.
 
-## Project tasks (scripts/forge-tasks-world.py, forge-capture.py, sync-of-tasks-from-of.py)
+## Project tasks (Super Productivity + legacy TASKS.toml)
+
+With `superproductivity.enabled`, **capture and inbox go to Super Productivity**;
+Forge remains kanban-only. See `docs/superproductivity.md` and `docs/app.md`
+(**Open TASKS** / board tick icon).
 
 | Command | Purpose |
 |---------|---------|
-| `forge capture "…"` | Capture into inbox (`.forge/tasks.db`); `--source assistant` for chat |
+| `forge capture "…"` | Capture into SP Inbox when enabled (else `.forge/tasks.db`); `--source assistant` for chat |
 | `forge tasks inbox` | List inbox |
-| `forge tasks assign <id> <project>` | Process inbox → project |
+| `forge tasks assign <id> <project>` | Process inbox → project (`project_ids` when SP) |
 | `forge tasks complete <id>` | Mark done |
 | `forge tasks open <id>` | Open first mail/file/url link |
-| `python3 scripts/sync-of-tasks-from-of.py` | OmniFocus → `TASKS.toml` + ingest `tasks.db` (optional) |
-| `python3 scripts/forge-tasks-world.py ingest` | Re-ingest all board `TASKS.toml` files into task index |
-| `python3 scripts/forge-tasks-world.py due --days N` | List due/open tasks from task index |
-| `python3 scripts/forge-tasks-world.py status` | Task index summary (project/task/inbox counts) |
-| `python3 scripts/forge-tasks-world.py show [project]` | Pretty-print TASKS.toml (read-only checklist) |
-| `python3 scripts/forge-tasks-world.py format [project]` | Rewrite TASKS.toml with the readable writer |
-| `python3 scripts/forge-tasks-world.py convert` | Legacy `TASKS.md` → `TASKS.toml` (one-off) |
+| `forge superproductivity list` | List SP projects |
+| `forge superproductivity mirror-menu-tree` | Mirror Finder paths into SP sidebar folders |
+| `python3 scripts/forge-sp-focus-project.py <id>` | Focus one SP project in the UI (CDP) |
+| `python3 scripts/sync-of-tasks-from-of.py` | OmniFocus → `TASKS.toml` + ingest (legacy / non-SP) |
+| `python3 scripts/forge-tasks-world.py ingest` | Re-ingest board `TASKS.toml` into task index (legacy) |
+| `python3 scripts/forge-tasks-world.py due --days N` | List due/open tasks from task index (legacy when SP off) |
 
-Project tasks: `<project>/TASKS.toml` (optional view). Task database: `Forge/.forge/tasks.db` (gitignored; migrates from `world.db`). Capture is **link-only** unless `--stash`.
+When SP is enabled, prefer SP for dues/inbox; leave `TASKS.toml` on disk unused.
+When the user says **capture:** / **inbox:**, run `forge capture "…" --source assistant` immediately.
 
-When the user says **capture:** / **inbox:**, run `forge capture "…" --source assistant` immediately (no project picker).
-
-Morning review (session start when the user agrees) also runs
-`forge omnifocus refresh --apply-finder`, `sync-of-tasks-from-of.py`,
-`forge calendar --days 1 --json`, due tasks from task index, and GitHub owned-repo/fork checks —
-see `@.cursor/rules/morning-brief.mdc` and `AGENTS.md` Briefs.
+Morning review: see `@.cursor/rules/morning-brief.mdc` (skip OF→TASKS when SP is on).
 
 ## forge dashboard (scripts/forge-dashboard.py)
 

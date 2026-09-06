@@ -87,6 +87,26 @@ Saving Preferences reloads the board in place; it does not close the board windo
 Reopen the board with **Window → Board** (Cmd+B), the menu bar **Board** item, or
 the Dock icon when no windows are visible.
 
+#### Open TASKS
+
+**General → Open TASKS opens** chooses the task manager for:
+
+- Board card **tick** (checkmark) icon
+- Context menu **Open TASKS**
+- Dashboard project click (⌘-click still reveals in Finder)
+
+| Choice | Opens |
+|--------|--------|
+| Auto (default) | Super Productivity if enabled, else Reminders, else OmniFocus, else `TASKS.toml` |
+| Super Productivity | Mapped SP project focused in the app (`#/project/<id>/tasks`) |
+| OmniFocus | OmniFocus.app |
+| Reminders | Reminders.app |
+| TASKS.toml (editor) | `<project>/TASKS.toml` in the preferred text editor |
+
+The **folder** icon on cards still reveals the project in Finder. SP focus needs
+`superproductivity.project_ids` and may briefly enable CDP on first use; see
+[superproductivity.md](superproductivity.md).
+
 ### OmniFocus (optional)
 
 Optional: keep **project** kanban columns in step with OmniFocus. Day-to-day
