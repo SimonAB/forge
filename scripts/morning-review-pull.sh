@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
-# morning-review-pull.sh — read-only morning data pulls (sync + brief bundle)
+# morning-review-pull.sh — morning data pulls (sync + brief bundle)
 #
 # Phase 1: OmniFocus refresh (kanban join). Legacy OF→TASKS.toml sync only when
 # Super Productivity is not the enabled task store.
+# Phase 1b (SP only): drain Apple Reminders Inbox → SP Inbox
+#   (scripts/reminders-capture-drain.sh), then forge-brief sees the new captures.
 # Phase 2: forge-brief.py (calendar + board + inbox/dues from SP when enabled)
 #
 # GitHub owned/fork checks stay with the synthesising agent (see morning-brief.mdc).
@@ -42,6 +44,14 @@ PY
 
 if [[ "$sp_enabled" == "1" ]]; then
   echo "[$stamp] morning-review-pull: skip OF→TASKS (Super Productivity is task store)" | tee "$cache_dir/sync-tasks.txt"
+  echo "[$stamp] morning-review-pull: Reminders Inbox → SP Inbox"
+  # Soft-fail: SP down or Reminders permission must not abort the brief.
+  if bash scripts/reminders-capture-drain.sh --forge "$forge_bin" --forge-home "$forge_dir" \
+    | tee "$cache_dir/reminders-drain.json"; then
+    :
+  else
+    echo "[$stamp] morning-review-pull: reminders drain failed (continuing brief)" | tee -a "$cache_dir/reminders-drain.json" >&2
+  fi
 else
   echo "[$stamp] morning-review-pull: project tasks sync"
   python3 scripts/sync-of-tasks-from-of.py | tee "$cache_dir/sync-tasks.txt"
@@ -52,3 +62,6 @@ python3 scripts/forge-brief.py --calendar-days 1 | tee "$cache_dir/forge-brief.t
 
 echo "[$stamp] morning-review-pull: done"
 echo "  brief: $cache_dir/forge-brief.txt"
+if [[ "$sp_enabled" == "1" ]]; then
+  echo "  reminders drain: $cache_dir/reminders-drain.json"
+fi
