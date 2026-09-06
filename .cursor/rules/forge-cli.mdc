@@ -186,6 +186,7 @@ Forge remains kanban-only. See `docs/superproductivity.md` and `docs/app.md`
 | `forge superproductivity list` | List SP projects |
 | `forge superproductivity mirror-menu-tree` | Mirror Finder paths into SP sidebar folders |
 | `python3 scripts/forge-sp-focus-project.py <id>` | Focus one SP project in the UI (CDP) |
+| `bash scripts/reminders-capture-drain.sh` | Reminders **Inbox** → SP Inbox (`forge capture --source reminders`); morning pull runs this when SP is on |
 | `python3 scripts/sync-of-tasks-from-of.py` | OmniFocus → `TASKS.toml` + ingest (legacy / non-SP) |
 | `python3 scripts/forge-tasks-world.py ingest` | Re-ingest board `TASKS.toml` into task index (legacy) |
 | `python3 scripts/forge-tasks-world.py due --days N` | List due/open tasks from task index (legacy when SP off) |
@@ -193,7 +194,7 @@ Forge remains kanban-only. See `docs/superproductivity.md` and `docs/app.md`
 When SP is enabled, prefer SP for dues/inbox; leave `TASKS.toml` on disk unused.
 When the user says **capture:** / **inbox:**, run `forge capture "…" --source assistant` immediately.
 
-Morning review: see `@.cursor/rules/morning-brief.mdc` (skip OF→TASKS when SP is on).
+Morning review: see `@.cursor/rules/morning-brief.mdc` (Reminders Inbox drain + skip OF→TASKS when SP is on).
 
 ## forge dashboard (scripts/forge-dashboard.py)
 

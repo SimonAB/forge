@@ -284,9 +284,10 @@ Populate the task index first with `bash scripts/morning-review-pull.sh` (sync +
 bash scripts/morning-review-pull.sh
 ```
 
-Runs OF refresh for the kanban join, skips OmniFocus → `TASKS.toml` when Super
-Productivity is the enabled task store, then `forge-brief.py --calendar-days 1`.
-GitHub checks stay with the synthesising agent.
+Runs OF refresh for the kanban join; when Super Productivity is enabled, drains
+Apple Reminders **Inbox** → SP Inbox (`scripts/reminders-capture-drain.sh`) and
+skips OmniFocus → `TASKS.toml`; otherwise syncs OF→`TASKS.toml`; then
+`forge-brief.py --calendar-days 1`. GitHub checks stay with the synthesising agent.
 
 This is **not** a `forge` subcommand; it requires `forge` on your `$PATH`.
 
@@ -311,6 +312,7 @@ python3 scripts/forge-sp-menu-tree.py --forge-home .          # apply menu tree
 
 ```bash
 forge capture "…" --source assistant          # → SP Inbox when enabled
+bash scripts/reminders-capture-drain.sh       # Apple Reminders Inbox → SP
 forge tasks inbox
 forge tasks assign <id> "Project Name"        # needs project_ids
 python3 scripts/forge-brief.py --calendar-days 1

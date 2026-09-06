@@ -71,9 +71,9 @@ When this pane is dedicated to morning brief (Herdr title **Morning Brief**, or 
 bash scripts/morning-review-pull.sh
 ```
 
-That script runs: `forge omnifocus refresh --apply-finder`, `sync-of-tasks-from-of.py`, and `forge-brief.py --calendar-days 1`.
+That script runs: `forge omnifocus refresh --apply-finder`; when Super Productivity is enabled, drains Reminders **Inbox** → SP via `scripts/reminders-capture-drain.sh` and skips OF→`TASKS.toml`; otherwise `sync-of-tasks-from-of.py`; then `forge-brief.py --calendar-days 1`.
 
-Do **not** also run `forge calendar`, `forge-tasks-world.py due`, or a second `forge-brief.py` — the brief script already includes calendar, board neglect, and due tasks from the task index.
+Do **not** also run `forge calendar`, `forge-tasks-world.py due`, a second `forge-brief.py`, or a separate reminders drain — the pull script already covers those.
 
 **Then (GitHub only):** owned open issues/PRs and fork drift vs upstream — parallel `gh` commands are fine. Cap fork compares at ~90s; note partial results if truncated.
 
@@ -126,7 +126,9 @@ forge omnifocus refresh --apply-finder
 
 The OF refresh updates `.cache/omnifocus-snapshot.json` and pulls OF columns onto Finder (same OF half of board Refresh). With **Super Productivity** as the task store, skip `sync-of-tasks-from-of.py` unless deliberately refreshing legacy `TASKS.toml`. Report apply-finder errors briefly; continue the brief even if doctor still reports drift.
 
-If Reminders is also enabled, do **not** invent a second sync unless asked; OF refresh comes first.
+When SP is enabled, `morning-review-pull.sh` also drains Apple Reminders **Inbox** into the SP Inbox (`scripts/reminders-capture-drain.sh`) before `forge-brief.py`, so captures from Siri/Reminders appear in the brief. Soft-fail if SP is down. That drain is standing morning authorisation (capture only); it is not a licence to move columns or change tags.
+
+If Forge’s project-list Reminders bridge is also enabled, do **not** invent a second project sync unless asked; OF refresh comes first.
 
 ### 2. Today’s calendar, board, and due tasks
 

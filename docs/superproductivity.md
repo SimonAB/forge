@@ -11,7 +11,7 @@ owns inbox, dues, capture, completion, focus, and time tracking.
 |---------|---------------------------|
 | `forge capture` / `forge tasks` | SP Inbox (`INBOX_PROJECT`); assign moves a task onto a mapped SP project |
 | `forge-brief.py` inbox + dues | Live SP REST (`GET /tasks`), not `.forge/tasks.db` |
-| Morning pull | Skips OmniFocus → `TASKS.toml` import; still runs OF Refresh for kanban join |
+| Morning pull | OF Refresh for kanban join; drains Reminders **Inbox** → SP (`reminders-capture-drain.sh`); skips OF → `TASKS.toml` |
 | `forge move` / board drag | Optional `nexus.sp_column_mirror`: Finder-style tags (e.g. `Coding 🤖`) on SP tasks |
 | **Open TASKS** (board) | Opens / focuses the mapped SP project (Preferences → General) |
 | `TASKS.toml` / `.forge/tasks.db` | Left on disk; **not** authoritative; not written by capture when SP is on |
@@ -128,6 +128,27 @@ python3 scripts/forge-brief.py --calendar-days 1    # inbox + dues from SP
 
 `forge tasks assign` fails clearly if the folder has no `project_ids` entry.
 Notes may carry `[forge:source:…]` and a URI line for `forge tasks open`.
+
+### Apple Reminders Inbox → SP Inbox
+
+Super Productivity does not watch Apple Reminders. To approximate OmniFocus’s
+Reminders capture, drain the Reminders list **`Inbox`** into SP with:
+
+```sh
+bash scripts/reminders-capture-drain.sh              # capture + mark completed
+bash scripts/reminders-capture-drain.sh --dry-run    # JSON preview only
+```
+
+Each incomplete item becomes `forge capture … --source reminders` (SP Inbox).
+On success the reminder is marked completed so the next run does not duplicate
+it. Single-line URI notes are passed as `--link`; other notes as `--note`.
+Stdout is a JSON summary (`scanned` / `captured` / `completed` / `failed`).
+
+`bash scripts/morning-review-pull.sh` runs this drain automatically when
+`superproductivity.enabled` is true (before `forge-brief.py`), soft-failing if
+SP is down. A Shortcuts automation can also **Run Shell Script** with the
+absolute path (schedule or menu bar). SP must be running (Local REST). This path
+is independent of Forge’s project-list Reminders bridge (`forge reminders`).
 
 ## Column mirror
 

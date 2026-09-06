@@ -77,7 +77,9 @@ names to SP project ids in `config.yaml`. Local REST cannot create projects
 (`POST /projects` → 404); create them in the app or via Plugin API
 `addProject` (see [superproductivity.md](superproductivity.md) and
 `scripts/sp-plugins/`). Optional `nexus.sp_column_mirror` paints Finder-style
-column tags onto SP tasks on `forge move` / board drag.
+column tags onto SP tasks on `forge move` / board drag. Morning review can drain
+Apple Reminders **Inbox** into SP via `scripts/reminders-capture-drain.sh`
+(independent of the project-list `forge reminders` bridge).
 
 Forge.app **Open TASKS** (board tick icon / context menu) opens the preferred
 task manager and, for SP, focuses the mapped project

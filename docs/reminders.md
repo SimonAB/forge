@@ -147,9 +147,28 @@ Reminders is enabled and the snapshot is eligible: `incompleteCount`,
 
 See [config.sample.yaml](../config.sample.yaml).
 
+## Apple Reminders Inbox → Super Productivity
+
+This page is the **project-list** bridge (`forge reminders`). It does not move
+ordinary reminders into Super Productivity.
+
+When `superproductivity.enabled` is true, Siri / Quick / Apple Reminders
+captures sitting on the Reminders list titled **`Inbox`** can be drained into
+the SP Inbox:
+
+```sh
+bash scripts/reminders-capture-drain.sh              # capture + mark completed
+bash scripts/reminders-capture-drain.sh --dry-run    # JSON preview only
+```
+
+`bash scripts/morning-review-pull.sh` runs that drain automatically (soft-fail
+if SP is down). Details: [superproductivity.md](superproductivity.md#apple-reminders-inbox--sp-inbox).
+Do not confuse this with project lists or sentinel sync above.
+
 ## Further reading
 
 - [CLI `forge reminders`](cli.md#forge-reminders)
 - [Forge.app — Reminders](app.md#reminders-optional)
+- [Super Productivity — Reminders Inbox drain](superproductivity.md#apple-reminders-inbox--sp-inbox)
 - [OmniFocus bridge](omnifocus.md)
 - [Privacy](../PRIVACY.md)
