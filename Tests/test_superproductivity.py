@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import tempfile
 import unittest
+from datetime import date
+from unittest.mock import Mock
 from pathlib import Path
 import sys
 
@@ -12,6 +14,8 @@ sys.path.insert(0, str(Path(__file__).parents[1] / "scripts"))
 from forge_tasks_world.superproductivity import (  # noqa: E402
     DEFAULT_ENDPOINT,
     SuperProductivityConfig,
+    SpTaskStore,
+    INBOX_PROJECT_ID,
     combine_notes,
     config_from_yaml_text,
     defer_blocks_export,
@@ -26,6 +30,21 @@ from forge_tasks_world.toml_io import TaskRecord  # noqa: E402
 
 
 class SuperProductivityTests(unittest.TestCase):
+    def test_due_tasks_include_inbox_even_when_projects_omit_it(self):
+        client = Mock()
+        client.config.endpoint = DEFAULT_ENDPOINT
+        client.projects.return_value = [{"id": "project", "title": "Demo"}]
+        today = date.today().isoformat()
+        client.tasks.side_effect = lambda project_id, **kwargs: (
+            [{"id": "due-inbox", "title": "Reply", "dueDay": today},
+             {"id": "done", "title": "Finished", "dueDay": today, "isDone": True}]
+            if project_id == INBOX_PROJECT_ID else []
+        )
+        rows, status = SpTaskStore(Path("/unused"), client).due_tasks(horizon_days=7)
+        self.assertEqual([row.task_id for row in rows], ["due-inbox"])
+        self.assertEqual(rows[0].project_name, "Inbox")
+        self.assertEqual(status["open_tasks"], 1)
+
     def test_config_rejects_non_loopback(self):
         with self.assertRaises(ValueError):
             SuperProductivityConfig.from_mapping({"endpoint": "https://example.test"})

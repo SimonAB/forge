@@ -306,11 +306,20 @@ for rem in reminders:
 
     try:
         cap = json.loads(proc.stdout)
-        entry["sp_id"] = cap.get("id")
-        entry["backend"] = cap.get("backend")
-    except json.JSONDecodeError:
-        entry["sp_id"] = None
-        entry["capture_stdout"] = (proc.stdout or "").strip()
+        if not isinstance(cap, dict):
+            raise ValueError("capture response must be a JSON object")
+        task_id = cap.get("id")
+        if cap.get("backend") != "super-productivity":
+            raise ValueError("capture did not confirm the Super Productivity backend")
+        if not isinstance(task_id, str) or not task_id.strip():
+            raise ValueError("capture did not return a Super Productivity task id")
+        entry["sp_id"] = task_id
+        entry["backend"] = cap["backend"]
+    except ValueError as exc:
+        entry["error"] = f"capture unconfirmed; reminder left incomplete: {exc}"
+        failed.append(entry)
+        print(entry["error"], file=sys.stderr)
+        continue
 
     captured.append(entry)
 

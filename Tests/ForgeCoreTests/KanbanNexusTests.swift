@@ -143,3 +143,42 @@ private func decodeNexusYAML(_ yaml: String) throws -> ForgeConfig {
     let decoder = YAMLDecoder()
     return try decoder.decode(ForgeConfig.self, from: yaml)
 }
+
+@Test(arguments: ["sidecar", "finder", "refresh"])
+func kanbanMetadataSyncWithoutColumnChange(direction: String) throws {
+    let root = FileManager.default.temporaryDirectory
+        .appendingPathComponent("forge-meta-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: root) }
+    let config = ForgeConfig.defaultConfig(projectRoots: [root.path])
+    let store = InMemoryTagStore()
+    store.setTags(["Coding 🤖", "#Bob", "Unrelated"], at: root.path)
+    try KanbanSidecarStore.save(KanbanSidecar(
+        column: "Coding", workflowTag: "Coding 🤖", meta: ["URGENT ⚠️"],
+        assignees: ["#Alice"]
+    ), projectPath: root.path)
+    let projects = [Project(name: "Demo", path: root.path, tags: store.tags(at: root.path),
+                            workflowTag: "Coding 🤖", column: "Coding", metaTags: [], assignees: ["#Bob"])]
+    let drift = try KanbanFsSync.doctor(projects: projects, config: config, tagStore: store)
+    #expect(drift.map(\.issue) == ["metadata-drift"])
+    let preview = try KanbanFsSync.sync(projects: projects, config: config, apply: false, tagStore: store)
+    #expect(preview.count == 1)
+    #expect(store.tags(at: root.path) == ["Coding 🤖", "#Bob", "Unrelated"])
+    if direction == "refresh" {
+        let changes = try KanbanFsSync.paintAllFromSidecar(projects: projects, config: config, tagStore: store)
+        #expect(changes.count == 1)
+    } else {
+        let changes = try KanbanFsSync.sync(projects: projects, config: config,
+            prefer: direction == "finder" ? .finder : .sidecar, apply: true, tagStore: store)
+        #expect(changes.count == 1)
+    }
+    if direction == "finder" {
+        let sidecar = try KanbanSidecarStore.load(projectPath: root.path)
+        #expect(sidecar?.meta == [])
+        #expect(sidecar?.assignees == ["#Bob"])
+    } else {
+        #expect(Set(store.tags(at: root.path)) == Set(["Coding 🤖", "URGENT ⚠️", "#Alice", "Unrelated"]))
+    }
+    #expect(try KanbanFsSync.doctor(projects: projects, config: config, tagStore: store).isEmpty)
+    #expect(try KanbanFsSync.sync(projects: projects, config: config, apply: true, tagStore: store).isEmpty)
+}

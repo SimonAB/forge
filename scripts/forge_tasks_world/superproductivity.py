@@ -617,11 +617,11 @@ class SpTaskStore:
             for project in projects
             if project.get("id")
         }
+        # Inbox is a built-in project and may be absent from GET /projects.
+        title_by_id.setdefault(INBOX_PROJECT_ID, "Inbox")
         rows: list[SpDueItem] = []
         open_count = 0
         for project_id, project_name in title_by_id.items():
-            if project_id == INBOX_PROJECT_ID:
-                continue
             for task in self.client.tasks(project_id, include_done=False):
                 if task.get("isDone"):
                     continue

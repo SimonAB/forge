@@ -38,7 +38,7 @@ public enum KanbanFsSync {
         }
     }
 
-    /// Report sidecar ↔ tag column disagreements (and missing sidecars when enabled).
+    /// Report portable state disagreements (and missing sidecars when enabled).
     public static func doctor(
         projects: [Project],
         config: ForgeConfig,
@@ -60,13 +60,13 @@ public enum KanbanFsSync {
                 continue
             }
             guard let sidecar else { continue }
-            if sidecar.column != classified.column {
+            if !matches(sidecar, classified) {
                 drifts.append(Drift(
                     project: project.name,
                     path: project.path,
                     sidecarColumn: sidecar.column,
                     tagColumn: classified.column,
-                    issue: "column-drift"
+                    issue: sidecar.column != classified.column ? "column-drift" : "metadata-drift"
                 ))
             }
         }
@@ -85,7 +85,7 @@ public enum KanbanFsSync {
         for project in projects {
             let tags = syncTags(from: tagStore, at: project.path)
             let classified = KanbanNexus.classifyTags(tags, config: config)
-            var sidecar = try KanbanSidecarStore.load(projectPath: project.path)
+            let sidecar = try KanbanSidecarStore.load(projectPath: project.path)
 
             if sidecar == nil {
                 if classified.column == nil, classified.meta.isEmpty, classified.assignees.isEmpty {
@@ -106,13 +106,12 @@ public enum KanbanFsSync {
                 ))
                 if apply {
                     try KanbanSidecarStore.save(built, projectPath: project.path)
-                    sidecar = built
                 }
                 continue
             }
 
             guard let current = sidecar else { continue }
-            if current.column == classified.column {
+            if matches(current, classified) {
                 continue
             }
 
@@ -122,7 +121,7 @@ public enum KanbanFsSync {
                     project: project.name,
                     path: project.path,
                     action: "sidecar-to-tags",
-                    detail: "\(classified.column ?? "Untagged") → \(current.column ?? "Untagged")"
+                    detail: changeDetail(from: classified.column, to: current.column)
                 ))
                 if apply {
                     try KanbanNexus.applySidecarToTags(
@@ -144,7 +143,7 @@ public enum KanbanFsSync {
                     project: project.name,
                     path: project.path,
                     action: "tags-to-sidecar",
-                    detail: "\(current.column ?? "Untagged") → \(built.column ?? "Untagged")"
+                    detail: changeDetail(from: current.column, to: built.column)
                 ))
                 if apply {
                     try KanbanSidecarStore.save(built, projectPath: project.path)
@@ -201,7 +200,7 @@ public enum KanbanFsSync {
             guard let sidecar = try KanbanSidecarStore.load(projectPath: project.path) else { continue }
             let tags = syncTags(from: tagStore, at: project.path)
             let classified = KanbanNexus.classifyTags(tags, config: config)
-            if sidecar.column == classified.column { continue }
+            if matches(sidecar, classified) { continue }
             try KanbanNexus.applySidecarToTags(
                 path: project.path,
                 sidecar: sidecar,
@@ -216,5 +215,18 @@ public enum KanbanFsSync {
             ))
         }
         return changes
+    }
+
+    /// Tag order does not change the portable state; assignees accept either spelling.
+    private static func matches(_ sidecar: KanbanSidecar, _ tags: KanbanNexus.ClassifiedTags) -> Bool {
+        let assignees = Set(sidecar.assignees.map { $0.hasPrefix("#") ? $0 : "#\($0)" })
+        return sidecar.column == tags.column
+            && Set(sidecar.meta) == Set(tags.meta)
+            && assignees == Set(tags.assignees)
+    }
+
+    private static func changeDetail(from previous: String?, to next: String?) -> String {
+        if previous == next { return "\(next ?? "Untagged"): meta tags or assignees changed" }
+        return "\(previous ?? "Untagged") → \(next ?? "Untagged")"
     }
 }

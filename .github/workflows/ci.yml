@@ -31,5 +31,12 @@ jobs:
       - name: Test
         run: swift test
 
+      - name: Test Python integrations
+        env:
+          PYTHONPATH: scripts
+        run: |
+          python3 -m unittest discover -s Tests -p 'test_*.py'
+          python3 -m unittest discover -s Tests/scripts -p 'test_*.py'
+
       - name: Compile brief script
         run: python3 -m py_compile scripts/forge-brief.py
