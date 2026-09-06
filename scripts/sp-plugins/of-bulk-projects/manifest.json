@@ -1,0 +1,18 @@
+{
+  "id": "of-bulk-projects",
+  "name": "OF Bulk Projects",
+  "version": "1.0.0",
+  "manifestVersion": 1,
+  "minSupVersion": "18.0.0",
+  "description": "One-shot: create Super Productivity projects for OmniFocus project/SAL names.",
+  "author": "Forge",
+  "icon": "icon.svg",
+  "permissions": [
+    "getAllProjects",
+    "addProject",
+    "showSnack",
+    "persistDataSynced",
+    "loadSyncedData"
+  ],
+  "hooks": []
+}
