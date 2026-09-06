@@ -98,6 +98,7 @@ private struct BoardRootView: View {
         return BoardView(viewModel: viewModel)
             .environment(\.projectContextMenuActions, contextMenuActions(for: viewModel))
             .environment(\.projectRevealAction, revealAction)
+            .environment(\.projectOpenTasksAction, openTasksAction)
             .environment(\.runForgeInTerminal, runForge)
     }
 
@@ -252,13 +253,30 @@ private struct BoardRootView: View {
         }
     }
 
+    private var openTasksAction: (Project) -> Void {
+        { [forgeDir] project in
+            #if canImport(AppKit)
+            ProjectOpenActions.openTasksOrRevealFolder(
+                projectDirectory: project.path,
+                config: viewModel.config,
+                forgeDir: forgeDir
+            )
+            #endif
+        }
+    }
+
     private func contextMenuActions(for viewModel: BoardViewModel) -> (Project) -> [ProjectContextMenuAction] {
         let config = viewModel.config
+        let forgeDir = forgeDir
         return { project in
             [
-                ProjectContextMenuAction(title: "Open TASKS.toml") { p in
+                ProjectContextMenuAction(title: "Open TASKS") { p in
                     #if canImport(AppKit)
-                    ProjectOpenActions.openTasksOrRevealFolder(projectDirectory: p.path, config: config)
+                    ProjectOpenActions.openTasksOrRevealFolder(
+                        projectDirectory: p.path,
+                        config: config,
+                        forgeDir: forgeDir
+                    )
                     #endif
                 },
                 ProjectContextMenuAction(title: "Reveal in Finder") { p in

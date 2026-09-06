@@ -79,9 +79,14 @@ final class BoardWindowController: NSObject, NSWindowDelegate {
         let contextMenuActions: (Project) -> [ProjectContextMenuAction] = { [weak self] project in
             guard let self = self else { return [] }
             let config = self.viewModel.config
+            let forgeDir = self.forgeDir
             return [
-                ProjectContextMenuAction(title: "Open TASKS.toml") { p in
-                    ProjectOpenActions.openTasksOrRevealFolder(projectDirectory: p.path, config: config)
+                ProjectContextMenuAction(title: "Open TASKS") { p in
+                    ProjectOpenActions.openTasksOrRevealFolder(
+                        projectDirectory: p.path,
+                        config: config,
+                        forgeDir: forgeDir
+                    )
                 },
                 ProjectContextMenuAction(title: "Reveal in Finder") { p in
                     ProjectOpenActions.revealInFinder(projectDirectory: p.path)
@@ -103,6 +108,14 @@ final class BoardWindowController: NSObject, NSWindowDelegate {
             .environment(\.projectContextMenuActions, contextMenuActions)
             .environment(\.projectRevealAction) { project in
                 ProjectOpenActions.revealInFinder(projectDirectory: project.path)
+            }
+            .environment(\.projectOpenTasksAction) { [weak self] project in
+                guard let self else { return }
+                ProjectOpenActions.openTasksOrRevealFolder(
+                    projectDirectory: project.path,
+                    config: self.viewModel.config,
+                    forgeDir: self.forgeDir
+                )
             }
             .environment(\.runForgeInTerminal, runForgeInTerminal)
 

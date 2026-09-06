@@ -2,13 +2,14 @@ import SwiftUI
 import ForgeCore
 
 /// A single project card on the board: name, meta tags (context/people from native folder tags), draggable,
-/// optional clickable folder icon to reveal in Finder, and optional context menu from environment.
+/// optional tick (Open TASKS) and folder (Reveal in Finder) icons, and optional context menu from environment.
 struct ProjectCardView: View {
     let project: Project
     /// Optional Shipped→Completed countdown label (e.g. `complete in 3d`).
     var archiveCountdownLabel: String? = nil
     @Environment(\.projectContextMenuActions) private var contextMenuActions
     @Environment(\.projectRevealAction) private var revealAction
+    @Environment(\.projectOpenTasksAction) private var openTasksAction
     @State private var isHovering = false
 
     var body: some View {
@@ -38,17 +39,35 @@ struct ProjectCardView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            if let revealAction = revealAction {
-                Button {
-                    revealAction(project)
-                } label: {
-                    Image(systemName: "folder")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.secondary)
-                        .contentShape(Rectangle())
+            if openTasksAction != nil || revealAction != nil {
+                HStack(spacing: 4) {
+                    if let openTasksAction {
+                        Button {
+                            openTasksAction(project)
+                        } label: {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(.secondary)
+                                .frame(width: 16, height: 16)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .help("Open TASKS")
+                    }
+                    if let revealAction {
+                        Button {
+                            revealAction(project)
+                        } label: {
+                            Image(systemName: "folder")
+                                .font(.system(size: 12))
+                                .foregroundStyle(.secondary)
+                                .frame(width: 16, height: 16)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .help("Reveal in Finder")
+                    }
                 }
-                .buttonStyle(.plain)
-                .help("Reveal in Finder")
             }
         }
         .padding(8)

@@ -43,6 +43,21 @@ public extension EnvironmentValues {
     }
 }
 
+// MARK: - Open TASKS action (clickable tick icon)
+
+private enum ProjectOpenTasksActionKey: EnvironmentKey {
+    nonisolated(unsafe) static let defaultValue: ((Project) -> Void)? = nil
+}
+
+public extension EnvironmentValues {
+    /// Optional action invoked when the user taps the tick icon on a project card (Open TASKS).
+    /// When set, a small checkmark icon is shown on each card.
+    var projectOpenTasksAction: ((Project) -> Void)? {
+        get { self[ProjectOpenTasksActionKey.self] }
+        set { self[ProjectOpenTasksActionKey.self] = newValue }
+    }
+}
+
 // MARK: - Run forge command in terminal
 
 private enum RunForgeInTerminalKey: EnvironmentKey {
