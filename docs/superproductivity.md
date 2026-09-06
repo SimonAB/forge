@@ -10,7 +10,7 @@ owns inbox, dues, capture, completion, focus, and time tracking.
 | Concern | Behaviour when SP enabled |
 |---------|---------------------------|
 | `forge capture` / `forge tasks` | SP Inbox (`INBOX_PROJECT`); assign moves a task onto a mapped SP project |
-| `forge-brief.py` inbox + dues | Live SP REST (`GET /tasks`), not `.forge/tasks.db` |
+| Brief and dashboard inbox + dues | Live SP REST, including Inbox deadlines; dashboard joins mapped project IDs to board columns |
 | Morning pull | OF Refresh for kanban join; drains Reminders **Inbox** → SP (`reminders-capture-drain.sh`); skips OF → `TASKS.toml` |
 | `forge move` / board drag | Optional `nexus.sp_column_mirror`: Finder-style tags (e.g. `Coding 🤖`) on SP tasks |
 | **Open TASKS** (board) | Opens / focuses the mapped SP project (Preferences → General) |
@@ -21,6 +21,19 @@ When `superproductivity.enabled` is false, capture and briefs fall back to the
 legacy task index (`.forge/tasks.db` / `TASKS.toml`).
 
 ## Setup
+
+Install the Python helpers once from Forge's directory (Python 3.11 or later):
+
+```sh
+python3 -m venv .venv
+.venv/bin/python -m pip install -r scripts/requirements.txt
+source .venv/bin/activate
+```
+
+The CLI and app prefer this persistent environment for capture, dashboard, and
+SP helpers. Morning pull also uses it. Direct Python commands below assume the
+environment is activated. Configuration uses PyYAML's safe loader; `enabled`
+must be a YAML boolean. Quoted project names and inline comments are supported.
 
 1. Install the stable desktop app (validated against 18.x local REST).
 2. Enable **Settings → Misc → Local REST API** (`http://127.0.0.1:3876`).
@@ -64,12 +77,13 @@ Forge focuses `#/project/<id>/tasks` via `scripts/forge-sp-focus-project.py`
 
 ```sh
 # Manual focus (same helper the app uses)
-/tmp/sp-cdp-venv/bin/python scripts/forge-sp-focus-project.py '<sp-project-id>'
+.venv/bin/python scripts/forge-sp-focus-project.py '<sp-project-id>'
 ```
 
-The first focus in a session may briefly relaunch SP with
-`--remote-debugging-port=9222` if CDP is not already available; later focuses
-reuse that session. SP has no public URL scheme for opening an existing project.
+The first focus in a session may relaunch SP with `--remote-debugging-port=9222`
+if CDP is unavailable; later focuses reuse that session. Forge requests a graceful
+quit and waits for exit. If SP does not exit within the bounded wait, opening
+fails without force-killing the app. Dependencies are checked before quitting.
 
 See [app.md](app.md).
 
@@ -108,8 +122,8 @@ forge superproductivity mirror-menu-tree --dry-run
 # or: python3 scripts/forge-sp-menu-tree.py --forge-home . --dry-run
 
 # Apply (relaunches SP briefly with CDP; needs websocket-client)
-python3 -m venv /tmp/sp-cdp-venv && /tmp/sp-cdp-venv/bin/pip -q install websocket-client
-/tmp/sp-cdp-venv/bin/python scripts/forge-sp-menu-tree.py --forge-home .
+python3 -m venv .venv && .venv/bin/python -m pip install -r scripts/requirements.txt
+.venv/bin/python scripts/forge-sp-menu-tree.py --forge-home .
 # or: forge superproductivity mirror-menu-tree
 ```
 
@@ -143,6 +157,18 @@ Each incomplete item becomes `forge capture … --source reminders` (SP Inbox).
 On success the reminder is marked completed so the next run does not duplicate
 it. Single-line URI notes are passed as `--link`; other notes as `--note`.
 Stdout is a JSON summary (`scanned` / `captured` / `completed` / `failed`).
+
+The drain keeps `.forge/reminders-capture-receipts.json` and a process lock.
+After a confirmed capture, retries complete the original reminder using the
+saved SP ID instead of creating another task. This also applies to
+`--no-complete`. Dry runs write no receipts.
+
+A pending receipt (`sp_id: null`) means capture was interrupted or could not be
+confirmed. The drain leaves the reminder incomplete and refuses to recapture it.
+To reconcile, stop drain automations, inspect SP, and either enter the existing
+task's actual ID in that receipt or remove the receipt only after confirming
+that capture did not create a task. Receipts are local and excluded from git;
+they coordinate drains on this machine, not on multiple machines.
 
 `bash scripts/morning-review-pull.sh` runs this drain automatically when
 `superproductivity.enabled` is true (before `forge-brief.py`), soft-failing if
@@ -184,9 +210,7 @@ Agreed direction; do not assume these exist until implemented:
    work; leave existing files on disk until explicitly deleted.
 2. **Soft-deprecate** `forge-tasks-world.py` due/ingest paths when SP is enabled
    (or thin shims that read SP).
-3. **Dashboard due strip** — ensure `forge-dashboard.py` / `forge dashboard`
-   prefer SP dues the same way `forge-brief.py` does (brief already does).
-4. **No mass-delete** of `TASKS.toml` without an explicit request.
+3. **No mass-delete** of `TASKS.toml` without an explicit request.
 
 ## Safety notes
 

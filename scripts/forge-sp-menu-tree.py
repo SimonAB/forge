@@ -130,24 +130,9 @@ def summarize(nodes: list, depth: int = 0) -> None:
 
 
 def ensure_cdp(sp_bin: str) -> None:
-    """Quit SP if needed and launch with remote debugging on port 9222."""
-    try:
-        urllib.request.urlopen("http://127.0.0.1:9222/json/version", timeout=1)
-        return
-    except Exception:
-        pass
-    subprocess.run(
-        ["osascript", "-e", 'tell application "Super Productivity" to quit'],
-        check=False,
-    )
-    time.sleep(2)
-    subprocess.run(["pkill", "-9", "-f", "Super Productivity"], check=False)
-    time.sleep(1)
-    subprocess.Popen(
-        [sp_bin, "--remote-debugging-port=9222", "--remote-allow-origins=*"],
-        stdout=open("/tmp/sp-cdp.log", "w"),
-        stderr=subprocess.STDOUT,
-    )
+    """Use the same graceful launch policy as project focus."""
+    from forge_tasks_world.sp_cdp import ensure_cdp as launch
+    launch(sp_bin=sp_bin)
 
 
 def wait_cdp(timeout: float = 40.0) -> str:
@@ -178,14 +163,14 @@ def apply_via_indexeddb(tree: list, sp_bin: str) -> dict:
     except ImportError as exc:
         raise SystemExit(
             "websocket-client required. Example:\n"
-            "  python3 -m venv /tmp/sp-cdp-venv && "
-            "/tmp/sp-cdp-venv/bin/pip install websocket-client\n"
-            "  /tmp/sp-cdp-venv/bin/python scripts/forge-sp-menu-tree.py --forge-home ."
+            "  python3 -m venv .venv && "
+            ".venv/bin/python -m pip install -r scripts/requirements.txt\n"
+            "  .venv/bin/python scripts/forge-sp-menu-tree.py --forge-home ."
         ) from exc
 
     ensure_cdp(sp_bin)
     ws_url = wait_cdp()
-    ws = websocket.create_connection(ws_url, timeout=60)
+    ws = websocket.create_connection(ws_url, timeout=60, suppress_origin=True)
     n = 0
 
     def call(method: str, params: dict | None = None) -> dict:

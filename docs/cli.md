@@ -307,7 +307,7 @@ in Forge.app focuses the mapped SP project (see [app.md](app.md)):
 ```bash
 forge superproductivity mirror-menu-tree --dry-run
 python3 scripts/forge-sp-menu-tree.py --forge-home .          # apply menu tree
-/tmp/sp-cdp-venv/bin/python scripts/forge-sp-focus-project.py '<id>'  # focus one project
+.venv/bin/python scripts/forge-sp-focus-project.py '<id>'  # focus one project
 ```
 
 ```bash

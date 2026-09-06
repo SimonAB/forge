@@ -44,7 +44,7 @@ python3 scripts/forge-sp-menu-tree.py --forge-home .
 Used by Forge.app when **Open TASKS** targets Super Productivity:
 
 ```sh
-/tmp/sp-cdp-venv/bin/python scripts/forge-sp-focus-project.py '<sp-project-id>'
+.venv/bin/python scripts/forge-sp-focus-project.py '<sp-project-id>'
 ```
 
 See [docs/superproductivity.md](../../docs/superproductivity.md). The old path
