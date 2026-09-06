@@ -3,7 +3,7 @@ import Foundation
 #if canImport(AppKit)
 import AppKit
 
-/// Opens project folders and `TASKS.toml` using Finder / the preferred editor.
+/// Opens project folders and the configured task manager for **Open TASKS**.
 public enum ProjectOpenActions {
 
     /// Reveal a project folder in Finder (selects the folder in its parent).
@@ -11,38 +11,57 @@ public enum ProjectOpenActions {
         NSWorkspace.shared.selectFile(projectDirectory, inFileViewerRootedAtPath: "")
     }
 
-    /// Open `TASKS.toml` in the preferred editor, or reveal the folder when the file is missing.
+    /// Open tasks for a project in the preferred task manager (or `TASKS.toml`).
     ///
     /// - Parameters:
     ///   - projectDirectory: Absolute path to the project folder.
-    ///   - config: Forge config (needed for Vim-in-terminal).
-    ///   - preferredEditor: Stored editor preference; defaults to `EditorPreferences`.
+    ///   - config: Forge config (backends + SP project ids).
+    ///   - forgeDir: Forge home (directory containing ``scripts/``); needed for SP focus.
+    ///   - preferredEditor: Stored editor preference for the toml backend.
+    ///   - preferredTaskManager: Stored task-manager preference.
     public static func openTasksOrRevealFolder(
         projectDirectory: String,
         config: ForgeConfig?,
-        preferredEditor: String? = EditorPreferences.loadPreferredEditor()
+        forgeDir: String? = nil,
+        preferredEditor: String? = EditorPreferences.loadPreferredEditor(),
+        preferredTaskManager: TaskManagerPreferences.Kind? = TaskManagerPreferences.loadPreferredTaskManager()
     ) {
-        switch ProjectOpenResolver.primaryOpenTarget(projectDirectory: projectDirectory) {
-        case .tasksFile(let url):
-            EditorLauncher.openFile(
-                fileURL: url,
-                preferredEditor: preferredEditor,
-                config: config,
-                openURL: { NSWorkspace.shared.open($0) }
-            )
-        case .projectFolder(let url):
-            revealInFinder(projectDirectory: url.path)
+        guard let config else {
+            // No config: fall back to toml / Finder.
+            switch ProjectOpenResolver.primaryOpenTarget(projectDirectory: projectDirectory) {
+            case .tasksFile(let url):
+                EditorLauncher.openFile(
+                    fileURL: url,
+                    preferredEditor: preferredEditor,
+                    config: nil,
+                    openURL: { NSWorkspace.shared.open($0) }
+                )
+            case .projectFolder(let url):
+                revealInFinder(projectDirectory: url.path)
+            default:
+                revealInFinder(projectDirectory: projectDirectory)
+            }
+            return
         }
+
+        let target = ProjectOpenResolver.tasksOpenTarget(
+            projectDirectory: projectDirectory,
+            config: config,
+            preferredTaskManager: preferredTaskManager
+        )
+        open(target: target, config: config, forgeDir: forgeDir, preferredEditor: preferredEditor)
     }
 
-    /// Resolve a project by name and open `TASKS.toml` (or reveal the folder if missing).
+    /// Resolve a project by name and open tasks in the preferred task manager.
     ///
     /// - Returns: `true` when a project directory was found and an open was attempted.
     @discardableResult
     public static func openTasksOrRevealFolder(
         projectName: String,
         config: ForgeConfig,
-        preferredEditor: String? = EditorPreferences.loadPreferredEditor()
+        forgeDir: String? = nil,
+        preferredEditor: String? = EditorPreferences.loadPreferredEditor(),
+        preferredTaskManager: TaskManagerPreferences.Kind? = TaskManagerPreferences.loadPreferredTaskManager()
     ) -> Bool {
         guard let directory = ProjectOpenResolver.resolveProjectDirectory(
             named: projectName,
@@ -50,11 +69,13 @@ public enum ProjectOpenActions {
         ) else {
             return false
         }
-        openTasksOrRevealFolder(
+        let target = ProjectOpenResolver.tasksOpenTarget(
             projectDirectory: directory,
+            projectName: projectName,
             config: config,
-            preferredEditor: preferredEditor
+            preferredTaskManager: preferredTaskManager
         )
+        open(target: target, config: config, forgeDir: forgeDir, preferredEditor: preferredEditor)
         return true
     }
 
@@ -71,6 +92,89 @@ public enum ProjectOpenActions {
         }
         revealInFinder(projectDirectory: directory)
         return true
+    }
+
+    // MARK: - Private
+
+    private static func open(
+        target: ProjectTasksOpenTarget,
+        config: ForgeConfig,
+        forgeDir: String?,
+        preferredEditor: String?
+    ) {
+        switch target {
+        case .superProductivity(let projectId):
+            openSuperProductivity(projectId: projectId, forgeDir: forgeDir)
+        case .omnifocus(let projectName):
+            openOmniFocus(projectName: projectName)
+        case .reminders(let listTitle):
+            openReminders(listTitle: listTitle)
+        case .tasksFile(let url):
+            EditorLauncher.openFile(
+                fileURL: url,
+                preferredEditor: preferredEditor,
+                config: config,
+                openURL: { NSWorkspace.shared.open($0) }
+            )
+        case .projectFolder(let url):
+            revealInFinder(projectDirectory: url.path)
+        }
+    }
+
+    private static func openSuperProductivity(projectId: String?, forgeDir: String?) {
+        if let projectId, !projectId.isEmpty {
+            // Focus the project view via CDP helper (may briefly relaunch SP with debugging).
+            DispatchQueue.global(qos: .userInitiated).async {
+                _ = SuperProductivityFocus.focusProject(projectId: projectId, forgeDir: forgeDir)
+            }
+            return
+        }
+        launchApplication(named: "Super Productivity", bundleIdentifiers: [
+            "com.super-productivity.app",
+        ])
+    }
+
+    private static func openOmniFocus(projectName: String) {
+        _ = projectName
+        if let url = URL(string: "omnifocus://"), NSWorkspace.shared.open(url) {
+            return
+        }
+        launchApplication(named: "OmniFocus", bundleIdentifiers: [
+            "com.omnigroup.OmniFocus4",
+            "com.omnigroup.OmniFocus3",
+            "com.omnigroup.OmniFocus2",
+        ])
+    }
+
+    private static func openReminders(listTitle: String) {
+        // Reminders has no stable public deep link for list titles; open the app.
+        _ = listTitle
+        if let url = URL(string: "x-apple-reminderkit://"), NSWorkspace.shared.open(url) {
+            return
+        }
+        launchApplication(named: "Reminders", bundleIdentifiers: [
+            "com.apple.reminders",
+        ])
+    }
+
+    private static func launchApplication(named name: String, bundleIdentifiers: [String]) {
+        for bundleId in bundleIdentifiers {
+            if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleId) {
+                let config = NSWorkspace.OpenConfiguration()
+                NSWorkspace.shared.openApplication(at: url, configuration: config)
+                return
+            }
+        }
+        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: name) {
+            let config = NSWorkspace.OpenConfiguration()
+            NSWorkspace.shared.openApplication(at: url, configuration: config)
+            return
+        }
+        // Last resort: ask Launch Services by display name via `open`.
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+        process.arguments = ["-a", name]
+        try? process.run()
     }
 }
 #endif

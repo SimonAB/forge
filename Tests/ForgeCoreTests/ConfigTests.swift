@@ -314,6 +314,27 @@ import Testing
     #expect(!config.omnifocus.completeOfProjectWhenEnteringShipped)
 }
 
+@Test func superproductivityDecodesProjectIds() throws {
+    let config = try loadForgeYAML("""
+    project_roots:
+      - /tmp
+    board:
+      columns:
+        - name: Plan
+          tag: "Plan"
+          colour: 4
+      meta_tags: []
+      tag_aliases: {}
+    superproductivity:
+      enabled: true
+      endpoint: http://127.0.0.1:3876
+      project_ids:
+        Forge: abc123
+    """)
+    #expect(config.superproductivity.enabled)
+    #expect(config.superproductivity.projectIds["Forge"] == "abc123")
+}
+
 private func loadForgeYAML(_ yaml: String) throws -> ForgeConfig {
     let tmp = FileManager.default.temporaryDirectory
         .appendingPathComponent("forge-config-\(UUID().uuidString).yaml")

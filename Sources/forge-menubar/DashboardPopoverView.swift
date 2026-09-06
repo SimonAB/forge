@@ -21,7 +21,7 @@ struct DashboardPopoverView: View {
     let assignProjects: [DashboardAssignProject]
     let onRefresh: () -> Void
     let onOpenBoard: () -> Void
-    /// Primary click: open `TASKS.toml` (or reveal folder if missing).
+    /// Primary click: open TASKS in the preferred task manager (or reveal folder if missing).
     let onOpenProjectTasks: (String) -> Void
     /// ⌘-click: reveal project folder in Finder.
     let onRevealProject: (String) -> Void
@@ -341,7 +341,7 @@ struct DashboardPopoverView: View {
         }
     }
 
-    /// Click opens `TASKS.toml`; ⌘-click reveals the project folder in Finder.
+    /// Click opens TASKS in the preferred task manager; ⌘-click reveals the project folder in Finder.
     private func clickableProjectRow<Content: View>(
         projectName: String,
         @ViewBuilder label: () -> Content
@@ -362,7 +362,7 @@ struct DashboardPopoverView: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .help("Open TASKS.toml · ⌘-click to reveal in Finder")
+        .help("Open TASKS · ⌘-click to reveal in Finder")
     }
 
     private func beginAssign(_ item: DashboardSnapshotJSON.InboxItem) {

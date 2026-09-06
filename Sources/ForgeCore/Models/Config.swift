@@ -160,6 +160,69 @@ public enum TerminalPreferences {
     }
 }
 
+// MARK: - Default task manager preference (UserDefaults)
+
+/// Where **Open TASKS** should land (board context menu, dashboard project click).
+///
+/// Stored in UserDefaults so it can differ from which backends are merely enabled
+/// for sync. ``auto`` follows enabled backends: Super Productivity → Reminders →
+/// OmniFocus → legacy `TASKS.toml`.
+public enum TaskManagerPreferences {
+    public static let userDefaultsKey = "ForgePreferredTaskManager"
+
+    public enum Kind: String, CaseIterable, Sendable, Equatable {
+        case auto
+        case superproductivity
+        case omnifocus
+        case reminders
+        case tasksToml = "tasks_toml"
+    }
+
+    public static let knownKinds: [(kind: Kind, title: String)] = [
+        (.auto, "Auto (follow enabled backends)"),
+        (.superproductivity, "Super Productivity"),
+        (.omnifocus, "OmniFocus"),
+        (.reminders, "Reminders"),
+        (.tasksToml, "TASKS.toml (editor)"),
+    ]
+
+    /// Stored preference, or `nil` meaning Auto.
+    public static func loadPreferredTaskManager() -> Kind? {
+        guard let raw = UserDefaults.standard.string(forKey: userDefaultsKey), !raw.isEmpty else {
+            return nil
+        }
+        return Kind(rawValue: raw)
+    }
+
+    public static func savePreferredTaskManager(_ kind: Kind?) {
+        if let kind, kind != .auto {
+            UserDefaults.standard.set(kind.rawValue, forKey: userDefaultsKey)
+        } else {
+            UserDefaults.standard.removeObject(forKey: userDefaultsKey)
+        }
+    }
+
+    public static func displayTitle(for kind: Kind?) -> String {
+        let resolved = kind ?? .auto
+        return knownKinds.first(where: { $0.kind == resolved })?.title
+            ?? knownKinds[0].title
+    }
+
+    public static func kind(forDisplayTitle title: String) -> Kind {
+        knownKinds.first(where: { $0.title == title })?.kind ?? .auto
+    }
+
+    /// Resolve Auto against which backends are enabled in config.
+    public static func resolve(config: ForgeConfig, preferred: Kind? = loadPreferredTaskManager()) -> Kind {
+        let choice = preferred ?? .auto
+        if choice != .auto { return choice }
+        if config.superproductivity.enabled { return .superproductivity }
+        if config.reminders.enabled { return .reminders }
+        if config.omnifocus.enabled { return .omnifocus }
+        return .tasksToml
+    }
+}
+
 // MARK: - Calendar
 
 /// Optional Calendar integration configuration (read-only).
@@ -215,6 +278,7 @@ public struct ForgeConfig: Codable, Sendable {
     public let calendar: CalendarConfig
     public let omnifocus: OmniFocusConfig
     public let reminders: RemindersConfig
+    public let superproductivity: SuperProductivityConfig
     public let gtd: GTDConfig
     public let workspaceTags: [String]
     public var projectAreas: [String: [String]]
@@ -240,6 +304,7 @@ public struct ForgeConfig: Codable, Sendable {
     enum CodingKeys: String, CodingKey {
         case workspace
         case board, calendar, omnifocus, reminders
+        case superproductivity
         case gtd
         case nexus
         case projectRoots = "project_roots"
@@ -258,6 +323,7 @@ public struct ForgeConfig: Codable, Sendable {
         try container.encode(calendar, forKey: .calendar)
         try container.encode(omnifocus, forKey: .omnifocus)
         try container.encode(reminders, forKey: .reminders)
+        try container.encode(superproductivity, forKey: .superproductivity)
         try container.encode(gtd, forKey: .gtd)
         try container.encode(nexus, forKey: .nexus)
         try container.encode(workspaceTags, forKey: .workspaceTags)
@@ -274,6 +340,7 @@ public struct ForgeConfig: Codable, Sendable {
         calendar: CalendarConfig = CalendarConfig(),
         omnifocus: OmniFocusConfig = OmniFocusConfig(),
         reminders: RemindersConfig = RemindersConfig(),
+        superproductivity: SuperProductivityConfig = SuperProductivityConfig(),
         gtd: GTDConfig = GTDConfig(),
         nexus: NexusConfig = NexusConfig(),
         workspaceTags: [String] = ["work"],
@@ -288,6 +355,7 @@ public struct ForgeConfig: Codable, Sendable {
         self.calendar = calendar
         self.omnifocus = omnifocus
         self.reminders = reminders
+        self.superproductivity = superproductivity
         self.gtd = gtd
         self.nexus = nexus
         self.workspaceTags = workspaceTags
@@ -296,6 +364,41 @@ public struct ForgeConfig: Codable, Sendable {
         self.projectTag = projectTag
         self.projectScanDepth = max(1, projectScanDepth)
         self.dueConflictPolicy = dueConflictPolicy
+    }
+
+    /// Copy with selected fields replaced (Preferences saves).
+    public func replacing(
+        projectRoots: [String]? = nil,
+        board: BoardConfig? = nil,
+        calendar: CalendarConfig? = nil,
+        omnifocus: OmniFocusConfig? = nil,
+        reminders: RemindersConfig? = nil,
+        superproductivity: SuperProductivityConfig? = nil,
+        gtd: GTDConfig? = nil,
+        nexus: NexusConfig? = nil,
+        workspaceTags: [String]? = nil,
+        projectAreas: [String: [String]]? = nil,
+        terminal: String?? = nil,
+        projectTag: String?? = nil,
+        projectScanDepth: Int? = nil,
+        dueConflictPolicy: DueConflictPolicy? = nil
+    ) -> ForgeConfig {
+        ForgeConfig(
+            projectRoots: projectRoots ?? self.projectRoots,
+            board: board ?? self.board,
+            calendar: calendar ?? self.calendar,
+            omnifocus: omnifocus ?? self.omnifocus,
+            reminders: reminders ?? self.reminders,
+            superproductivity: superproductivity ?? self.superproductivity,
+            gtd: gtd ?? self.gtd,
+            nexus: nexus ?? self.nexus,
+            workspaceTags: workspaceTags ?? self.workspaceTags,
+            projectAreas: projectAreas ?? self.projectAreas,
+            terminal: terminal ?? self.terminal,
+            projectTag: projectTag ?? self.projectTag,
+            projectScanDepth: projectScanDepth ?? self.projectScanDepth,
+            dueConflictPolicy: dueConflictPolicy ?? self.dueConflictPolicy
+        )
     }
 
     /// Primary path (first project root). Used for Forge dir fallback and working directory.
@@ -337,6 +440,8 @@ extension ForgeConfig {
         omnifocus = (try? container.decode(OmniFocusConfig.self, forKey: .omnifocus)) ?? OmniFocusConfig()
         gtd = (try? container.decode(GTDConfig.self, forKey: .gtd)) ?? GTDConfig()
         reminders = Self.decodeReminders(from: container, gtd: gtd)
+        superproductivity = (try? container.decode(SuperProductivityConfig.self, forKey: .superproductivity))
+            ?? SuperProductivityConfig()
         let roots = try container.decodeIfPresent([String].self, forKey: .projectRoots)
         let legacyWorkspace = try container.decodeIfPresent(String.self, forKey: .workspace)
         if let r = roots, !r.isEmpty {

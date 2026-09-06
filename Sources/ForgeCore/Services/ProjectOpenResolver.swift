@@ -1,17 +1,23 @@
 import Foundation
 
-/// Where a primary click on a project/task entry should land.
-public enum ProjectPrimaryOpenTarget: Equatable, Sendable {
+/// Where **Open TASKS** should land for a project.
+public enum ProjectTasksOpenTarget: Equatable, Sendable {
+    /// Launch Super Productivity (optionally with a mapped project id).
+    case superProductivity(projectId: String?)
+    /// Activate OmniFocus (project matched by folder name when possible).
+    case omnifocus(projectName: String)
+    /// Open Reminders (list title = folder name).
+    case reminders(listTitle: String)
     /// Open `<project>/TASKS.toml` in the preferred editor.
     case tasksFile(URL)
-    /// `TASKS.toml` is missing — reveal the project folder instead.
+    /// Fallback when no tasks file exists for the toml backend.
     case projectFolder(URL)
 }
 
-/// Resolves Forge project folders and primary-click targets for dashboard / board opens.
+/// Resolves Forge project folders and Open TASKS targets for dashboard / board.
 public enum ProjectOpenResolver {
 
-    /// Canonical per-project tasks filename.
+    /// Canonical per-project tasks filename (legacy toml backend).
     public static let tasksFileName = "TASKS.toml"
 
     /// Locate a project directory by exact folder name under the configured roots.
@@ -44,16 +50,49 @@ public enum ProjectOpenResolver {
         URL(fileURLWithPath: projectDirectory).appendingPathComponent(tasksFileName)
     }
 
-    /// Choose the primary-click target: `TASKS.toml` when present, else the project folder.
+    /// Choose the Open TASKS target from config + task-manager preference.
     ///
     /// - Parameters:
     ///   - projectDirectory: Absolute path to the project folder.
+    ///   - projectName: Folder name (for SP / OF / Reminders matching).
+    ///   - config: Forge configuration.
+    ///   - preferredTaskManager: Stored preference; defaults to UserDefaults.
     ///   - fileExists: Injected existence check (defaults to `FileManager`).
-    /// - Returns: Editor target or folder fallback.
+    public static func tasksOpenTarget(
+        projectDirectory: String,
+        projectName: String? = nil,
+        config: ForgeConfig,
+        preferredTaskManager: TaskManagerPreferences.Kind? = TaskManagerPreferences.loadPreferredTaskManager(),
+        fileExists: (String) -> Bool = { FileManager.default.fileExists(atPath: $0) }
+    ) -> ProjectTasksOpenTarget {
+        let name = projectName
+            ?? URL(fileURLWithPath: projectDirectory).lastPathComponent
+        let manager = TaskManagerPreferences.resolve(config: config, preferred: preferredTaskManager)
+        switch manager {
+        case .auto:
+            // resolve() never returns auto
+            return .projectFolder(URL(fileURLWithPath: projectDirectory))
+        case .superproductivity:
+            let id = config.superproductivity.projectIds[name]
+            return .superProductivity(projectId: id)
+        case .omnifocus:
+            return .omnifocus(projectName: name)
+        case .reminders:
+            return .reminders(listTitle: name)
+        case .tasksToml:
+            let tasksURL = tasksFileURL(projectDirectory: projectDirectory)
+            if fileExists(tasksURL.path) {
+                return .tasksFile(tasksURL)
+            }
+            return .projectFolder(URL(fileURLWithPath: projectDirectory))
+        }
+    }
+
+    /// Legacy primary-click helper: `TASKS.toml` when present, else the project folder.
     public static func primaryOpenTarget(
         projectDirectory: String,
         fileExists: (String) -> Bool = { FileManager.default.fileExists(atPath: $0) }
-    ) -> ProjectPrimaryOpenTarget {
+    ) -> ProjectTasksOpenTarget {
         let tasksURL = tasksFileURL(projectDirectory: projectDirectory)
         if fileExists(tasksURL.path) {
             return .tasksFile(tasksURL)
@@ -66,7 +105,7 @@ public enum ProjectOpenResolver {
         projectName: String,
         projectRoots: [String],
         fileManager: FileManager = .default
-    ) -> ProjectPrimaryOpenTarget? {
+    ) -> ProjectTasksOpenTarget? {
         guard let directory = resolveProjectDirectory(
             named: projectName,
             projectRoots: projectRoots,

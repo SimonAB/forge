@@ -33,7 +33,7 @@ struct ProjectOpenResolverTests {
         #expect(found == nil)
     }
 
-    @Test("Primary target prefers TASKS.toml when present")
+    @Test("Legacy primary target prefers TASKS.toml when present")
     func primaryPrefersTasksFile() throws {
         let root = try makeTempRoot()
         defer { try? FileManager.default.removeItem(at: root) }
@@ -47,7 +47,7 @@ struct ProjectOpenResolverTests {
         #expect(target == .tasksFile(tasks))
     }
 
-    @Test("Primary target falls back to folder when TASKS.toml is missing")
+    @Test("Legacy primary target falls back to folder when TASKS.toml is missing")
     func primaryFallsBackToFolder() throws {
         let root = try makeTempRoot()
         defer { try? FileManager.default.removeItem(at: root) }
@@ -59,19 +59,68 @@ struct ProjectOpenResolverTests {
         #expect(target == .projectFolder(project))
     }
 
-    @Test("Resolves name then primary target in one step")
-    func resolveThenPrimaryTarget() throws {
+    @Test("Auto prefers Super Productivity when enabled")
+    func autoPrefersSuperProductivity() throws {
         let root = try makeTempRoot()
         defer { try? FileManager.default.removeItem(at: root) }
+        let project = root.appendingPathComponent("Forge", isDirectory: true)
+        try FileManager.default.createDirectory(at: project, withIntermediateDirectories: true)
 
-        let project = root.appendingPathComponent("CausalDynamics.jl", isDirectory: true)
+        let config = ForgeConfig(
+            projectRoots: [root.path],
+            board: BoardConfig(columns: [], metaTags: [], tagAliases: [:]),
+            superproductivity: SuperProductivityConfig(
+                enabled: true,
+                projectIds: ["Forge": "sp-forge-id"]
+            )
+        )
+        let target = ProjectOpenResolver.tasksOpenTarget(
+            projectDirectory: project.path,
+            projectName: "Forge",
+            config: config,
+            preferredTaskManager: .auto
+        )
+        #expect(target == .superProductivity(projectId: "sp-forge-id"))
+    }
+
+    @Test("Explicit OmniFocus preference overrides Auto")
+    func explicitOmniFocusOverride() throws {
+        let root = try makeTempRoot()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let project = root.appendingPathComponent("Forge", isDirectory: true)
+        try FileManager.default.createDirectory(at: project, withIntermediateDirectories: true)
+
+        let config = ForgeConfig(
+            projectRoots: [root.path],
+            board: BoardConfig(columns: [], metaTags: [], tagAliases: [:]),
+            superproductivity: SuperProductivityConfig(enabled: true)
+        )
+        let target = ProjectOpenResolver.tasksOpenTarget(
+            projectDirectory: project.path,
+            projectName: "Forge",
+            config: config,
+            preferredTaskManager: .omnifocus
+        )
+        #expect(target == .omnifocus(projectName: "Forge"))
+    }
+
+    @Test("TASKS.toml backend opens the file when present")
+    func tasksTomlBackend() throws {
+        let root = try makeTempRoot()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let project = root.appendingPathComponent("Forge", isDirectory: true)
         try FileManager.default.createDirectory(at: project, withIntermediateDirectories: true)
         let tasks = project.appendingPathComponent(ProjectOpenResolver.tasksFileName)
         FileManager.default.createFile(atPath: tasks.path, contents: Data(), attributes: nil)
 
-        let target = ProjectOpenResolver.primaryOpenTarget(
-            projectName: "CausalDynamics.jl",
-            projectRoots: [root.path]
+        let config = ForgeConfig(
+            projectRoots: [root.path],
+            board: BoardConfig(columns: [], metaTags: [], tagAliases: [:])
+        )
+        let target = ProjectOpenResolver.tasksOpenTarget(
+            projectDirectory: project.path,
+            config: config,
+            preferredTaskManager: .tasksToml
         )
         #expect(target == .tasksFile(tasks))
     }

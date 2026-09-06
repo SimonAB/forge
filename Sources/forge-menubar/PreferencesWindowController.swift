@@ -143,20 +143,7 @@ final class PreferencesWindowController: NSWindowController {
 
     private func saveProjectRoots(_ newRoots: [String]) -> Bool {
         guard let path = configPath, let current = config else { return false }
-        let updated = ForgeConfig(
-            projectRoots: newRoots,
-            board: current.board,
-            calendar: current.calendar,
-            omnifocus: current.omnifocus,
-            reminders: current.reminders,
-            gtd: current.gtd,
-            workspaceTags: current.workspaceTags,
-            projectAreas: current.projectAreas,
-            terminal: current.terminal,
-            projectTag: current.projectTag,
-            projectScanDepth: current.projectScanDepth,
-            dueConflictPolicy: current.dueConflictPolicy
-        )
+        let updated = current.replacing(projectRoots: newRoots)
         do {
             try updated.save(to: path)
             config = updated
@@ -170,20 +157,7 @@ final class PreferencesWindowController: NSWindowController {
     /// Save terminal preference to config.yaml and update in-memory config.
     private func saveTerminal(_ terminal: String?) -> Bool {
         guard let path = configPath, let current = config else { return false }
-        let updated = ForgeConfig(
-            projectRoots: current.projectRoots,
-            board: current.board,
-            calendar: current.calendar,
-            omnifocus: current.omnifocus,
-            reminders: current.reminders,
-            gtd: current.gtd,
-            workspaceTags: current.workspaceTags,
-            projectAreas: current.projectAreas,
-            terminal: terminal,
-            projectTag: current.projectTag,
-            projectScanDepth: current.projectScanDepth,
-            dueConflictPolicy: current.dueConflictPolicy
-        )
+        let updated = current.replacing(terminal: .some(terminal))
         do {
             try updated.save(to: path)
             config = updated
@@ -202,20 +176,7 @@ final class PreferencesWindowController: NSWindowController {
             syncOnMove: syncOnMove,
             syncFromOmnifocus: syncFromOmnifocus
         )
-        let updated = ForgeConfig(
-            projectRoots: current.projectRoots,
-            board: current.board,
-            calendar: current.calendar,
-            omnifocus: of,
-            reminders: current.reminders,
-            gtd: current.gtd,
-            workspaceTags: current.workspaceTags,
-            projectAreas: current.projectAreas,
-            terminal: current.terminal,
-            projectTag: current.projectTag,
-            projectScanDepth: current.projectScanDepth,
-            dueConflictPolicy: current.dueConflictPolicy
-        )
+        let updated = current.replacing(omnifocus: of)
         do {
             try updated.save(to: path)
             config = updated
@@ -242,20 +203,7 @@ final class PreferencesWindowController: NSWindowController {
             syncOnMove: syncOnMove,
             syncFromReminders: syncFromReminders
         )
-        let updated = ForgeConfig(
-            projectRoots: current.projectRoots,
-            board: current.board,
-            calendar: current.calendar,
-            omnifocus: current.omnifocus,
-            reminders: rem,
-            gtd: current.gtd,
-            workspaceTags: current.workspaceTags,
-            projectAreas: current.projectAreas,
-            terminal: current.terminal,
-            projectTag: current.projectTag,
-            projectScanDepth: current.projectScanDepth,
-            dueConflictPolicy: current.dueConflictPolicy
-        )
+        let updated = current.replacing(reminders: rem)
         do {
             try updated.save(to: path)
             config = updated
@@ -381,6 +329,7 @@ final class PreferencesWindowController: NSWindowController {
 private final class PreferencesGeneralView: NSView {
     private var editorPopUp: NSPopUpButton?
     private var terminalPopUp: NSPopUpButton?
+    private var taskManagerPopUp: NSPopUpButton?
     private let configPath: String?
     private let config: ForgeConfig?
     private let onSaveTerminal: (String?) -> Bool
@@ -457,6 +406,36 @@ private final class PreferencesGeneralView: NSView {
             popUp.widthAnchor.constraint(greaterThanOrEqualToConstant: 200),
         ])
 
+        let taskManagerLabel = NSTextField(labelWithString: "Open TASKS opens:")
+        taskManagerLabel.font = .systemFont(ofSize: 12, weight: .regular)
+        taskManagerLabel.textColor = .secondaryLabelColor
+        taskManagerLabel.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(taskManagerLabel)
+
+        let taskManagerPopUp = NSPopUpButton(frame: .zero, pullsDown: false)
+        taskManagerPopUp.translatesAutoresizingMaskIntoConstraints = false
+        taskManagerPopUp.addItems(withTitles: TaskManagerPreferences.knownKinds.map(\.title))
+        let taskDisplay = TaskManagerPreferences.displayTitle(
+            for: TaskManagerPreferences.loadPreferredTaskManager()
+        )
+        if let idx = TaskManagerPreferences.knownKinds.map(\.title).firstIndex(of: taskDisplay) {
+            taskManagerPopUp.selectItem(at: idx)
+        } else {
+            taskManagerPopUp.selectItem(at: 0)
+        }
+        taskManagerPopUp.target = self
+        taskManagerPopUp.action = #selector(taskManagerPopUpChanged(_:))
+        addSubview(taskManagerPopUp)
+        self.taskManagerPopUp = taskManagerPopUp
+
+        NSLayoutConstraint.activate([
+            taskManagerLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            taskManagerLabel.topAnchor.constraint(equalTo: popUp.bottomAnchor, constant: 16),
+            taskManagerPopUp.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            taskManagerPopUp.topAnchor.constraint(equalTo: taskManagerLabel.bottomAnchor, constant: 6),
+            taskManagerPopUp.widthAnchor.constraint(greaterThanOrEqualToConstant: 280),
+        ])
+
         let terminalLabel = NSTextField(labelWithString: "Default terminal for Forge CLI actions:")
         terminalLabel.font = .systemFont(ofSize: 12, weight: .regular)
         terminalLabel.textColor = .secondaryLabelColor
@@ -480,7 +459,7 @@ private final class PreferencesGeneralView: NSView {
 
         NSLayoutConstraint.activate([
             terminalLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
-            terminalLabel.topAnchor.constraint(equalTo: popUp.bottomAnchor, constant: 16),
+            terminalLabel.topAnchor.constraint(equalTo: taskManagerPopUp.bottomAnchor, constant: 16),
             terminalPopUp.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
             terminalPopUp.topAnchor.constraint(equalTo: terminalLabel.bottomAnchor, constant: 6),
             terminalPopUp.widthAnchor.constraint(greaterThanOrEqualToConstant: 200),
@@ -605,6 +584,12 @@ private final class PreferencesGeneralView: NSView {
         guard let title = sender.selectedItem?.title else { return }
         let id = EditorPreferences.identifier(forDisplayTitle: title)
         EditorPreferences.savePreferredEditor(id)
+    }
+
+    @objc private func taskManagerPopUpChanged(_ sender: NSPopUpButton) {
+        guard let title = sender.selectedItem?.title else { return }
+        let kind = TaskManagerPreferences.kind(forDisplayTitle: title)
+        TaskManagerPreferences.savePreferredTaskManager(kind == .auto ? nil : kind)
     }
 
     /// Persist the selected terminal application into config.yaml.
