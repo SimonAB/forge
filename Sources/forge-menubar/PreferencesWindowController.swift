@@ -412,6 +412,14 @@ private final class PreferencesGeneralView: NSView {
         taskManagerLabel.translatesAutoresizingMaskIntoConstraints = false
         addSubview(taskManagerLabel)
 
+        let taskManagerHint = NSTextField(wrappingLabelWithString: """
+        Prefer Auto or Super Productivity while dogfooding SP (docs/of-frozen-sp-primary.md). OmniFocus here only activates the app, not a task deep-link.
+        """)
+        taskManagerHint.font = .systemFont(ofSize: 11, weight: .regular)
+        taskManagerHint.textColor = .tertiaryLabelColor
+        taskManagerHint.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(taskManagerHint)
+
         let taskManagerPopUp = NSPopUpButton(frame: .zero, pullsDown: false)
         taskManagerPopUp.translatesAutoresizingMaskIntoConstraints = false
         taskManagerPopUp.addItems(withTitles: TaskManagerPreferences.knownKinds.map(\.title))
@@ -431,8 +439,11 @@ private final class PreferencesGeneralView: NSView {
         NSLayoutConstraint.activate([
             taskManagerLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
             taskManagerLabel.topAnchor.constraint(equalTo: popUp.bottomAnchor, constant: 16),
+            taskManagerHint.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            taskManagerHint.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
+            taskManagerHint.topAnchor.constraint(equalTo: taskManagerLabel.bottomAnchor, constant: 4),
             taskManagerPopUp.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
-            taskManagerPopUp.topAnchor.constraint(equalTo: taskManagerLabel.bottomAnchor, constant: 6),
+            taskManagerPopUp.topAnchor.constraint(equalTo: taskManagerHint.bottomAnchor, constant: 6),
             taskManagerPopUp.widthAnchor.constraint(greaterThanOrEqualToConstant: 280),
         ])
 
@@ -702,7 +713,7 @@ private final class PreferencesOmniFocusView: NSView {
         addSubview(title)
 
         let blurb = NSTextField(wrappingLabelWithString: """
-        Optional local bridge to OmniFocus (Automation / OmniJS). When enabled, Forge can link projects and mirror kanban columns both ways. Nothing is sent to the cloud.
+        Optional local bridge to OmniFocus (Automation / OmniJS). With Super Productivity primary (config: superproductivity.primary), keep this for kanban column join and rollback only — do not use OF as the day-to-day task inbox. Nothing is sent to the cloud.
         """)
         blurb.font = .systemFont(ofSize: 12, weight: .regular)
         blurb.textColor = .secondaryLabelColor
@@ -743,7 +754,7 @@ private final class PreferencesOmniFocusView: NSView {
         syncFromOmnifocusCheckbox = pull
 
         let note = NSTextField(wrappingLabelWithString: """
-        Requires OmniFocus running with Automation permission for Forge. Change a column tag in OmniFocus, then press Refresh on the board. With board moves → OmniFocus on, leaving Shipped reopens the OF project and entering Shipped marks it Done (config: reopen_of_project_when_leaving_shipped / complete_of_project_when_entering_shipped).
+        Requires OmniFocus running with Automation permission for Forge. Column sync only while SP is primary (docs/of-frozen-sp-primary.md). Change a column tag in OmniFocus, then press Refresh on the board. With board moves → OmniFocus on, leaving Shipped reopens the OF project and entering Shipped marks it Done.
         """)
         note.font = .systemFont(ofSize: 11, weight: .regular)
         note.textColor = .tertiaryLabelColor

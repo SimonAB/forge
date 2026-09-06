@@ -8,6 +8,9 @@ from pathlib import Path
 
 from forge_tasks_world.capture import (
     CaptureStore,
+    extract_uri_from_notes,
+    format_sp_note_attachment,
+    format_sp_note_link,
     infer_link_kind,
     message_uri,
     sniff_clipboard_link,
@@ -25,7 +28,43 @@ class CaptureTests(unittest.TestCase):
         )
         self.assertIsNone(sniff_clipboard_link("not a link with spaces"))
         self.assertEqual(message_uri("abc@example.com"), "message://%3cabc@example.com%3e")
+        self.assertEqual(
+            message_uri("weird id with space"),
+            "message://%3cweird%20id%20with%20space%3e",
+        )
 
+    def test_sp_note_link_wrap_and_extract(self) -> None:
+        http = "https://example.com/path(1)"
+        http_line = format_sp_note_link(http, kind="url")
+        self.assertEqual(http_line, "[example.com](https://example.com/path(1%29)")
+        self.assertEqual(
+            extract_uri_from_notes(http_line),
+            "https://example.com/path(1)",
+        )
+        self.assertEqual(
+            extract_uri_from_notes("<message://%3cid%3e>"),
+            "message://%3cid%3e",
+        )
+        self.assertEqual(
+            extract_uri_from_notes("message://%3cold%3e"),
+            "message://%3cold%3e",
+        )
+
+    def test_sp_mail_uses_inetloc_trampoline(self) -> None:
+        mail = message_uri("id@example.com")
+        with tempfile.TemporaryDirectory() as tmp:
+            forge_home = Path(tmp)
+            lines = format_sp_note_attachment(mail, kind="mail", forge_home=forge_home)
+            self.assertEqual(len(lines), 2)
+            self.assertTrue(lines[0].startswith("[Open in Mail](file://"))
+            self.assertTrue(lines[0].endswith(".inetloc)"))
+            self.assertEqual(lines[1], f"[forge:uri:{mail}]")
+            notes = "\n".join(lines)
+            self.assertEqual(extract_uri_from_notes(notes), mail)
+            locs = list((forge_home / ".forge" / "mail-open").glob("*.inetloc"))
+            self.assertEqual(len(locs), 1)
+            self.assertIn(mail, locs[0].read_text(encoding="utf-8"))
+            self.assertEqual(extract_uri_from_notes(lines[0]), mail)
     def test_capture_assign_complete(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             forge_home = Path(tmp)

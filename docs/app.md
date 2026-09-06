@@ -105,14 +105,18 @@ the Dock icon when no windows are visible.
 
 The **folder** icon on cards still reveals the project in Finder. SP focus needs
 `superproductivity.project_ids` for that folder title, then brings Super Productivity
-to the front (a beep means the CDP focus helper failed). See
+to the front (a beep means the CDP focus helper failed). While dogfooding SP as
+primary, keep Open TASKS on Auto or Super Productivity
+([of-frozen-sp-primary.md](of-frozen-sp-primary.md)). See
 [superproductivity.md](superproductivity.md).
 
 ### OmniFocus (optional)
 
-Optional: keep **project** kanban columns in step with OmniFocus. Day-to-day
-tasks stay in the task app. Apple Reminders is the other optional backend
-(EventKit); Things is a possible later addition.
+Optional: keep **project** kanban columns in step with OmniFocus. With
+`superproductivity.primary`, OmniFocus is **frozen** as a task inbox — column
+join and rollback only. Day-to-day tasks stay in Super Productivity. Apple
+Reminders **Inbox** may still feed SP via morning drain; project Reminders lists
+are not a parallel task system.
 
 Enable under **Preferences → OmniFocus**. With `sync_on_move`, board column moves mirror onto linked OF tasks. With `sync_from_omnifocus`, board **Refresh** pulls OF column tags onto Finder (and clears stacked leftover OF kanban tags on those folders). Finder→OF is not rewritten from Refresh. With `sync_completed_project_to_shipped`, a completed/dropped OF **project** can move the matching Finder folder to **Shipped** on Refresh (unless you have since left Shipped — that override is remembered). With `sync_on_move`, leaving **Shipped** reopens the OF project (`reopen_of_project_when_leaving_shipped`, default true); entering **Shipped** marks it Done (`complete_of_project_when_entering_shipped`, default true).
 
@@ -149,8 +153,11 @@ Inbox** (see [superproductivity.md](superproductivity.md)). Otherwise capture
 uses the legacy Forge inbox (`.forge/tasks.db`).
 
 - **Menubar:** **Capture…** (default ⌃⌘Space), or File → Capture…
-- **Services:** **Capture to Forge Inbox** (Finder files or selected text); **Capture Mail Message to Forge** (Mail)
-- **CLI:** `forge capture "…"`, `forge tasks inbox`, `forge tasks assign <id> <project>`
+- **Services (macOS, shipped in Forge.app):** **Capture to Forge Inbox** — context-aware: Finder files, Mail selection (`message://`), browser tab URL (Safari/Chrome family), or selected text. Selected text becomes a **note** when a richer primary exists. **Capture Mail Message to Forge** is the same engine with Mail preference (for existing shortcuts).
+- **CLI (macOS + Linux):** `forge capture "…"`, or context capture via
+  `python3 scripts/forge-capture.py service --prefer auto|mail|file|browser|text`
+  (Linux: files / text / URI; no Mail or browser frontmost detection).
+  Then `forge tasks inbox`, `forge tasks assign <id> <project>`.
 - **Reminders Inbox → SP:** `bash scripts/reminders-capture-drain.sh` (also run by morning pull when SP is on); see [superproductivity.md](superproductivity.md#apple-reminders-inbox--sp-inbox)
 - Clipboard URIs (`message://`, `https://`, `file://`, …) are attached as **links** (link-only unless `forge capture --file … --stash`)
 

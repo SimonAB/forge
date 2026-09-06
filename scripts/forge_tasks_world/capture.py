@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import secrets
@@ -9,6 +10,7 @@ import shutil
 from dataclasses import dataclass
 from pathlib import Path
 import subprocess
+from urllib.parse import quote, urlparse, unquote
 
 from .world_db import WorldDatabase
 from .toml_io import (
@@ -28,6 +30,17 @@ _MESSAGE_URI = re.compile(r"^message:", re.IGNORECASE)
 _HTTP_URI = re.compile(r"^https?://", re.IGNORECASE)
 _FILE_URI = re.compile(r"^file:", re.IGNORECASE)
 _OBSIDIAN_URI = re.compile(r"^obsidian:", re.IGNORECASE)
+_MD_LINK_RE = re.compile(r"\[([^\]]*)\]\(([^)\s]+)\)")
+_ANGLE_URI_RE = re.compile(r"<((?:https?|message|file|obsidian|bookends|x-bookends):[^>\s]+)>", re.I)
+_BARE_URI_RE = re.compile(
+    r"^((?:https?|message|file|obsidian|bookends|x-bookends):[^\s]+)\s*$",
+    re.I,
+)
+_FORGE_URI_RE = re.compile(r"\[forge:uri:([^\]]+)\]", re.IGNORECASE)
+_WEBLOC_URL_RE = re.compile(
+    r"<key>\s*URL\s*</key>\s*<string>([^<]+)</string>",
+    re.IGNORECASE | re.DOTALL,
+)
 
 
 @dataclass
@@ -126,11 +139,208 @@ function run() {
 
 
 def message_uri(message_id: str) -> str:
-    """Build a message:// URI from a Mail message-id."""
+    """Build a ``message://`` URI from a Mail message-id.
+
+    Encodes the id as ``message://%3c…%3e`` so Apple Mail and Forge agree.
+    """
     mid = message_id.strip().strip("<>")
     if not mid:
         return ""
-    return f"message://%3c{mid}%3e"
+    # Keep @ . + - _ = unencoded (Mail / common message-id shape); encode the rest.
+    encoded_mid = quote(mid, safe="@.+-_=")
+    return f"message://%3c{encoded_mid}%3e"
+
+
+def normalize_mail_uri(uri: str) -> str:
+    """Normalise OmniFocus ``message:…`` forms to ``message://…`` for Mail."""
+    text = (uri or "").strip()
+    lower = text.lower()
+    if lower.startswith("message://"):
+        return text
+    if lower.startswith("message:"):
+        return "message://" + text[len("message:") :].lstrip("/")
+    return text
+
+
+def format_sp_uri_marker(uri: str) -> str:
+    """Return a Forge marker that stores the canonical open URI in SP notes."""
+    return f"[forge:uri:{(uri or '').strip()}]"
+
+
+def mail_open_link_path(forge_home: Path, mail_uri: str) -> Path:
+    """Return the stable internet-location path for a Mail message URI."""
+    digest = hashlib.sha256(normalize_mail_uri(mail_uri).encode("utf-8")).hexdigest()[:16]
+    # ``.inetloc`` (not ``.webloc``): Launch Services opens message:// only via inetloc.
+    return forge_home / ".forge" / "mail-open" / f"{digest}.inetloc"
+
+
+def ensure_mail_open_link(forge_home: Path, mail_uri: str) -> Path:
+    """Write (or reuse) a macOS internet-location trampoline for ``message://``.
+
+    Super Productivity blocks the ``message://`` scheme in notes ("unsafe URL
+    scheme"). ``file://`` is allowed; opening the ``.inetloc`` hands the real
+    Mail URI to the OS. Plain ``.webloc`` files fail for ``message://``.
+    """
+    clean = normalize_mail_uri(mail_uri)
+    if not clean.lower().startswith("message:"):
+        raise ValueError(f"not a Mail message URI: {mail_uri!r}")
+    path = mail_open_link_path(forge_home, clean)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    body = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" '
+        '"http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n'
+        '<plist version="1.0">\n'
+        "<dict>\n"
+        "\t<key>URL</key>\n"
+        f"\t<string>{clean}</string>\n"
+        "</dict>\n"
+        "</plist>\n"
+    )
+    if not path.is_file() or path.read_text(encoding="utf-8") != body:
+        path.write_text(body, encoding="utf-8")
+    return path
+
+
+def uri_from_internet_location(path: Path) -> str | None:
+    """Read the URL string from a ``.inetloc`` / ``.webloc`` plist, if present."""
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    match = _WEBLOC_URL_RE.search(text)
+    return match.group(1).strip() if match else None
+
+
+def format_sp_note_link(
+    uri: str,
+    *,
+    kind: str | None = None,
+    label: str | None = None,
+) -> str:
+    """Return a markdown link line that SP notes parse as a clickable URL.
+
+    Bare ``https://`` forms with punctuation can break SP's markdown autolinker;
+    wrapping as ``[label](uri)`` is reliable. Parentheses inside the URI are
+    percent-encoded so the markdown parser does not truncate.
+
+    Do **not** pass ``message://`` here for clickable SP notes — SP blocks that
+    scheme. Use :func:`format_sp_note_attachment` instead (``.inetloc`` trampoline).
+    """
+    clean = (uri or "").strip()
+    if not clean:
+        return ""
+    inferred = kind or infer_link_kind(clean)
+    if label is None:
+        if inferred == "mail" or clean.lower().startswith("message:"):
+            label = "Open in Mail"
+        elif inferred == "file" or clean.lower().startswith("file:"):
+            label = "Open file"
+        elif inferred == "url":
+            parsed = urlparse(clean)
+            label = parsed.netloc or "Open link"
+        elif inferred == "obsidian":
+            label = "Open in Obsidian"
+        else:
+            label = "Open link"
+    safe_label = label.replace("]", "\\]")
+    # Keep scheme + structure; encode ')' so markdown ``](…)`` stays balanced.
+    safe_uri = clean.replace(")", "%29").replace(" ", "%20")
+    return f"[{safe_label}]({safe_uri})"
+
+
+def format_sp_note_attachment(
+    uri: str,
+    *,
+    kind: str | None = None,
+    forge_home: Path | None = None,
+    label: str | None = None,
+) -> list[str]:
+    """Return SP note lines for a link that stays clickable in Super Productivity.
+
+    Mail URIs use a local ``.inetloc`` (``file://``) plus ``[forge:uri:…]`` so
+    ``forge tasks open`` still receives the real ``message://`` target.
+    """
+    clean = (uri or "").strip()
+    if not clean:
+        return []
+    inferred = kind or infer_link_kind(clean)
+    is_mail = inferred == "mail" or clean.lower().startswith("message:")
+    if is_mail and forge_home is not None:
+        mail = normalize_mail_uri(clean)
+        location = ensure_mail_open_link(forge_home, mail)
+        click = format_sp_note_link(
+            location.resolve().as_uri(),
+            kind="file",
+            label=label or "Open in Mail",
+        )
+        return [click, format_sp_uri_marker(mail)]
+    if is_mail:
+        # No Forge home (tests / dry paths): keep the URI for open, not for SP click.
+        mail = normalize_mail_uri(clean)
+        return [format_sp_uri_marker(mail), mail]
+    return [format_sp_note_link(clean, kind=inferred, label=label)]
+
+
+def extract_uri_from_notes(notes: str | None) -> str | None:
+    """Return the first openable URI embedded in notes.
+
+    Prefers ``[forge:uri:…]`` (canonical Mail target), then markdown / angle /
+    bare URIs. Resolves Forge mail ``.inetloc`` trampolines back to ``message://``.
+    """
+    if not notes:
+        return None
+    marker = _FORGE_URI_RE.search(notes)
+    if marker:
+        return marker.group(1).strip()
+
+    for line in notes.splitlines():
+        text = line.strip()
+        if not text:
+            continue
+        match = _MD_LINK_RE.search(text)
+        if match:
+            candidate = match.group(2).strip().replace("%29", ")")
+            if (
+                "://" in candidate
+                or candidate.lower().startswith(("message:", "file:", "obsidian:"))
+            ):
+                resolved = _resolve_extracted_uri(candidate)
+                if resolved:
+                    return resolved
+        match = _ANGLE_URI_RE.search(text)
+        if match:
+            resolved = _resolve_extracted_uri(match.group(1).strip())
+            if resolved:
+                return resolved
+        match = _BARE_URI_RE.match(text)
+        if match:
+            resolved = _resolve_extracted_uri(match.group(1).strip())
+            if resolved:
+                return resolved
+        if text.startswith(("http://", "https://", "file:", "message:", "obsidian:")):
+            resolved = _resolve_extracted_uri(text.split()[0])
+            if resolved:
+                return resolved
+    return None
+
+
+def _resolve_extracted_uri(uri: str) -> str | None:
+    """Map trampoline ``file://…mail-open/*`` back to ``message://``."""
+    clean = (uri or "").strip()
+    if not clean:
+        return None
+    if clean.lower().startswith("message:"):
+        return normalize_mail_uri(clean)
+    if clean.lower().startswith("file:"):
+        parsed = urlparse(clean)
+        path = Path(unquote(parsed.path))
+        if path.suffix.lower() in {".inetloc", ".webloc"} and "mail-open" in path.parts:
+            from_loc = uri_from_internet_location(path)
+            if from_loc:
+                return normalize_mail_uri(from_loc)
+        return clean
+    return clean
 
 
 def selected_mail_messages() -> list[dict[str, str]]:

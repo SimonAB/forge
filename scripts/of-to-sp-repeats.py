@@ -32,7 +32,9 @@ sys.path.insert(0, str(SCRIPT_DIR))
 
 from forge_tasks_world.superproductivity import (  # noqa: E402
     INBOX_PROJECT_ID,
+    config_from_file,
     open_client,
+    refuse_of_import_while_primary,
 )
 from forge_tasks_world.sp_cdp import SP_BIN, ensure_cdp  # noqa: E402
 
@@ -655,11 +657,23 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--forge-home", type=Path, default=None)
     parser.add_argument("--apply", action="store_true", help="Write via CDP (not dry-run)")
+    parser.add_argument(
+        "--allow-while-primary",
+        action="store_true",
+        help="Allow --apply even when superproductivity.primary is true",
+    )
     parser.add_argument("--json", action="store_true")
     parser.add_argument("--sp-bin", default=SP_BIN)
     args = parser.parse_args()
 
     forge_home = (args.forge_home or resolve_forge_home()).expanduser().resolve()
+    config = config_from_file(forge_home / "config.yaml")
+    if args.apply:
+        refuse_of_import_while_primary(
+            config,
+            allow=args.allow_while_primary,
+            action="of-to-sp-repeats --apply",
+        )
     print("Exporting OmniFocus recurring tasks…", file=sys.stderr)
     of_data = export_recurring_omnifocus()
     client = open_client(forge_home)

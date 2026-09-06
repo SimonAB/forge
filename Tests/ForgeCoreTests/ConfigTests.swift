@@ -332,7 +332,28 @@ import Testing
         Forge: abc123
     """)
     #expect(config.superproductivity.enabled)
+    #expect(config.superproductivity.primary == false)
     #expect(config.superproductivity.projectIds["Forge"] == "abc123")
+}
+
+@Test func superproductivityDecodesPrimary() throws {
+    let config = try loadForgeYAML("""
+    project_roots:
+      - /tmp
+    board:
+      columns:
+        - name: Plan
+          tag: "Plan"
+          colour: 4
+      meta_tags: []
+      tag_aliases: {}
+    superproductivity:
+      enabled: true
+      primary: true
+    """)
+    #expect(config.superproductivity.enabled)
+    #expect(config.superproductivity.primary)
+    #expect(config.superproductivity.isPrimaryTaskStore)
 }
 
 private func loadForgeYAML(_ yaml: String) throws -> ForgeConfig {

@@ -143,8 +143,11 @@ python3 scripts/forge-brief.py --calendar-days 1    # inbox + dues from SP
 ```
 
 `forge tasks assign` fails clearly if the folder has no `project_ids` entry.
-Notes may carry `[forge:source:…]` and a URI line for `forge tasks open`.
-
+Notes may carry `[forge:source:…]` and markdown links. Super Productivity
+blocks the `message://` scheme ("Link blocked: unsafe URL scheme"), so Mail
+captures use a local `.inetloc` trampoline (`file://…/.forge/mail-open/…`) plus
+`[forge:uri:message://…]` for `forge tasks open`. Ordinary `https://` links
+remain `[host](https://…)`.
 ### Context capture (Services + CLI)
 
 Forge.app ships a macOS Service **Capture to Forge Inbox** that resolves by

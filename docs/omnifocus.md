@@ -3,9 +3,11 @@
 Forge is the project kanban **nexus** ([nexus.md](nexus.md)). When
 `superproductivity.enabled` is true, **Super Productivity is the sole task
 store** ([superproductivity.md](superproductivity.md)); OmniFocus remains a
-**macOS-only** subordinate column join on linked tasks/projects. Otherwise
-day-to-day tasks may live in OmniFocus, [Reminders](reminders.md), Things, or
-another app.
+**macOS-only** subordinate column join on linked tasks/projects. With
+`superproductivity.primary: true`, treat OmniFocus as **frozen** for day-to-day
+tasks during dogfooding — see [of-frozen-sp-primary.md](of-frozen-sp-primary.md).
+Otherwise day-to-day tasks may live in OmniFocus, [Reminders](reminders.md),
+Things, or another app.
 
 This page is the OmniFocus bridge: it keeps *project* columns in step with
 OmniFocus via Omni Automation (OmniJS). Mutating commands default to **dry-run**.

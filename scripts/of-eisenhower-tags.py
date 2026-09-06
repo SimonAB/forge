@@ -28,6 +28,7 @@ from forge_tasks_world.superproductivity import (  # noqa: E402
     SuperProductivityError,
     config_from_file,
     open_client,
+    refuse_of_import_while_primary,
 )
 
 OF_ID_RE = re.compile(r"\[forge:of-id:([^\]]+)\]")
@@ -115,10 +116,22 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--forge-home", type=Path, default=None)
     parser.add_argument("--apply", action="store_true", help="Write tagIds (default: dry-run)")
+    parser.add_argument(
+        "--allow-while-primary",
+        action="store_true",
+        help="Allow --apply even when superproductivity.primary is true",
+    )
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
 
     forge_home = (args.forge_home or resolve_forge_home()).expanduser().resolve()
+    config = config_from_file(forge_home / "config.yaml")
+    if args.apply:
+        refuse_of_import_while_primary(
+            config,
+            allow=args.allow_while_primary,
+            action="of-eisenhower-tags --apply",
+        )
     client = open_client(forge_home)
     tag_titles = {str(t["id"]): str(t.get("title") or t["id"]) for t in client.tags()}
     for needed in (IMPORTANT_ID, URGENT_ID):
@@ -129,7 +142,6 @@ def main() -> int:
     print("Exporting flagged OmniFocus tasks…", file=sys.stderr)
     flagged = export_flagged_omnifocus()
     urgent_projects = board_urgent_projects()
-    config = config_from_file(forge_home / "config.yaml")
     name_to_spid = dict(config.project_ids or {})
 
     print("Indexing Super Productivity tasks…", file=sys.stderr)

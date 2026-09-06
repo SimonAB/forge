@@ -30,6 +30,7 @@ from typing import Any
 SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR))
 
+from forge_tasks_world.capture import format_sp_note_attachment, normalize_mail_uri  # noqa: E402
 from forge_tasks_world.of_mapping import (  # noqa: E402
     PROJECT_FOLDER_ALIASES,
     keep_task,
@@ -43,6 +44,7 @@ from forge_tasks_world.superproductivity import (  # noqa: E402
     _planned_to_ms,
     config_from_file,
     open_client,
+    refuse_of_import_while_primary,
 )
 
 
@@ -92,8 +94,12 @@ def of_id_marker(of_id: str) -> str:
     return f"[forge:of-id:{of_id}]"
 
 
-def build_user_notes(task: dict[str, Any]) -> str | None:
-    """Build user-visible notes (mail links preserved as URI lines)."""
+def build_user_notes(
+    task: dict[str, Any],
+    *,
+    forge_home: Path | None = None,
+) -> str | None:
+    """Build user-visible notes (mail links as SP-safe ``file://`` trampolines)."""
     note = (task.get("note") or "").strip()
     parts: list[str] = ["[forge:source:omnifocus]"]
     message = parse_message_link(note) if note else None
@@ -103,12 +109,22 @@ def build_user_notes(task: dict[str, Any]) -> str | None:
         cleaned = re.sub(r"<message:[^>]+>", "", note).strip()
         if cleaned:
             parts.append(cleaned)
-        parts.append(message)
+        parts.extend(
+            format_sp_note_attachment(
+                normalize_mail_uri(message),
+                kind="mail",
+                forge_home=forge_home,
+            )
+        )
     elif message:
-        parts.append(message)
+        parts.extend(
+            format_sp_note_attachment(
+                normalize_mail_uri(message),
+                kind="mail",
+                forge_home=forge_home,
+            )
+        )
     return "\n".join(parts)
-
-
 def combine_of_notes(user_notes: str | None, of_id: str) -> str:
     """Attach the OmniFocus identity marker to notes."""
     marker = of_id_marker(of_id)
@@ -188,6 +204,7 @@ def plan_import(
     project_ids: dict[str, str],
     sp_by_title: dict[str, str],
     existing_of_ids: set[str],
+    forge_home: Path | None = None,
 ) -> list[PlannedRow]:
     """Build the dry-run / apply plan for pending OmniFocus tasks."""
     project_forge = {
@@ -215,7 +232,7 @@ def plan_import(
         )
         due = fmt_date(task.get("due"))
         planned = fmt_date(task.get("planned"))
-        notes = build_user_notes(task)
+        notes = build_user_notes(task, forge_home=forge_home)
         forge_folder = task.get("forgeFolder") or resolve_folder(task, project_forge, forge_paths)
         of_project = (task.get("ofProjectName") or "").strip() or None
 
@@ -451,6 +468,11 @@ def main() -> int:
         help="Create SP tasks for destinations that already exist (not dry-run)",
     )
     parser.add_argument(
+        "--allow-while-primary",
+        action="store_true",
+        help="Allow --apply even when superproductivity.primary is true",
+    )
+    parser.add_argument(
         "--skip-scan",
         action="store_true",
         help="Do not scan SP for existing [forge:of-id:…] markers (faster, risk of duplicates)",
@@ -462,6 +484,12 @@ def main() -> int:
     if not config.enabled:
         print("superproductivity.enabled is false", file=sys.stderr)
         return 1
+    if args.apply:
+        refuse_of_import_while_primary(
+            config,
+            allow=args.allow_while_primary,
+            action="of-to-sp --apply",
+        )
 
     print("Exporting OmniFocus…", file=sys.stderr)
     of_data = export_omnifocus()
@@ -483,6 +511,7 @@ def main() -> int:
         project_ids=dict(config.project_ids),
         sp_by_title=sp_by_title,
         existing_of_ids=existing,
+        forge_home=forge_home,
     )
     summary = summarise(rows)
 

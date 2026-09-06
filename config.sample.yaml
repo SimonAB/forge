@@ -83,8 +83,12 @@ nexus:
 # Forge.app Open TASKS (Preferences → General) focuses mapped projects via
 # scripts/forge-sp-focus-project.py. Sidebar folders: forge superproductivity
 # mirror-menu-tree. See docs/superproductivity.md and docs/app.md.
+# Super Productivity local REST. When enabled + primary, SP is the day-to-day
+# task store; keep omnifocus.enabled for kanban join / rollback during dogfood.
+# See docs/of-frozen-sp-primary.md and docs/superproductivity.md.
 superproductivity:
   enabled: false
+  primary: false
   endpoint: http://127.0.0.1:3876
   timeout: 5
   # project_ids:

@@ -116,7 +116,8 @@ herdr agent read <pane_id|name> --lines 120
 When the user says **capture:** or **inbox:** followed by text, run
 `forge capture "<text>" --source assistant` (add `--link` / `--file` when
 provided). Do not invent due dates or task IDs; process later with
-`forge tasks assign`.
+`forge tasks assign`. With `superproductivity.primary`, do **not** create OmniFocus
+tasks; SP (or Reminders Inbox → morning drain) is the capture path.
 
 ### 1. Sync Forge ↔ OmniFocus (kanban join)
 

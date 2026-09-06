@@ -22,7 +22,7 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, Iterator
 
-from .capture import new_task_id
+from .capture import extract_uri_from_notes, format_sp_note_attachment, new_task_id
 from .toml_io import ProjectTasks, TaskRecord, load_project_tasks, project_tasks_path, write_project_tasks
 
 BACKEND = "super-productivity"
@@ -281,6 +281,8 @@ class SuperProductivityConfig:
     endpoint: str = DEFAULT_ENDPOINT
     project_ids: dict[str, str] = field(default_factory=dict)
     timeout: float = 5.0
+    #: When true with ``enabled``, SP is the day-to-day task store (OF frozen).
+    primary: bool = False
 
     @classmethod
     def from_mapping(cls, value: dict[str, Any] | None) -> "SuperProductivityConfig":
@@ -290,6 +292,8 @@ class SuperProductivityConfig:
             raise ValueError("superproductivity must be a mapping")
         if not isinstance(value.get("enabled", False), bool):
             raise ValueError("superproductivity.enabled must be a boolean")
+        if "primary" in value and not isinstance(value.get("primary"), bool):
+            raise ValueError("superproductivity.primary must be a boolean")
         endpoint = str(value.get("endpoint", DEFAULT_ENDPOINT)).rstrip("/")
         if not _is_loopback_endpoint(endpoint):
             raise ValueError("Super Productivity endpoint must be loopback")
@@ -297,16 +301,38 @@ class SuperProductivityConfig:
         if not isinstance(project_ids, dict):
             raise ValueError("superproductivity.project_ids must be a mapping")
         return cls(
-            bool(value.get("enabled", False)),
-            endpoint,
-            {str(key): str(ident) for key, ident in project_ids.items()},
-            float(value.get("timeout", 5.0)),
+            enabled=bool(value.get("enabled", False)),
+            endpoint=endpoint,
+            project_ids={str(key): str(ident) for key, ident in project_ids.items()},
+            timeout=float(value.get("timeout", 5.0)),
+            primary=bool(value.get("primary", False)),
         )
 
     @property
     def mapped_projects(self) -> list[str]:
         """Return sorted mapped project folder names."""
         return sorted(self.project_ids)
+
+    @property
+    def is_primary_task_store(self) -> bool:
+        """Return True when SP is enabled and marked primary for day-to-day tasks."""
+        return self.enabled and self.primary
+
+
+def refuse_of_import_while_primary(
+    config: SuperProductivityConfig,
+    *,
+    allow: bool,
+    action: str,
+) -> None:
+    """Exit if an OmniFocus→SP import is blocked by ``primary`` without override."""
+    if config.is_primary_task_store and not allow:
+        raise SystemExit(
+            f"{action} blocked: superproductivity.primary is true "
+            "(OmniFocus frozen / SP primary for dogfooding). "
+            "Pass --allow-while-primary only for intentional one-shot imports. "
+            "See docs/of-frozen-sp-primary.md."
+        )
 
 
 def _is_loopback_endpoint(endpoint: str) -> bool:
@@ -476,15 +502,12 @@ def _parse_source_from_notes(notes: str | None) -> str | None:
 
 
 def _first_uri_from_notes(notes: str | None) -> str | None:
-    """Return the first http(s)/file/message URI found in notes."""
-    if not notes:
-        return None
-    for line in notes.splitlines():
-        candidate = line.strip()
-        if candidate.startswith(("http://", "https://", "file:", "message:", "obsidian:")):
-            return candidate
-    return None
+    """Return the first http(s)/file/message URI found in notes.
 
+    Accepts bare URI lines, ``<uri>`` autolinks, and markdown ``[label](uri)``
+    (the form Forge writes for Super Productivity).
+    """
+    return extract_uri_from_notes(notes)
 
 @dataclass(frozen=True)
 class SpInboxItem:
@@ -549,8 +572,12 @@ class SpTaskStore:
             uri = resolved_file.as_uri()
             kind = "file"
 
+        link_lines: list[str] = []
         if uri:
-            note_parts.append(uri)
+            link_lines = format_sp_note_attachment(
+                uri, kind=kind, forge_home=self.forge_home
+            )
+            note_parts.extend(link_lines)
 
         payload: dict[str, Any] = {"title": clean_title, "notes": "\n".join(note_parts)}
         created = self.client.create_task(INBOX_PROJECT_ID, payload)
@@ -560,16 +587,19 @@ class SpTaskStore:
         if uri:
             links.append({"kind": (kind or "link"), "uri": uri})
 
-        if stash and resolved_file is not None:
+        if stash and resolved_file is not None and link_lines:
             stashed = self._stash_file(task_id, resolved_file)
             stashed_uri = stashed.as_uri()
-            payload_notes = "\n".join(
-                part if part != uri else stashed_uri for part in note_parts
+            stashed_lines = format_sp_note_attachment(
+                stashed_uri, kind="file", forge_home=self.forge_home
             )
+            # Drop previous attachment lines, then append stashed ones.
+            kept = note_parts[: -len(link_lines)] if link_lines else list(note_parts)
+            note_parts = [*kept, *stashed_lines]
+            payload_notes = "\n".join(note_parts)
             self.client.update_task(task_id, {"notes": payload_notes})
             links = [{"kind": "file", "uri": stashed_uri}]
             note_parts = [payload_notes]
-
         return SpInboxItem(
             task_id=task_id,
             title=clean_title,
