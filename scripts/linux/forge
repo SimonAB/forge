@@ -53,6 +53,7 @@ class Config:
     archive_after_shipped_days: int
     sidecar_enabled: bool
     prefer_sidecar: bool
+    superproductivity_enabled: bool
 
     @property
     def workflow_tags(self) -> set[str]:
@@ -120,6 +121,7 @@ def load_config(home: Path | None = None) -> Config:
     raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     board = raw.get("board") or {}
     nexus = raw.get("nexus") or {}
+    superproductivity = raw.get("superproductivity") or {}
     columns = [
         Column(name=c["name"], tag=c["tag"], colour=int(c.get("colour", 0)))
         for c in board.get("columns") or []
@@ -140,6 +142,7 @@ def load_config(home: Path | None = None) -> Config:
         archive_after_shipped_days=max(0, int(board.get("archive_after_shipped_days") or 7)),
         sidecar_enabled=bool(nexus.get("sidecar_enabled", False)),
         prefer_sidecar=bool(nexus.get("prefer_sidecar", True)),
+        superproductivity_enabled=bool(superproductivity.get("enabled", False)),
     )
 
 
@@ -611,6 +614,14 @@ def cmd_delegate(args: argparse.Namespace) -> int:
     """Expose portable Python task helpers through the Linux `forge` surface."""
 
     root = forge_home()
+    if args.command in {"capture", "tasks"} and not load_config(root).superproductivity_enabled:
+        print(
+            "Linux task commands require Super Productivity. Enable "
+            "superproductivity.enabled in this machine's config.yaml, then run "
+            "'forge superproductivity setup-token' and map project_ids.",
+            file=sys.stderr,
+        )
+        return 2
     scripts = {
         "capture": root / "scripts" / "forge-capture.py",
         "tasks": root / "scripts" / "forge-capture.py",

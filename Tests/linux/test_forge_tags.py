@@ -132,6 +132,27 @@ class FinderTagCompatTests(unittest.TestCase):
             )
             self.assertEqual(forge_sidecar.load(folder).column, "Coding")
 
+    def test_capture_refuses_legacy_task_store(self) -> None:
+        """Linux capture does not silently create the retired local task database."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            (home / "config.yaml").write_text(
+                "project_roots: []\n"
+                "board: {columns: [], meta_tags: []}\n"
+                "superproductivity: {enabled: false}\n",
+                encoding="utf-8",
+            )
+            result = subprocess.run(
+                [sys.executable, str(FORGE_SCRIPT), "capture", "A task"],
+                text=True,
+                capture_output=True,
+                env=dict(os.environ, FORGE_HOME=str(home)),
+            )
+            self.assertEqual(result.returncode, 2)
+            self.assertIn("require Super Productivity", result.stderr)
+            self.assertFalse((home / ".forge" / "tasks.db").exists())
+
 
 if __name__ == "__main__":
     unittest.main()

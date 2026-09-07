@@ -12,6 +12,7 @@ state; the macOS UI remains unchanged.
 | Kanban column / meta / `#Person` tags | Yes (`forge` Python CLI) |
 | Portable `.forge/kanban.toml` | Yes (`forge fs`, opt-in) |
 | `forge board`, `move`, `status`, `project-tag` | Yes |
+| `forge capture`, `tasks`, `superproductivity` | Yes, with Super Productivity configured |
 | Hermes `forge-board` skill + `forge-brief.py` | Yes (once Hermes Agent is installed) |
 | Forge.app / Sparkle / OmniFocus / Reminders | macOS only |
 

@@ -149,7 +149,7 @@ def main() -> int:
     parser.add_argument("--json", action="store_true")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    sub.add_parser("setup-token", help="store the API token in macOS Keychain")
+    sub.add_parser("setup-token", help="store the API token in the platform credential store")
     sub.add_parser("status")
     sub.add_parser("list")
     show = sub.add_parser("show")
