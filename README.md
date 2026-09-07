@@ -52,6 +52,7 @@ For a longer tour of concepts and workflows, see the user manual in
 | [Forge.app](docs/app.md) | Menu bar companion and board window |
 | [Hermes + Ollama](docs/hermes.md) | Privacy-first local assistant (`forge-board` skill) |
 | [Neovim plugin](docs/neovim.md) | Keymaps, commands, and dashboard integration via `forge-nvim.lua` |
+| [Linux](docs/linux.md) | Finder-compatible xattr CLI + Hermes on Linux (Omarchy); macOS app remains Darwin-only |
 
 ## Project website
 

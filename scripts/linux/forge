@@ -1,0 +1,550 @@
+#!/usr/bin/env python3
+"""Linux-compatible Forge CLI using Finder-compatible xattrs (+ sidecar).
+
+Implements the board / move / status / project-tag / tags-doctor subset so this
+machine stays aligned with the macOS Swift CLI. OmniFocus, Reminders, and the
+menu-bar app remain macOS-only.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sys
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Sequence
+
+import yaml
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+import forge_tags  # noqa: E402
+
+DEFAULT_FORGE_HOME = Path.home() / "Documents" / "Software" / "Forge"
+PROJECT_TAG_DEFAULT = "🔥 Forge"
+
+
+@dataclass(frozen=True)
+class Column:
+    """Kanban column mapped to a Finder tag."""
+
+    name: str
+    tag: str
+    colour: int
+
+
+@dataclass
+class Config:
+    """Subset of Forge config.yaml needed on Linux."""
+
+    forge_home: Path
+    project_roots: list[Path]
+    project_scan_depth: int
+    columns: list[Column]
+    meta_tags: list[str]
+    tag_aliases: dict[str, str]
+    project_tag: str | None
+    archive_after_shipped_days: int
+
+    @property
+    def workflow_tags(self) -> set[str]:
+        """Return canonical and alias workflow tags."""
+
+        tags = {c.tag for c in self.columns}
+        tags.update(self.tag_aliases.keys())
+        return tags
+
+    def column_for_tag(self, tag: str) -> Column | None:
+        """Resolve a Finder tag to its column."""
+
+        resolved = self.tag_aliases.get(tag, tag)
+        for column in self.columns:
+            if column.tag == resolved:
+                return column
+        return None
+
+    def column_named(self, name: str) -> Column | None:
+        """Find a column by name (case-insensitive, unique prefix)."""
+
+        lower = name.lower()
+        exact = [c for c in self.columns if c.name.lower() == lower]
+        if exact:
+            return exact[0]
+        prefixed = [c for c in self.columns if c.name.lower().startswith(lower)]
+        return prefixed[0] if len(prefixed) == 1 else None
+
+
+@dataclass(frozen=True)
+class Project:
+    """A project folder with tags."""
+
+    name: str
+    path: Path
+    tags: tuple[str, ...]
+    workflow_tag: str | None
+    column: str | None
+    meta_tags: tuple[str, ...]
+    assignees: tuple[str, ...]
+
+
+def forge_home() -> Path:
+    """Resolve Forge home from env or the default path."""
+
+    env = os.environ.get("FORGE_HOME", "").strip()
+    if env:
+        return Path(env).expanduser().resolve()
+    return DEFAULT_FORGE_HOME.expanduser().resolve()
+
+
+def load_config(home: Path | None = None) -> Config:
+    """Load config.yaml from Forge home."""
+
+    root = home or forge_home()
+    path = root / "config.yaml"
+    if not path.is_file():
+        sample = root / "config.sample.yaml"
+        raise SystemExit(
+            f"Missing {path}. Copy {sample} to config.yaml and adjust project_roots."
+        )
+    raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    board = raw.get("board") or {}
+    columns = [
+        Column(name=c["name"], tag=c["tag"], colour=int(c.get("colour", 0)))
+        for c in board.get("columns") or []
+    ]
+    roots = raw.get("project_roots") or ([raw["workspace"]] if raw.get("workspace") else [])
+    return Config(
+        forge_home=root,
+        project_roots=[Path(os.path.expanduser(p)).resolve() for p in roots],
+        project_scan_depth=max(1, int(raw.get("project_scan_depth") or 1)),
+        columns=columns,
+        meta_tags=list(board.get("meta_tags") or []),
+        tag_aliases=dict(board.get("tag_aliases") or {}),
+        project_tag=raw.get("project_tag"),
+        archive_after_shipped_days=max(0, int(board.get("archive_after_shipped_days") or 7)),
+    )
+
+
+def assignee_id(tag: str) -> str | None:
+    """Return assignee name for a #Person tag, else None."""
+
+    trimmed = tag.strip()
+    if not trimmed.startswith("#"):
+        return None
+    name = trimmed[1:].strip()
+    return name or None
+
+
+def classify(name: str, path: Path, tags: Sequence[str], config: Config) -> Project:
+    """Classify folder tags into column / meta / assignees."""
+
+    workflow_tag = None
+    column_name = None
+    meta: list[str] = []
+    assignees: list[str] = []
+    meta_set = set(config.meta_tags)
+
+    for tag in tags:
+        person = assignee_id(tag)
+        if person is not None:
+            assignees.append(person)
+            continue
+        if tag in meta_set:
+            meta.append(tag)
+            continue
+        if workflow_tag is None:
+            col = config.column_for_tag(tag)
+            if col is not None:
+                workflow_tag = col.tag
+                column_name = col.name
+
+    return Project(
+        name=name,
+        path=path,
+        tags=tuple(tags),
+        workflow_tag=workflow_tag,
+        column=column_name,
+        meta_tags=tuple(meta),
+        assignees=tuple(assignees),
+    )
+
+
+def qualifies(tags: Sequence[str], config: Config) -> bool:
+    """Return True when the folder is a Forge project."""
+
+    if not config.project_tag:
+        return True
+    return config.project_tag in tags
+
+
+def scan_projects(config: Config) -> list[Project]:
+    """Scan configured roots for project folders."""
+
+    projects: list[Project] = []
+
+    def walk(directory: Path, remaining: int) -> None:
+        if remaining <= 0 or not directory.is_dir():
+            return
+        try:
+            entries = sorted(directory.iterdir(), key=lambda p: p.name.lower())
+        except OSError:
+            return
+        for entry in entries:
+            if entry.name.startswith(".") or not entry.is_dir():
+                continue
+            tags = forge_tags.read_tags(entry)
+            if qualifies(tags, config):
+                projects.append(classify(entry.name, entry, tags, config))
+            elif remaining > 1:
+                walk(entry, remaining - 1)
+
+    for root in config.project_roots:
+        walk(root, config.project_scan_depth)
+    return projects
+
+
+def find_project(query: str, projects: Sequence[Project]) -> Project | None:
+    """Resolve a project by exact name or unique substring."""
+
+    lower = query.lower()
+    exact = [p for p in projects if p.name.lower() == lower]
+    if exact:
+        return exact[0]
+    matches = [p for p in projects if lower in p.name.lower()]
+    if len(matches) == 1:
+        return matches[0]
+    if len(matches) > 1:
+        print(f"Ambiguous match for '{query}':", file=sys.stderr)
+        for match in matches:
+            print(f"  - {match.name}", file=sys.stderr)
+        return None
+    return None
+
+
+def days_since_mtime(path: Path) -> float:
+    """Return days since directory mtime."""
+
+    import time
+
+    try:
+        mtime = path.stat().st_mtime
+    except OSError:
+        return 0.0
+    return max(0.0, (time.time() - mtime) / 86400.0)
+
+
+def project_json(project: Project) -> dict[str, Any]:
+    """Build a board --json project row."""
+
+    return {
+        "name": project.name,
+        "path": str(project.path),
+        "column": project.column,
+        "workflowTag": project.workflow_tag,
+        "metaTags": list(project.meta_tags),
+        "assignees": list(project.assignees),
+        "tags": list(project.tags),
+        "radarBucket": "active",
+        "daysSinceActivity": round(days_since_mtime(project.path), 2),
+        "activityModificationDate": None,
+        "activitySource": "mtime",
+        "archiveStatus": None,
+        "daysUntilArchive": None,
+        "shippedAt": None,
+    }
+
+
+def cmd_board(args: argparse.Namespace) -> int:
+    """Print the kanban board."""
+
+    config = load_config()
+    projects = scan_projects(config)
+    if args.column:
+        needle = args.column.lower()
+        projects = [p for p in projects if (p.column or "").lower() == needle]
+    if args.assignee:
+        person = args.assignee.lstrip("#").lower()
+        projects = [p for p in projects if any(a.lower() == person for a in p.assignees)]
+
+    if args.json:
+        payload = {
+            "board": {
+                "columns": [
+                    {"name": c.name, "tag": c.tag, "colour": c.colour} for c in config.columns
+                ],
+                "metaTags": config.meta_tags,
+                "tagAliases": [
+                    {"from": src, "to": dst} for src, dst in sorted(config.tag_aliases.items())
+                ],
+                "archiveAfterShippedDays": config.archive_after_shipped_days,
+                "completedMetaTag": next(
+                    (t for t in config.meta_tags if t.upper().startswith("COMPLETED")), None
+                ),
+            },
+            "projects": [project_json(p) for p in projects],
+            "platform": "linux",
+            "tagBackend": "xattr+sidecar",
+        }
+        print(json.dumps(payload, indent=2, sort_keys=True))
+        return 0
+
+    if args.list:
+        by_col: dict[str, list[Project]] = {c.name: [] for c in config.columns}
+        untagged: list[Project] = []
+        for project in projects:
+            if project.column and project.column in by_col:
+                by_col[project.column].append(project)
+            else:
+                untagged.append(project)
+        for column in config.columns:
+            items = by_col[column.name]
+            print(f"{column.name} ({len(items)})")
+            if not items:
+                print("  (empty)")
+            for project in items:
+                extras = " ".join(list(project.meta_tags) + [f"@{a}" for a in project.assignees])
+                suffix = f" {extras}" if extras else ""
+                print(f"  • {project.name}{suffix}")
+            print()
+        if untagged:
+            print(f"Untagged ({len(untagged)})")
+            for project in untagged:
+                print(f"  • {project.name}")
+        return 0
+
+    # Compact multi-column summary
+    print(f"Forge board — {len(projects)} project(s)  [linux xattr]")
+    print("-" * 48)
+    for column in config.columns:
+        items = [p for p in projects if p.column == column.name]
+        names = ", ".join(p.name for p in items) if items else "—"
+        print(f"{column.name:8} ({len(items):2})  {names}")
+    orphan = [p for p in projects if p.column is None]
+    if orphan:
+        print(f"{'Untagged':8} ({len(orphan):2})  {', '.join(p.name for p in orphan)}")
+    return 0
+
+
+def cmd_status(args: argparse.Namespace) -> int:
+    """Print a short status dashboard."""
+
+    config = load_config()
+    projects = scan_projects(config)
+    print(f"Forge home: {config.forge_home}")
+    print(f"Roots: {', '.join(str(p) for p in config.project_roots)}")
+    print(f"Projects: {len(projects)}")
+    for column in config.columns:
+        count = sum(1 for p in projects if p.column == column.name)
+        if count:
+            print(f"  {column.name}: {count}")
+    urgent = [p for p in projects if any(t.upper().startswith("URGENT") for t in p.tags)]
+    if urgent:
+        print("URGENT: " + ", ".join(p.name for p in urgent))
+    return 0
+
+
+def cmd_move(args: argparse.Namespace) -> int:
+    """Move a project to a column by rewriting workflow tags."""
+
+    config = load_config()
+    projects = scan_projects(config)
+    target = config.column_named(args.column)
+    if target is None:
+        valid = ", ".join(c.name for c in config.columns)
+        print(f"Unknown column '{args.column}'. Valid: {valid}", file=sys.stderr)
+        return 1
+    matched = find_project(args.project, projects)
+    if matched is None:
+        print(
+            f"No project matching '{args.project}'. Use 'forge board --list'.",
+            file=sys.stderr,
+        )
+        return 1
+
+    previous = matched.column or "Untagged"
+    forge_tags.replace_workflow_tag(matched.path, target.tag, config.workflow_tags)
+    if config.project_tag:
+        forge_tags.add_tag(matched.path, config.project_tag)
+
+    if args.json:
+        print(
+            json.dumps(
+                {
+                    "project": matched.name,
+                    "path": str(matched.path),
+                    "fromColumn": previous,
+                    "toColumn": target.name,
+                    "notes": ["linux: OmniFocus/Reminders sync skipped"],
+                },
+                indent=2,
+                sort_keys=True,
+            )
+        )
+    else:
+        print(f"{matched.name}: {previous} → {target.name}")
+    return 0
+
+
+def cmd_project_tag(args: argparse.Namespace) -> int:
+    """Add, remove, or list meta / assignee tags."""
+
+    config = load_config()
+    projects = scan_projects(config)
+    matched = find_project(args.project, projects)
+    if matched is None:
+        print(f"No project matching '{args.project}'.", file=sys.stderr)
+        return 1
+
+    if args.list or (not args.add and not args.remove):
+        print(f"{matched.name}: {', '.join(matched.tags) or '(no tags)'}")
+        return 0
+
+    tags = list(matched.tags)
+    if args.add:
+        for tag in args.add:
+            if not args.force and config.column_for_tag(tag) is not None:
+                print(f"Refusing workflow tag '{tag}' — use forge move.", file=sys.stderr)
+                return 1
+            if (
+                not args.force
+                and tag not in config.meta_tags
+                and assignee_id(tag) is None
+            ):
+                print(
+                    f"Unrecognised tag '{tag}' (use --force for arbitrary tags).",
+                    file=sys.stderr,
+                )
+                return 1
+            if tag not in tags:
+                tags.append(tag)
+    if args.remove:
+        tags = [t for t in tags if t not in args.remove]
+    forge_tags.write_tags(matched.path, tags)
+    print(f"{matched.name}: {', '.join(tags) or '(no tags)'}")
+    return 0
+
+
+def cmd_adopt(args: argparse.Namespace) -> int:
+    """Tag an existing folder as a Forge project (project tag + column)."""
+
+    config = load_config()
+    path = Path(args.path).expanduser().resolve()
+    if not path.is_dir():
+        print(f"Not a directory: {path}", file=sys.stderr)
+        return 1
+    column = config.column_named(args.column or "Watch")
+    if column is None:
+        print(f"Unknown column '{args.column}'.", file=sys.stderr)
+        return 1
+    tags = forge_tags.read_tags(path)
+    tags = [t for t in tags if t not in config.workflow_tags]
+    tags.append(column.tag)
+    if config.project_tag and config.project_tag not in tags:
+        tags.append(config.project_tag)
+    forge_tags.write_tags(path, tags)
+    print(f"Adopted {path.name} → {column.name}  tags={tags}")
+    return 0
+
+
+def cmd_tags_doctor(args: argparse.Namespace) -> int:
+    """Show how tags are stored for a path."""
+
+    path = Path(args.path).expanduser().resolve()
+    print(json.dumps(forge_tags.doctor(path), indent=2, sort_keys=True))
+    return 0
+
+
+def cmd_calendar(args: argparse.Namespace) -> int:
+    """macOS EventKit calendar is unavailable on Linux — emit empty JSON."""
+
+    if args.json:
+        print(json.dumps({"events": [], "platform": "linux", "available": False}, indent=2))
+    else:
+        print("Calendar is unavailable on Linux (EventKit is macOS-only).")
+    return 0
+
+
+def cmd_init(args: argparse.Namespace) -> int:
+    """Ensure Forge home and config exist (non-destructive)."""
+
+    home = Path(args.workspace).expanduser().resolve() if args.workspace else forge_home()
+    home.mkdir(parents=True, exist_ok=True)
+    config_path = home / "config.yaml"
+    sample = home / "config.sample.yaml"
+    if config_path.exists():
+        print(f"Already initialised: {config_path}")
+        return 0
+    if sample.is_file():
+        config_path.write_text(sample.read_text(encoding="utf-8"), encoding="utf-8")
+        print(f"Wrote {config_path} from sample")
+    else:
+        print(f"No sample at {sample}; create config.yaml manually.", file=sys.stderr)
+        return 1
+    return 0
+
+
+def build_parser() -> argparse.ArgumentParser:
+    """Build the top-level argument parser."""
+
+    parser = argparse.ArgumentParser(prog="forge", description="Forge CLI (Linux xattr port)")
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    board = sub.add_parser("board", help="Display the kanban board")
+    board.add_argument("-l", "--list", action="store_true")
+    board.add_argument("--json", action="store_true")
+    board.add_argument("-c", "--column")
+    board.add_argument("-a", "--assignee")
+    board.set_defaults(func=cmd_board)
+
+    status = sub.add_parser("status", help="Summary dashboard")
+    status.set_defaults(func=cmd_status)
+
+    move = sub.add_parser("move", help="Move a project between columns")
+    move.add_argument("project")
+    move.add_argument("column")
+    move.add_argument("--json", action="store_true")
+    move.set_defaults(func=cmd_move)
+
+    ptag = sub.add_parser("project-tag", help="Add/remove/list meta and assignee tags")
+    ptag.add_argument("project")
+    ptag.add_argument("--add", action="append", default=[])
+    ptag.add_argument("--remove", action="append", default=[])
+    ptag.add_argument("--list", action="store_true")
+    ptag.add_argument("--force", action="store_true")
+    ptag.set_defaults(func=cmd_project_tag)
+
+    adopt = sub.add_parser("adopt", help="Tag an existing folder as a Forge project")
+    adopt.add_argument("path")
+    adopt.add_argument("-c", "--column", default="Watch")
+    adopt.set_defaults(func=cmd_adopt)
+
+    doctor = sub.add_parser("tags-doctor", help="Inspect tag xattrs / sidecar for a path")
+    doctor.add_argument("path")
+    doctor.set_defaults(func=cmd_tags_doctor)
+
+    calendar = sub.add_parser("calendar", help="List calendar events (macOS only; empty on Linux)")
+    calendar.add_argument("--days", type=int, default=3)
+    calendar.add_argument("--json", action="store_true")
+    calendar.set_defaults(func=cmd_calendar)
+
+    init = sub.add_parser("init", help="Ensure Forge home config exists")
+    init.add_argument("--workspace")
+    init.set_defaults(func=cmd_init)
+
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    """CLI entry point."""
+
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    return int(args.func(args))
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -38,7 +38,9 @@ def _resolve_forge_bin() -> str:
         candidates.append(env)
     candidates.extend(
         [
+            os.path.expanduser("~/.local/bin/forge"),
             os.path.expanduser("~/bin/forge"),
+            os.path.join(FORGE_DIR, "scripts", "linux", "forge"),
             "/Applications/Forge.app/Contents/Resources/bin/forge",
             os.path.join(FORGE_DIR, ".build", "debug", "forge"),
         ]

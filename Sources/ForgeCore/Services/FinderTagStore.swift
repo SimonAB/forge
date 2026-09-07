@@ -2,9 +2,17 @@ import Foundation
 
 /// Reads and writes macOS Finder tags using Foundation for reading and the
 /// com.apple.metadata:_kMDItemUserTags xattr for writing (portable across macOS versions).
+///
+/// Cross-platform note: Linux Forge writes the same binary plist under
+/// `user.com.apple.metadata:_kMDItemUserTags` (required `user.` namespace) and a
+/// `.forge/usertags.bplist` sidecar. When reading via xattr fallbacks, both key
+/// names are tried so tags synced from Linux (e.g. Syncthing with xattrs) still
+/// resolve. See `docs/linux.md`.
 public struct FinderTagStore: Sendable {
 
     private static let tagXattrName = "com.apple.metadata:_kMDItemUserTags"
+    /// Linux / Syncthing often exposes Apple metadata under the user namespace.
+    private static let linuxTagXattrName = "user.com.apple.metadata:_kMDItemUserTags"
 
     /// Default timeout when reading tags for paths that may be undownloaded (e.g. iCloud placeholders).
     public static let defaultAvailabilityTimeout: TimeInterval = 2.0
@@ -15,7 +23,31 @@ public struct FinderTagStore: Sendable {
     public func readTags(at path: String) throws -> [String] {
         let url = URL(fileURLWithPath: path)
         let values = try url.resourceValues(forKeys: [.tagNamesKey])
-        return values.tagNames ?? []
+        let foundationTags = values.tagNames ?? []
+        if !foundationTags.isEmpty {
+            return foundationTags
+        }
+        return readTagsFromXattr(at: path) ?? []
+    }
+
+    /// Read the binary-plist tag xattr directly (Apple or Linux user. key).
+    private func readTagsFromXattr(at path: String) -> [String]? {
+        for name in [Self.tagXattrName, Self.linuxTagXattrName] {
+            var size = getxattr(path, name, nil, 0, 0, 0)
+            if size <= 0 { continue }
+            var buffer = [UInt8](repeating: 0, count: Int(size))
+            let readSize = buffer.withUnsafeMutableBytes { raw in
+                getxattr(path, name, raw.baseAddress, Int(size), 0, 0)
+            }
+            guard readSize > 0 else { continue }
+            let data = Data(buffer.prefix(Int(readSize)))
+            if let array = try? PropertyListSerialization.propertyList(
+                from: data, options: [], format: nil
+            ) as? [String] {
+                return array
+            }
+        }
+        return nil
     }
 
     /// Read tags only if the path responds within the timeout; returns nil on timeout or error.
@@ -26,10 +58,8 @@ public struct FinderTagStore: Sendable {
         }
         let box = ResultBox()
         let semaphore = DispatchSemaphore(value: 0)
-        let url = URL(fileURLWithPath: path)
         DispatchQueue.global(qos: .utility).async {
-            let values = try? url.resourceValues(forKeys: [.tagNamesKey])
-            box.tags = values?.tagNames ?? []
+            box.tags = try? self.readTags(at: path)
             semaphore.signal()
         }
         guard semaphore.wait(timeout: .now() + timeout) == .success else {
@@ -41,7 +71,6 @@ public struct FinderTagStore: Sendable {
     /// Async version: read tags only if the path responds within the timeout; returns nil on timeout or error.
     /// Prefer this over the synchronous version to avoid blocking the calling thread.
     public func readTagsIfAvailable(at path: String, timeout: TimeInterval = defaultAvailabilityTimeout) async -> [String]? {
-        let url = URL(fileURLWithPath: path)
         return await withCheckedContinuation { continuation in
             final class ResumeState: @unchecked Sendable {
                 let lock = NSLock()
@@ -58,8 +87,7 @@ public struct FinderTagStore: Sendable {
             let state = ResumeState()
             state.continuation = continuation
             DispatchQueue.global(qos: .utility).async {
-                let values = try? url.resourceValues(forKeys: [.tagNamesKey])
-                state.resumeOnce(with: values?.tagNames ?? [])
+                state.resumeOnce(with: try? self.readTags(at: path))
             }
             DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + timeout) {
                 state.resumeOnce(with: nil)
@@ -80,6 +108,18 @@ public struct FinderTagStore: Sendable {
         guard result == 0 else {
             throw TagStoreError.writeFailed(path: path, errno: errno)
         }
+        try writeLinuxSidecar(tags, at: path)
+    }
+
+    /// Mirror tags into `.forge/usertags.bplist` for Linux / sync tools that drop xattrs.
+    private func writeLinuxSidecar(_ tags: [String], at path: String) throws {
+        let dir = (path as NSString).appendingPathComponent(".forge")
+        try FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
+        let sidecar = (dir as NSString).appendingPathComponent("usertags.bplist")
+        let data = try PropertyListSerialization.data(
+            fromPropertyList: tags as NSArray, format: .binary, options: 0
+        )
+        try data.write(to: URL(fileURLWithPath: sidecar), options: .atomic)
     }
 
     /// Add a single tag, preserving existing tags. No-op if already present.

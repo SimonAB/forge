@@ -6,6 +6,11 @@ The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 ### Unreleased
 
+- **Linux** — Finder-compatible tag CLI (`scripts/linux/forge`) using the same
+  binary-plist xattr payload as macOS (`user.com.apple.metadata:_kMDItemUserTags`
+  plus `.forge/usertags.bplist` sidecar). See [`docs/linux.md`](docs/linux.md).
+  `FinderTagStore` also dual-writes the sidecar and reads the Linux `user.` key
+  when Foundation tags are empty.
 - **`forge edit`** — open files or directories in the terminal editor (vim/Neovim) using the same Herdr → tmux → GUI terminal path as board “open in Vim”. NeoVim launcher.app can call it for Finder “Open With”.
 - **`AGENTS.md` / morning brief** — OmniFocus task dates, inbox, completion, notes, and review go through OmniFocus directly (OmniJS / JXA, or Omni Group MCP when available); `forge omnifocus` remains the Finder join (snapshot, doctor, align, Refresh, column-tag mirroring). Morning GitHub checks cover all owned (non-fork) `SimonAB/` repos, not only the five primary packages.
 
