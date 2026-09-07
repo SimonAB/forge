@@ -279,7 +279,11 @@ def load_snapshot(
         if calendar_raw.returncode != 0:
             snap.calendar_error = (calendar_raw.stderr or calendar_raw.stdout or "").strip()
         else:
-            snap.calendar_today = _parse_calendar(json.loads(calendar_raw.stdout or "{}"), now=now)
+            calendar_payload = json.loads(calendar_raw.stdout or "{}")
+            if calendar_payload.get("available") is False:
+                snap.calendar_error = "calendar unavailable on this platform"
+            else:
+                snap.calendar_today = _parse_calendar(calendar_payload, now=now)
     except subprocess.TimeoutExpired:
         snap.calendar_error = f"calendar timed out after {calendar_timeout:g}s"
     except Exception as exc:  # pragma: no cover

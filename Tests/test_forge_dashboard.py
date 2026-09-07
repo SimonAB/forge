@@ -40,6 +40,18 @@ class DashboardRenderTests(unittest.TestCase):
             self.assertEqual(snap.due_today[0].project_name, "Demo")
             self.assertFalse((root / '.forge/tasks.db').exists())
 
+    def test_snapshot_marks_unavailable_calendar(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "config.yaml").write_text("superproductivity: {enabled: false}\n")
+            with patch('forge_dashboard.data.resolve_forge_bin', return_value='forge'), \
+                 patch('forge_dashboard.data.subprocess.check_output', return_value='{"projects":[]}'), \
+                 patch('forge_dashboard.data.subprocess.run', return_value=Mock(
+                     returncode=0, stdout='{"events":[],"available":false}'
+                 )):
+                snap = load_snapshot(forge_home=root)
+            self.assertEqual(snap.calendar_error, "calendar unavailable on this platform")
+
     def _sample_snapshot(self) -> DashboardSnapshot:
         now = datetime(2026, 9, 2, 8, 0, tzinfo=timezone.utc)
         return DashboardSnapshot(

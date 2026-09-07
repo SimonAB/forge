@@ -14,7 +14,7 @@ state; the macOS UI remains unchanged.
 | `forge board`, `move`, `status`, `project-tag` | Yes |
 | `forge capture`, `tasks`, `superproductivity` | Yes, with Super Productivity configured |
 | Hermes `forge-board` skill + `forge-brief.py` | Yes (once Hermes Agent is installed) |
-| Forge.app / Sparkle / OmniFocus / Reminders | macOS only |
+| Calendar / Forge.app / Sparkle / OmniFocus / Reminders | macOS only (calendar reports unavailable on Linux) |
 
 ## Install on this machine
 
