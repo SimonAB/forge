@@ -1,6 +1,4 @@
 import QtQuick
-import QtQuick.Controls
-import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 import qs.Commons
@@ -55,55 +53,24 @@ Panel {
     function refresh(): string { root.refresh(); return "ok" }
   }
 
-  BarIconButton {
+  Item {
     id: button
     anchors.fill: parent
-    bar: root.bar
-    iconComponent: Component {
-      Text { text: "♜"; color: bar ? bar.foreground : Color.foreground; font.pixelSize: Style.font.pixelSize(15) }
+    implicitWidth: 27
+    implicitHeight: 26
+    Rectangle {
+      anchors.centerIn: parent
+      width: 10
+      height: 10
+      radius: width / 2
+      color: "white"
     }
-    onPressed: root.toggle()
-  }
-
-  KeyboardPanel {
-    id: panel
-    anchorItem: button
-    owner: root
-    bar: root.bar
-    open: root.opened
-    contentWidth: Style.space(300)
-    contentHeight: Style.space(230)
-
-    Column {
+    MouseArea {
       anchors.fill: parent
-      anchors.margins: Style.space(14)
-      spacing: Style.space(10)
-
-      RowLayout {
-        width: parent.width
-        Text { text: "Forge"; color: bar ? bar.foreground : Color.foreground; font.bold: true; Layout.fillWidth: true }
-        Button { text: "↻"; onClicked: root.refresh() }
-      }
-      Label { text: root.loading ? "Refreshing…" : root.errorText; visible: text !== ""; wrapMode: Text.WordWrap }
-      Label {
-        text: {
-          var columns = root.snapshot.columns || {}
-          var names = Object.keys(columns)
-          return names.length ? names.map(function (name) { return name + "  " + columns[name] }).join("\n") : "No board data"
-        }
-        color: bar ? bar.foreground : Color.foreground
-      }
-      Label {
-        text: {
-          var world = root.snapshot.world || {}
-          return "SP: " + (world.open_tasks || 0) + " open · " + (world.inbox || 0) + " inbox"
-        }
-        color: bar ? bar.foreground : Color.foreground
-      }
-      RowLayout {
-        width: parent.width
-        Button { text: "Open board"; onClicked: root.openBoard(); Layout.fillWidth: true }
-        Button { text: "Open SP"; onClicked: root.openSuperProductivity(); Layout.fillWidth: true }
+      acceptedButtons: Qt.LeftButton | Qt.RightButton
+      onClicked: function(mouse) {
+        if (mouse.button === Qt.RightButton) root.refresh()
+        else root.openBoard()
       }
     }
   }

@@ -4,7 +4,7 @@ set -euo pipefail
 # Install only user-owned files. Omarchy's /usr/share tree is intentionally
 # untouched; the desktop entry resolves forge-board through PATH.
 forge_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-bin_root="${XDG_BIN_HOME:-${XDG_DATA_HOME:-$HOME/.local}/bin}"
+bin_root="${XDG_BIN_HOME:-$HOME/.local/bin}"
 applications_root="${XDG_DATA_HOME:-$HOME/.local}/applications"
 mkdir -p "$bin_root" "$applications_root"
 ln -sfn "$forge_root/scripts/linux/forge-board" "$bin_root/forge-board"

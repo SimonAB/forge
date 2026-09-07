@@ -71,9 +71,8 @@ surface has settled.
 ## Omarchy bar widget
 
 The source tree includes a user-installable Quickshell widget at
-`packaging/omarchy/io.github.simonab.forge`. It runs `forge dashboard --json`,
-shows column counts and SP inbox/open-task counts, and offers buttons for the
-GTK board and SP. Install it by copying that directory to
+`packaging/omarchy/io.github.simonab.forge`. It provides a compact Forge bar
+indicator and launches the GTK board. Install it by copying that directory to
 `~/.config/omarchy/plugins/io.github.simonab.forge/`, then enable it and add
 the widget to the bar:
 
