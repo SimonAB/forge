@@ -17,6 +17,9 @@ Panel {
   implicitHeight: button.implicitHeight
   property var snapshot: ({})
   property var boardProjects: []
+  property var boardColumns: []
+  property var selectedProject: null
+  property string pendingColumn: ""
   property string errorText: ""
   property bool loading: false
   property int pendingReads: 0
@@ -38,6 +41,35 @@ Panel {
     if (!path) return
     launcher.command = ["xdg-open", path]
     launcher.running = true
+  }
+  function selectProject(project) {
+    selectedProject = project
+    projectDialog.open()
+  }
+  function moveTargets(project) {
+    if (!project || !project.column) return []
+    var targets = []
+    var index = -1
+    for (var i = 0; i < boardColumns.length; i++) {
+      if (boardColumns[i].name === project.column) { index = i; break }
+    }
+    // Forward movement is deliberately limited to one column. Shipped is
+    // evidence-gated and therefore never offered by this UI.
+    if (index >= 0 && index + 1 < boardColumns.length
+        && boardColumns[index + 1].name !== "Shipped")
+      targets.push(boardColumns[index + 1].name)
+    if (project.column !== "Paused" && project.column !== "Shipped") targets.push("Paused")
+    return targets
+  }
+  function requestMove(project, target) {
+    pendingColumn = target
+    confirmMove.open()
+  }
+  function performMove() {
+    if (!selectedProject || !pendingColumn || moveProcess.running) return
+    moveProcess.command = ["forge", "move", selectedProject.name, pendingColumn, "--json"]
+    moveProcess.running = true
+    projectDialog.close()
   }
   function readFinished() {
     pendingReads = Math.max(0, pendingReads - 1)
@@ -74,6 +106,7 @@ Panel {
       } else {
         try {
           var payload = JSON.parse(boardOutput.text)
+          boardColumns = payload.board && payload.board.columns ? payload.board.columns : []
           boardProjects = payload.projects || []
         } catch (error) { errorText = "Forge returned invalid board JSON" }
       }
@@ -82,6 +115,18 @@ Panel {
   }
 
   Process { id: launcher; command: []; running: false }
+
+  Process {
+    id: moveProcess
+    command: []
+    running: false
+    stdout: StdioCollector { id: moveOutput }
+    stderr: StdioCollector { id: moveDiagnostics }
+    onExited: function(exitCode) {
+      if (exitCode !== 0) errorText = moveDiagnostics.text || "Forge move failed"
+      else refresh()
+    }
+  }
 
   IpcHandler {
     target: root.ipcTarget
@@ -186,7 +231,7 @@ Panel {
               + (modelData.name || "")
             leftAlign: true
             foreground: root.foreground
-            onClicked: root.openProject(modelData.path || "")
+            onClicked: root.selectProject(modelData)
           }
         }
       }
@@ -196,5 +241,56 @@ Panel {
         Button { text: "Open SP"; onClicked: root.openSuperProductivity(); Layout.fillWidth: true }
       }
     }
+  }
+
+  Dialog {
+    id: projectDialog
+    modal: true
+    title: root.selectedProject ? root.selectedProject.name : "Project"
+    standardButtons: Dialog.Close
+    contentItem: Column {
+      spacing: Style.space(8)
+      Label {
+        text: root.selectedProject
+          ? (root.selectedProject.column || "(none)") + " project"
+          : ""
+        wrapMode: Text.WordWrap
+      }
+      Button {
+        text: "Open folder"
+        enabled: root.selectedProject !== null
+        onClicked: if (root.selectedProject) root.openProject(root.selectedProject.path || "")
+      }
+      Label { text: "Move to"; visible: moveRepeater.count > 0 }
+      Repeater {
+        id: moveRepeater
+        model: root.selectedProject ? root.moveTargets(root.selectedProject) : []
+        delegate: Button {
+          required property string modelData
+          text: modelData
+          onClicked: root.requestMove(root.selectedProject, modelData)
+        }
+      }
+      Label {
+        text: root.moveTargets(root.selectedProject).length === 0
+          ? "No permitted forward move"
+          : "Forward moves are limited to one column."
+        wrapMode: Text.WordWrap
+      }
+    }
+  }
+
+  Dialog {
+    id: confirmMove
+    modal: true
+    title: "Confirm project move"
+    standardButtons: Dialog.Ok | Dialog.Cancel
+    contentItem: Label {
+      text: root.selectedProject
+        ? "Move “" + root.selectedProject.name + "” to “" + root.pendingColumn + "”?"
+        : ""
+      wrapMode: Text.WordWrap
+    }
+    onAccepted: root.performMove()
   }
 }
