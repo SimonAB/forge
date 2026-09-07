@@ -16,20 +16,33 @@ Panel {
   implicitWidth: button.implicitWidth
   implicitHeight: button.implicitHeight
   property var snapshot: ({})
+  property var boardProjects: []
   property string errorText: ""
   property bool loading: false
+  property int pendingReads: 0
   readonly property string fontFamily: bar ? bar.fontFamily : Style.font.family
   readonly property color foreground: bar ? bar.foreground : Color.foreground
 
   function refresh() {
-    if (reader.running) return
+    if (reader.running || boardReader.running) return
     loading = true
     errorText = ""
+    pendingReads = 2
     reader.running = true
+    boardReader.running = true
   }
 
   function openBoard() { if (bar) bar.run("forge-board") }
   function openSuperProductivity() { if (bar) bar.run("super-productivity") }
+  function openProject(path) {
+    if (!path) return
+    launcher.command = ["xdg-open", path]
+    launcher.running = true
+  }
+  function readFinished() {
+    pendingReads = Math.max(0, pendingReads - 1)
+    if (pendingReads === 0) loading = false
+  }
 
   Component.onCompleted: refresh()
   onOpenedChanged: if (opened) refresh()
@@ -40,15 +53,35 @@ Panel {
     stdout: StdioCollector { id: output }
     stderr: StdioCollector { id: diagnostics }
     onExited: function(exitCode) {
-      loading = false
       if (exitCode !== 0) {
         errorText = diagnostics.text || "Forge dashboard failed"
-        return
+      } else {
+        try { snapshot = JSON.parse(output.text) }
+        catch (error) { errorText = "Forge returned invalid dashboard JSON" }
       }
-      try { snapshot = JSON.parse(output.text) }
-      catch (error) { errorText = "Forge returned invalid dashboard JSON" }
+      root.readFinished()
     }
   }
+
+  Process {
+    id: boardReader
+    command: ["forge", "board", "--json"]
+    stdout: StdioCollector { id: boardOutput }
+    stderr: StdioCollector { id: boardDiagnostics }
+    onExited: function(exitCode) {
+      if (exitCode !== 0) {
+        errorText = boardDiagnostics.text || "Forge board failed"
+      } else {
+        try {
+          var payload = JSON.parse(boardOutput.text)
+          boardProjects = payload.projects || []
+        } catch (error) { errorText = "Forge returned invalid board JSON" }
+      }
+      root.readFinished()
+    }
+  }
+
+  Process { id: launcher; command: []; running: false }
 
   IpcHandler {
     target: root.ipcTarget
@@ -133,6 +166,29 @@ Panel {
         color: root.foreground
         font.family: root.fontFamily
         font.pixelSize: Style.font.caption
+      }
+      Text {
+        text: "Projects"
+        color: root.foreground
+        font.family: root.fontFamily
+        font.pixelSize: Style.font.heading
+      }
+      Column {
+        width: parent.width
+        spacing: Style.space(4)
+        Repeater {
+          model: root.boardProjects
+          delegate: Button {
+            required property var modelData
+            width: parent.width
+            text: (modelData.column || "(none)") + " · "
+              + (modelData.metaTags && modelData.metaTags.some(function(tag) { return String(tag).toUpperCase().indexOf("URGENT") === 0 }) ? "⚠️ " : "")
+              + (modelData.name || "")
+            leftAlign: true
+            foreground: root.foreground
+            onClicked: root.openProject(modelData.path || "")
+          }
+        }
       }
       RowLayout {
         width: parent.width
