@@ -122,8 +122,7 @@ Panel {
 
     ScrollView {
       id: overviewScroll
-      width: parent.width
-      height: Style.space(650)
+      anchors.fill: parent
       clip: true
 
       Column {
