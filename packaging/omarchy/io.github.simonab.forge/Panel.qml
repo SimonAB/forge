@@ -89,8 +89,8 @@ Panel {
     id: button
     anchors.fill: parent
     bar: root.bar
-    text: "\uf6e3"
-    fontFamily: "Font Awesome 7 Free Solid"
+    text: "⚒"
+    fontFamily: "Noto Sans Symbols"
     tooltipText: "Forge"
     onPressed: function(buttonCode) {
       if (buttonCode === Qt.RightButton) root.refresh()
