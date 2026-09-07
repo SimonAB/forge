@@ -246,9 +246,12 @@ Panel {
   Dialog {
     id: projectDialog
     modal: true
+    width: Style.space(360)
+    height: Style.space(320)
     title: root.selectedProject ? root.selectedProject.name : "Project"
     standardButtons: Dialog.Close
     contentItem: Column {
+      width: Style.space(330)
       spacing: Style.space(8)
       Label {
         text: root.selectedProject
@@ -283,9 +286,12 @@ Panel {
   Dialog {
     id: confirmMove
     modal: true
+    width: Style.space(360)
+    height: Style.space(160)
     title: "Confirm project move"
     standardButtons: Dialog.Ok | Dialog.Cancel
     contentItem: Label {
+      width: Style.space(330)
       text: root.selectedProject
         ? "Move “" + root.selectedProject.name + "” to “" + root.pendingColumn + "”?"
         : ""
