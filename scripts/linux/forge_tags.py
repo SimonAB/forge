@@ -25,6 +25,7 @@ from typing import Iterable, Sequence
 
 APPLE_TAG_XATTR = "com.apple.metadata:_kMDItemUserTags"
 LINUX_TAG_XATTR = "user.com.apple.metadata:_kMDItemUserTags"
+XDG_TAG_XATTR = "user.xdg.tags"
 SIDECAR_REL = Path(".forge") / "usertags.bplist"
 
 
@@ -113,6 +114,18 @@ def read_tags(path: str | Path) -> list[str]:
     """
 
     folder = Path(path)
+    # `user.xdg.tags` is the Linux projection used by the portable Nexus.  Keep
+    # the Finder-compatible plist as a fallback for existing projects and for
+    # folders received from macOS.
+    raw_xdg = _read_xattr(folder, XDG_TAG_XATTR)
+    if raw_xdg is not None:
+        try:
+            text = raw_xdg.decode("utf-8")
+            tags = [tag.strip() for tag in text.split(",") if tag.strip()]
+            if tags:
+                return tags
+        except UnicodeDecodeError:
+            pass
     for name in read_xattr_names():
         raw = _read_xattr(folder, name)
         if raw is None:
@@ -126,11 +139,17 @@ def read_tags(path: str | Path) -> list[str]:
 
 
 def write_tags(path: str | Path, tags: Sequence[str], *, sidecar: bool = True) -> None:
-    """Replace all tags on ``path`` (xattr + optional sidecar)."""
+    """Replace tags in Linux and Finder-compatible local projections.
+
+    The canonical cross-machine representation is managed separately as
+    ``.forge/kanban.toml``.  Keeping the plist projection here makes a gradual
+    migration safe for folders shared with existing macOS Forge installations.
+    """
 
     folder = Path(path)
     data = encode_tags(tags)
     _write_xattr(folder, write_xattr_name(), data)
+    _write_xattr(folder, XDG_TAG_XATTR, ",".join(tags).encode("utf-8"))
     if sidecar:
         write_sidecar(folder, tags)
 

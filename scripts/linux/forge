@@ -23,6 +23,7 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 import forge_tags  # noqa: E402
+import forge_sidecar  # noqa: E402
 
 DEFAULT_FORGE_HOME = Path.home() / "Documents" / "Software" / "Forge"
 PROJECT_TAG_DEFAULT = "🔥 Forge"
@@ -49,6 +50,8 @@ class Config:
     tag_aliases: dict[str, str]
     project_tag: str | None
     archive_after_shipped_days: int
+    sidecar_enabled: bool
+    prefer_sidecar: bool
 
     @property
     def workflow_tags(self) -> set[str]:
@@ -94,9 +97,12 @@ class Project:
 def forge_home() -> Path:
     """Resolve Forge home from env or the default path."""
 
-    env = os.environ.get("FORGE_HOME", "").strip()
+    env = os.environ.get("FORGE_HOME", "").strip() or os.environ.get("FORGE_DIR", "").strip()
     if env:
         return Path(env).expanduser().resolve()
+    source_home = SCRIPT_DIR.parent.parent
+    if (source_home / "config.yaml").is_file() or (source_home / "config.sample.yaml").is_file():
+        return source_home
     return DEFAULT_FORGE_HOME.expanduser().resolve()
 
 
@@ -112,20 +118,27 @@ def load_config(home: Path | None = None) -> Config:
         )
     raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     board = raw.get("board") or {}
+    nexus = raw.get("nexus") or {}
     columns = [
         Column(name=c["name"], tag=c["tag"], colour=int(c.get("colour", 0)))
         for c in board.get("columns") or []
     ]
     roots = raw.get("project_roots") or ([raw["workspace"]] if raw.get("workspace") else [])
+    def resolve_root(value: str) -> Path:
+        candidate = Path(os.path.expanduser(value))
+        return (candidate if candidate.is_absolute() else root / candidate).resolve()
+
     return Config(
         forge_home=root,
-        project_roots=[Path(os.path.expanduser(p)).resolve() for p in roots],
+        project_roots=[resolve_root(p) for p in roots],
         project_scan_depth=max(1, int(raw.get("project_scan_depth") or 1)),
         columns=columns,
         meta_tags=list(board.get("meta_tags") or []),
         tag_aliases=dict(board.get("tag_aliases") or {}),
         project_tag=raw.get("project_tag"),
         archive_after_shipped_days=max(0, int(board.get("archive_after_shipped_days") or 7)),
+        sidecar_enabled=bool(nexus.get("sidecar_enabled", False)),
+        prefer_sidecar=bool(nexus.get("prefer_sidecar", True)),
     )
 
 
@@ -139,7 +152,7 @@ def assignee_id(tag: str) -> str | None:
     return name or None
 
 
-def classify(name: str, path: Path, tags: Sequence[str], config: Config) -> Project:
+def classify(name: str, path: Path, tags: Sequence[str], config: Config, *, prefer_sidecar: bool = True) -> Project:
     """Classify folder tags into column / meta / assignees."""
 
     workflow_tag = None
@@ -162,6 +175,13 @@ def classify(name: str, path: Path, tags: Sequence[str], config: Config) -> Proj
                 workflow_tag = col.tag
                 column_name = col.name
 
+    sidecar = forge_sidecar.load(path) if config.sidecar_enabled and prefer_sidecar and config.prefer_sidecar else None
+    if sidecar is not None:
+        workflow_tag = sidecar.workflow_tag
+        column_name = sidecar.column
+        meta = list(sidecar.meta)
+        assignees = [assignee_id(value) or value.lstrip("#") for value in sidecar.assignees]
+
     return Project(
         name=name,
         path=path,
@@ -181,7 +201,7 @@ def qualifies(tags: Sequence[str], config: Config) -> bool:
     return config.project_tag in tags
 
 
-def scan_projects(config: Config) -> list[Project]:
+def scan_projects(config: Config, *, prefer_sidecar: bool = True) -> list[Project]:
     """Scan configured roots for project folders."""
 
     projects: list[Project] = []
@@ -198,13 +218,50 @@ def scan_projects(config: Config) -> list[Project]:
                 continue
             tags = forge_tags.read_tags(entry)
             if qualifies(tags, config):
-                projects.append(classify(entry.name, entry, tags, config))
+                projects.append(classify(entry.name, entry, tags, config, prefer_sidecar=prefer_sidecar))
             elif remaining > 1:
                 walk(entry, remaining - 1)
 
     for root in config.project_roots:
         walk(root, config.project_scan_depth)
     return projects
+
+
+def sidecar_from_project(project: Project, *, source: str) -> forge_sidecar.KanbanSidecar:
+    """Build canonical portable state from a classified local project."""
+
+    return forge_sidecar.KanbanSidecar(
+        column=project.column,
+        workflow_tag=project.workflow_tag,
+        meta=project.meta_tags,
+        assignees=tuple(f"#{name}" for name in project.assignees),
+        updated_at=forge_sidecar.now(),
+        source=source,
+    )
+
+
+def write_sidecar_if_enabled(project: Project, config: Config, *, source: str) -> None:
+    if config.sidecar_enabled:
+        forge_sidecar.save(project.path, sidecar_from_project(project, source=source))
+
+
+def tags_from_sidecar(existing: Sequence[str], sidecar: forge_sidecar.KanbanSidecar, config: Config) -> list[str]:
+    """Paint portable kanban fields onto local tags without discarding other labels."""
+
+    meta = set(config.meta_tags)
+    tags = [
+        tag for tag in existing
+        if config.column_for_tag(tag) is None and tag not in meta and assignee_id(tag) is None
+    ]
+    workflow = sidecar.workflow_tag
+    if workflow is None and sidecar.column:
+        column = config.column_named(sidecar.column)
+        workflow = column.tag if column else None
+    if workflow:
+        tags.append(workflow)
+    tags.extend(tag for tag in sidecar.meta if tag not in tags)
+    tags.extend(tag if tag.startswith("#") else f"#{tag}" for tag in sidecar.assignees if (tag if tag.startswith("#") else f"#{tag}") not in tags)
+    return tags
 
 
 def find_project(query: str, projects: Sequence[Project]) -> Project | None:
@@ -369,6 +426,8 @@ def cmd_move(args: argparse.Namespace) -> int:
     forge_tags.replace_workflow_tag(matched.path, target.tag, config.workflow_tags)
     if config.project_tag:
         forge_tags.add_tag(matched.path, config.project_tag)
+    updated = classify(matched.name, matched.path, forge_tags.read_tags(matched.path), config, prefer_sidecar=False)
+    write_sidecar_if_enabled(updated, config, source="forge-move")
 
     if args.json:
         print(
@@ -424,6 +483,8 @@ def cmd_project_tag(args: argparse.Namespace) -> int:
     if args.remove:
         tags = [t for t in tags if t not in args.remove]
     forge_tags.write_tags(matched.path, tags)
+    updated = classify(matched.name, matched.path, tags, config, prefer_sidecar=False)
+    write_sidecar_if_enabled(updated, config, source="project-tag")
     print(f"{matched.name}: {', '.join(tags) or '(no tags)'}")
     return 0
 
@@ -446,6 +507,8 @@ def cmd_adopt(args: argparse.Namespace) -> int:
     if config.project_tag and config.project_tag not in tags:
         tags.append(config.project_tag)
     forge_tags.write_tags(path, tags)
+    adopted = classify(path.name, path, tags, config, prefer_sidecar=False)
+    write_sidecar_if_enabled(adopted, config, source="forge-move")
     print(f"Adopted {path.name} → {column.name}  tags={tags}")
     return 0
 
@@ -455,6 +518,81 @@ def cmd_tags_doctor(args: argparse.Namespace) -> int:
 
     path = Path(args.path).expanduser().resolve()
     print(json.dumps(forge_tags.doctor(path), indent=2, sort_keys=True))
+    return 0
+
+
+def _sidecar_matches(project: Project, sidecar: forge_sidecar.KanbanSidecar) -> bool:
+    return (
+        project.column == sidecar.column
+        and project.workflow_tag == sidecar.workflow_tag
+        and tuple(project.meta_tags) == tuple(sidecar.meta)
+        and tuple(f"#{name}" for name in project.assignees) == tuple(sidecar.assignees)
+    )
+
+
+def _fs_changes(config: Config, *, mode: str, prefer: str = "sidecar") -> list[dict[str, str]]:
+    """Plan Nexus migration/sync changes from raw local tags, never implicit state."""
+
+    changes: list[dict[str, str]] = []
+    for project in scan_projects(config, prefer_sidecar=False):
+        sidecar = forge_sidecar.load(project.path)
+        if sidecar is None:
+            if project.column or project.meta_tags or project.assignees:
+                changes.append({"project": project.name, "path": str(project.path), "action": "create-sidecar", "detail": project.column or "metadata"})
+            continue
+        if _sidecar_matches(project, sidecar):
+            continue
+        if mode == "doctor":
+            changes.append({"project": project.name, "path": str(project.path), "action": "drift", "detail": f"sidecar={sidecar.column or 'Untagged'} local={project.column or 'Untagged'}"})
+        elif prefer == "sidecar":
+            changes.append({"project": project.name, "path": str(project.path), "action": "sidecar-to-tags", "detail": sidecar.column or "Untagged"})
+        else:
+            changes.append({"project": project.name, "path": str(project.path), "action": "tags-to-sidecar", "detail": project.column or "Untagged"})
+    return changes
+
+
+def _print_fs(changes: list[dict[str, str]], args: argparse.Namespace) -> None:
+    if args.json:
+        print(json.dumps({"changes": changes}, indent=2, sort_keys=True))
+        return
+    if not changes:
+        print("Nexus: no drift.")
+        return
+    for change in changes:
+        print(f"{change['project']}: {change['action']} ({change['detail']})")
+
+
+def cmd_fs_doctor(args: argparse.Namespace) -> int:
+    _print_fs(_fs_changes(load_config(), mode="doctor"), args)
+    return 0
+
+
+def cmd_fs_migrate(args: argparse.Namespace) -> int:
+    config = load_config()
+    changes = _fs_changes(config, mode="migrate")
+    if args.apply:
+        for project in scan_projects(config, prefer_sidecar=False):
+            if forge_sidecar.load(project.path) is None and (project.column or project.meta_tags or project.assignees):
+                forge_sidecar.save(project.path, sidecar_from_project(project, source="migrate"))
+    _print_fs(changes, args)
+    return 0
+
+
+def cmd_fs_sync(args: argparse.Namespace) -> int:
+    config = load_config()
+    changes = _fs_changes(config, mode="sync", prefer=args.prefer)
+    if args.apply:
+        for project in scan_projects(config, prefer_sidecar=False):
+            sidecar = forge_sidecar.load(project.path)
+            if sidecar is None:
+                if project.column or project.meta_tags or project.assignees:
+                    forge_sidecar.save(project.path, sidecar_from_project(project, source="migrate"))
+            elif not _sidecar_matches(project, sidecar):
+                if args.prefer == "sidecar":
+                    forge_tags.write_tags(project.path, tags_from_sidecar(project.tags, sidecar, config))
+                else:
+                    forge_sidecar.save(project.path, sidecar_from_project(project, source="fs-import"))
+    _print_fs(changes, args)
     return 0
 
 
@@ -490,7 +628,7 @@ def cmd_init(args: argparse.Namespace) -> int:
 def build_parser() -> argparse.ArgumentParser:
     """Build the top-level argument parser."""
 
-    parser = argparse.ArgumentParser(prog="forge", description="Forge CLI (Linux xattr port)")
+    parser = argparse.ArgumentParser(prog="forge", description="Forge CLI (Linux Nexus port)")
     sub = parser.add_subparsers(dest="command", required=True)
 
     board = sub.add_parser("board", help="Display the kanban board")
@@ -525,6 +663,21 @@ def build_parser() -> argparse.ArgumentParser:
     doctor = sub.add_parser("tags-doctor", help="Inspect tag xattrs / sidecar for a path")
     doctor.add_argument("path")
     doctor.set_defaults(func=cmd_tags_doctor)
+
+    fs = sub.add_parser("fs", help="Portable kanban sidecar ↔ Linux tags")
+    fs_sub = fs.add_subparsers(dest="fs_command", required=True)
+    fs_doctor = fs_sub.add_parser("doctor", help="Report .forge/kanban.toml drift")
+    fs_doctor.add_argument("--json", action="store_true")
+    fs_doctor.set_defaults(func=cmd_fs_doctor)
+    fs_migrate = fs_sub.add_parser("migrate", help="Create missing sidecars from local tags (dry-run by default)")
+    fs_migrate.add_argument("--apply", action="store_true")
+    fs_migrate.add_argument("--json", action="store_true")
+    fs_migrate.set_defaults(func=cmd_fs_migrate)
+    fs_sync = fs_sub.add_parser("sync", help="Reconcile sidecars and local tags (dry-run by default)")
+    fs_sync.add_argument("--prefer", choices=["sidecar", "finder"], default="sidecar")
+    fs_sync.add_argument("--apply", action="store_true")
+    fs_sync.add_argument("--json", action="store_true")
+    fs_sync.set_defaults(func=cmd_fs_sync)
 
     calendar = sub.add_parser("calendar", help="List calendar events (macOS only; empty on Linux)")
     calendar.add_argument("--days", type=int, default=3)

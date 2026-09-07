@@ -5,15 +5,18 @@ from __future__ import annotations
 
 import os
 import plistlib
+import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parents[2] / "scripts" / "linux"
+FORGE_SCRIPT = SCRIPT_DIR / "forge"
 sys.path.insert(0, str(SCRIPT_DIR))
 
 import forge_tags  # noqa: E402
+import forge_sidecar  # noqa: E402
 
 
 class FinderTagCompatTests(unittest.TestCase):
@@ -46,6 +49,10 @@ class FinderTagCompatTests(unittest.TestCase):
             self.assertEqual(forge_tags.read_sidecar(folder), tags)
             raw = os.getxattr(folder, forge_tags.LINUX_TAG_XATTR)
             self.assertEqual(plistlib.loads(raw), tags)
+            self.assertEqual(
+                os.getxattr(folder, forge_tags.XDG_TAG_XATTR).decode("utf-8"),
+                ",".join(tags),
+            )
 
     def test_replace_workflow_preserves_meta(self) -> None:
         """Column moves keep meta and project tags."""
@@ -77,6 +84,53 @@ class FinderTagCompatTests(unittest.TestCase):
             except OSError:
                 self.skipTest("filesystem rejects bare Apple xattr name")
             self.assertEqual(forge_tags.read_tags(folder), ["Watch 👁️"])
+
+    def test_kanban_sidecar_round_trip(self) -> None:
+        """Portable TOML sidecar preserves workflow, metadata, and assignees."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp) / "Demo"
+            folder.mkdir()
+            original = forge_sidecar.KanbanSidecar(
+                column="Coding",
+                workflow_tag="Coding 🤖",
+                meta=("URGENT ⚠️",),
+                assignees=("#Alice",),
+                updated_at="2026-09-07T12:00:00.000Z",
+                source="forge-move",
+            )
+            forge_sidecar.save(folder, original)
+            self.assertEqual(forge_sidecar.load(folder), original)
+
+    def test_fs_migrate_creates_canonical_sidecar(self) -> None:
+        """The CLI migrates existing local tags only when --apply is supplied."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            projects = home / "projects"
+            folder = projects / "Demo"
+            folder.mkdir(parents=True)
+            forge_tags.write_tags(folder, ["Coding 🤖", "🔥 Forge", "#Alice"])
+            (home / "config.yaml").write_text(
+                "project_roots: [projects]\n"
+                "board:\n"
+                "  columns: [{name: Coding, tag: 'Coding 🤖', colour: 5}]\n"
+                "  meta_tags: []\n"
+                "project_tag: '🔥 Forge'\n",
+                encoding="utf-8",
+            )
+            env = dict(os.environ, FORGE_HOME=str(home))
+            preview = subprocess.run(
+                [sys.executable, str(FORGE_SCRIPT), "fs", "migrate", "--json"],
+                text=True, capture_output=True, check=True, env=env,
+            )
+            self.assertIn("create-sidecar", preview.stdout)
+            self.assertIsNone(forge_sidecar.load(folder))
+            subprocess.run(
+                [sys.executable, str(FORGE_SCRIPT), "fs", "migrate", "--apply"],
+                text=True, capture_output=True, check=True, env=env,
+            )
+            self.assertEqual(forge_sidecar.load(folder).column, "Coding")
 
 
 if __name__ == "__main__":

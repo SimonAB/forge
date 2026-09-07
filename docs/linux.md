@@ -1,8 +1,8 @@
 # Forge on Linux
 
-Forge’s Swift CLI and menu-bar app target **macOS 14+** (Finder tags, AppKit,
-OmniFocus, Reminders). This machine runs a **compatible Linux subset**: the same
-kanban model, the same tag *bytes*, and Hermes wiring — without the macOS UI.
+Forge’s Swift menu-bar app targets **macOS 14+** (Finder tags, AppKit,
+OmniFocus, Reminders). Linux has a compatible CLI subset and portable kanban
+state; the macOS UI remains unchanged.
 
 ## What works here
 
@@ -10,6 +10,7 @@ kanban model, the same tag *bytes*, and Hermes wiring — without the macOS UI.
 |---------|--------|
 | `config.yaml` + project folders | Yes |
 | Kanban column / meta / `#Person` tags | Yes (`forge` Python CLI) |
+| Portable `.forge/kanban.toml` | Yes (`forge fs`, opt-in) |
 | `forge board`, `move`, `status`, `project-tag` | Yes |
 | Hermes `forge-board` skill + `forge-brief.py` | Yes (once Hermes Agent is installed) |
 | Forge.app / Sparkle / OmniFocus / Reminders | macOS only |
@@ -17,18 +18,41 @@ kanban model, the same tag *bytes*, and Hermes wiring — without the macOS UI.
 ## Install on this machine
 
 ```bash
-# CLI (already linked when set up via the Omarchy agent)
-ln -sf ~/Documents/Software/Forge/scripts/linux/forge ~/.local/bin/forge
-chmod +x ~/Documents/Software/Forge/scripts/linux/forge
+# From the Forge checkout on this Linux host.
+ln -sf "$(pwd)/scripts/linux/forge" ~/.local/bin/forge
+chmod +x scripts/linux/forge
 
 # Adopt existing folders as projects (adds 🔥 Forge + a column tag)
 forge adopt ~/Work/apodemus-superspreaders-cdms -c Coding
 forge board --list
 ```
 
-Forge home: `~/Documents/Software/Forge` (`FORGE_HOME` overrides).
+The script uses its checkout as Forge home when it contains `config.yaml` or
+`config.sample.yaml`. `FORGE_HOME` (or the older `FORGE_DIR`) overrides it.
 
-## Shared Finder tags (macOS ↔ Linux)
+## Shared kanban state (macOS ↔ Linux)
+
+Enable the portable Nexus after reviewing its dry run:
+
+```yaml
+nexus:
+  sidecar_enabled: true
+  prefer_sidecar: true
+```
+
+```bash
+forge fs migrate          # preview sidecars built from local tags
+forge fs migrate --apply  # create .forge/kanban.toml
+forge fs doctor           # report local-tag / sidecar drift
+forge fs sync --apply     # paint local Linux tags from sidecars
+```
+
+`.forge/kanban.toml` is the portable representation. It records the workflow
+column, configured meta tags, and `#Person` assignees; it is suitable for git,
+Dropbox, LocalSend, and filesystems that do not retain xattrs. Migration and
+sync are dry-run by default.
+
+## Compatibility xattrs
 
 macOS stores tags in the extended attribute:
 
@@ -48,17 +72,22 @@ user.com.apple.metadata:_kMDItemUserTags
 
 with the **identical** binary plist payload. Readers try both names.
 
-### Sidecar (survives sync tools that drop xattrs)
+### Legacy Finder bridge
 
-Every write also updates:
+Every Linux write also paints:
+
+```text
+user.xdg.tags
+```
+
+and preserves the existing Finder-compatible sidecar:
 
 ```text
 <project>/.forge/usertags.bplist
 ```
 
-If xattrs are missing after a sync, Linux (and a future macOS import helper)
-can still recover tags from this file. Prefer enabling xattr sync when your
-tool supports it; keep the sidecar as a safety net.
+The binary plist exists for compatibility with older Forge folders and direct
+Finder-xattr sync. New cross-machine workflows should use `kanban.toml`.
 
 ### Sync recommendations
 
@@ -66,9 +95,9 @@ tool supports it; keep the sidecar as a safety net.
 |--------|--------|
 | **Syncthing** | Enable **Sync Extended Attributes** on both sides. Syncthing maps Apple ↔ `user.` namespaces across Darwin/Linux. |
 | **rsync** | Use `rsync -aX` (preserve xattrs). Test a round-trip before relying on it. |
-| **iCloud / many cloud clients** | Often **strip** xattrs. Rely on the `.forge/usertags.bplist` sidecar (and sync that folder). |
-| **git** | Does not store xattrs. Commit the sidecar if you want tags in the repo, or keep tags local. |
-| **Shared USB / dual-boot** | ext4 stores `user.*` fine; macOS will not read those natively without a bridge — use Syncthing or copy the sidecar. |
+| **iCloud / many cloud clients** | Often **strip** xattrs. Sync `.forge/kanban.toml`, then run `forge fs sync --apply`. |
+| **git** | Does not store xattrs. Commit `.forge/kanban.toml` if kanban state should travel with the project. |
+| **Shared USB / dual-boot** | ext4 stores `user.*` fine; sync `.forge/kanban.toml`, then paint each OS’s local tags. |
 
 ### Inspect storage
 
@@ -77,17 +106,10 @@ forge tags-doctor ~/Work/some-project
 getfattr -d ~/Work/some-project
 ```
 
-### Bringing Linux tags onto a Mac
+### Bringing Linux projects onto a Mac
 
-1. Sync the project folder with xattrs **or** copy `.forge/usertags.bplist`.
-2. On the Mac, open the folder in Forge (or re-apply tags). If only the sidecar
-   arrived, run (from Forge source on the Mac, once a helper lands):
-
-   ```bash
-   # Planned: forge tags import-sidecar <path>
-   # Until then, use `xattr -wx` with the bplist bytes, or re-tag in Forge.app
-   ```
-
+1. Sync the project folder, including `.forge/kanban.toml`.
+2. On the Mac, enable the same Nexus settings and run `forge fs sync --apply`.
 3. Confirm in Finder → Get Info → Tags.
 
 ## Hermes
