@@ -105,7 +105,7 @@ Panel {
     open: root.opened
     focusTarget: keyCatcher
     contentWidth: panel.fittedContentWidth(Style.space(500))
-    contentHeight: panel.fittedContentHeight(column.implicitHeight, Style.space(650))
+    contentHeight: panel.fittedContentHeight(Style.space(650), Style.space(650))
 
     PanelKeyCatcher {
       id: keyCatcher
@@ -120,16 +120,27 @@ Panel {
       }
     }
 
-    Column {
-      id: column
+    ScrollView {
+      id: overviewScroll
       width: parent.width
-      spacing: Style.space(10)
+      height: Style.space(650)
+      clip: true
+
+      Column {
+        id: column
+        width: overviewScroll.availableWidth
+        spacing: Style.space(10)
 
       Text {
         text: "Forge"
         color: root.foreground
         font.family: root.fontFamily
         font.pixelSize: Style.font.title
+      }
+      RowLayout {
+        width: parent.width
+        Button { text: "Open Forge board"; onClicked: root.openBoard(); Layout.fillWidth: true }
+        Button { text: "Open Super Productivity"; onClicked: root.openSuperProductivity(); Layout.fillWidth: true }
       }
       Text {
         text: root.loading ? "Refreshing…" : root.errorText
@@ -341,10 +352,6 @@ Panel {
           }
         }
       }
-      RowLayout {
-        width: parent.width
-        Button { text: "Open board"; onClicked: root.openBoard(); Layout.fillWidth: true }
-        Button { text: "Open SP"; onClicked: root.openSuperProductivity(); Layout.fillWidth: true }
       }
     }
   }
