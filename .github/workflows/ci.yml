@@ -14,6 +14,27 @@ permissions:
   contents: read
 
 jobs:
+  linux-python:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Test portable Python and Linux CLI
+        env:
+          PYTHONPATH: scripts
+        run: |
+          python3 -m venv .venv
+          .venv/bin/python -m pip install -r scripts/requirements.txt
+          .venv/bin/python -m unittest discover -s Tests/linux -p 'test_*.py'
+          .venv/bin/python -m unittest discover -s Tests -p 'test_*.py'
+          .venv/bin/python -m py_compile scripts/linux/forge scripts/linux/forge_tags.py scripts/linux/forge_sidecar.py
+
   build-and-test:
     runs-on: macos-15
     env:
