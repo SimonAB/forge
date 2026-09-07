@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Install only user-owned files. Omarchy's /usr/share tree is intentionally
+# untouched; the desktop entry resolves forge-board through PATH.
+forge_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+bin_root="${XDG_BIN_HOME:-${XDG_DATA_HOME:-$HOME/.local}/bin}"
+applications_root="${XDG_DATA_HOME:-$HOME/.local}/applications"
+mkdir -p "$bin_root" "$applications_root"
+ln -sfn "$forge_root/scripts/linux/forge-board" "$bin_root/forge-board"
+install -m 0644 "$forge_root/packaging/linux/io.github.simonab.Forge.desktop" \
+  "$applications_root/io.github.simonab.Forge.desktop"
+printf 'Installed Forge board launcher in %s\n' "$bin_root"
+printf 'Desktop entry installed in %s\n' "$applications_root"

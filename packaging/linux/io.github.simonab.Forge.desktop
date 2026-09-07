@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Forge
+Comment=Forge project kanban board
+Exec=forge-board
+Icon=folder-development
+Terminal=false
+Categories=Utility;Office;ProjectManagement;
+StartupWMClass=io.github.simonab.Forge

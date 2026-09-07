@@ -44,6 +44,50 @@ python3 scripts/forge-dashboard.py --layout tick --watch 30
 
 These read `forge board --json` and use the same column model as Forge.app.
 
+The native Linux board window is available from the source checkout:
+
+```bash
+scripts/linux/forge-board
+```
+
+It uses the Forge CLI as its data boundary, displays project cards by column,
+opens a project in the default file manager, and reports Super Productivity
+task/inbox counts. Linux calendar unavailability is shown in the status line;
+the board does not attempt to emulate the university Office 365 web calendar.
+The initial window is read-only for project state, so opening a card cannot
+accidentally move a project or alter Finder-compatible tags.
+
+For a desktop launcher, install the executable and desktop entry into the
+user-local locations (no Omarchy system files are changed):
+
+```bash
+scripts/linux/install-forge-board
+```
+
+The launcher is also suitable for a user-owned Omarchy application menu. A
+Quickshell bar widget can be added separately once the window's read-only
+surface has settled.
+
+## Omarchy bar widget
+
+The source tree includes a user-installable Quickshell widget at
+`packaging/omarchy/io.github.simonab.forge`. It runs `forge dashboard --json`,
+shows column counts and SP inbox/open-task counts, and offers buttons for the
+GTK board and SP. Install it by copying that directory to
+`~/.config/omarchy/plugins/io.github.simonab.forge/`, then enable it and add
+the widget to the bar:
+
+```bash
+omarchy plugin enable io.github.simonab.forge
+omarchy bar put io.github.simonab.forge --section right
+```
+
+If `omarchy bar put` is unavailable in the installed Omarchy version, add
+`{"id":"io.github.simonab.forge"}` to the desired section of
+`~/.config/omarchy/shell.json`, then run `omarchy-shell shell reload`.
+The plugin is deliberately kept out of the repository's live Omarchy config;
+macOS menu-bar behaviour and each machine's Linux layout remain independent.
+
 ## Super Productivity
 
 SP is the **task** plane when `superproductivity.enabled` is true (capture,

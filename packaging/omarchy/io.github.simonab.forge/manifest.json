@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "io.github.simonab.forge",
+  "name": "Forge",
+  "version": "0.1.0",
+  "author": "Simon A. B.",
+  "license": "MIT",
+  "description": "Forge kanban counts and a quick path to the native board window.",
+  "kinds": ["bar-widget"],
+  "entryPoints": {"barWidget": "Panel.qml"},
+  "barWidget": {
+    "displayName": "Forge",
+    "description": "Project counts, Super Productivity summary, and the Forge board.",
+    "category": "Productivity",
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {},
+    "schema": []
+  }
+}
