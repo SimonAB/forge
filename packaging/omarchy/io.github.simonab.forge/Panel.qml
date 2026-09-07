@@ -89,7 +89,7 @@ Panel {
     id: button
     anchors.fill: parent
     bar: root.bar
-    text: "F"
+    text: "\uf6e3"
     tooltipText: "Forge"
     onPressed: function(buttonCode) {
       if (buttonCode === Qt.RightButton) root.refresh()
