@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -27,6 +28,9 @@ from forge_tasks_world.superproductivity import (  # noqa: E402
 
 def resolve_forge_home() -> Path:
     """Locate Forge home from config search paths."""
+
+    if env := os.environ.get("FORGE_HOME", "").strip() or os.environ.get("FORGE_DIR", "").strip():
+        return Path(env).expanduser()
     home = Path.home()
     candidates = [
         home / "Documents/Software/Forge",
@@ -258,7 +262,8 @@ def cmd_open(args: argparse.Namespace) -> int:
     if args.print_only:
         print(uri)
         return 0
-    result = subprocess.run(["open", uri], check=False)
+    opener = "open" if sys.platform == "darwin" else "xdg-open"
+    result = subprocess.run([opener, uri], check=False)
     return result.returncode
 
 

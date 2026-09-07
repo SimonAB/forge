@@ -16,7 +16,7 @@ from forge_tasks_world.world_db import DueTask, WorldDatabase
 
 def resolve_forge_home() -> Path:
     """Return Forge home from env or common locations."""
-    env = os.environ.get("FORGE_DIR", "").strip()
+    env = os.environ.get("FORGE_HOME", "").strip() or os.environ.get("FORGE_DIR", "").strip()
     if env:
         return Path(env).expanduser()
     home = Path.home()
@@ -37,7 +37,9 @@ def resolve_forge_bin(forge_home: Path) -> str:
         candidates.append(env)
     candidates.extend(
         [
+            os.path.expanduser("~/.local/bin/forge"),
             os.path.expanduser("~/bin/forge"),
+            str(forge_home / "scripts" / "linux" / "forge"),
             "/Applications/Forge.app/Contents/Resources/bin/forge",
             str(forge_home / ".build" / "debug" / "forge"),
         ]

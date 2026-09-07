@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -606,6 +607,32 @@ def cmd_calendar(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_delegate(args: argparse.Namespace) -> int:
+    """Expose portable Python task helpers through the Linux `forge` surface."""
+
+    root = forge_home()
+    scripts = {
+        "capture": root / "scripts" / "forge-capture.py",
+        "tasks": root / "scripts" / "forge-capture.py",
+        "superproductivity": root / "scripts" / "forge-superproductivity.py",
+        "dashboard": root / "scripts" / "forge-dashboard.py",
+    }
+    script = scripts[args.command]
+    if not script.is_file():
+        print(f"Missing helper: {script}", file=sys.stderr)
+        return 1
+    forwarded = list(args.arguments)
+    if args.delegate_help:
+        forwarded.insert(0, "--help")
+    if args.command == "capture":
+        forwarded = ["--forge-home", str(root), "capture"] + forwarded
+    elif args.command == "dashboard":
+        forwarded = ["--forge-home", str(root)] + forwarded
+    else:
+        forwarded = ["--forge-home", str(root)] + forwarded
+    return subprocess.run([sys.executable, str(script), *forwarded], cwd=root, check=False).returncode
+
+
 def cmd_init(args: argparse.Namespace) -> int:
     """Ensure Forge home and config exist (non-destructive)."""
 
@@ -688,6 +715,16 @@ def build_parser() -> argparse.ArgumentParser:
     init.add_argument("--workspace")
     init.set_defaults(func=cmd_init)
 
+    for name, help_text in [
+        ("capture", "Capture into the configured task inbox"),
+        ("tasks", "Inbox task actions (inbox, assign, complete, open)"),
+        ("superproductivity", "Super Productivity task integration"),
+        ("dashboard", "Terminal project and task dashboard"),
+    ]:
+        delegated = sub.add_parser(name, help=help_text, add_help=False)
+        delegated.add_argument("--help", action="store_true", dest="delegate_help")
+        delegated.set_defaults(func=cmd_delegate)
+
     return parser
 
 
@@ -695,7 +732,14 @@ def main(argv: list[str] | None = None) -> int:
     """CLI entry point."""
 
     parser = build_parser()
-    args = parser.parse_args(argv)
+    args, unknown = parser.parse_known_args(argv)
+    if unknown:
+        if getattr(args, "func", None) is cmd_delegate:
+            args.arguments = unknown
+        else:
+            parser.error("unrecognized arguments: " + " ".join(unknown))
+    elif getattr(args, "func", None) is cmd_delegate:
+        args.arguments = []
     return int(args.func(args))
 
 
