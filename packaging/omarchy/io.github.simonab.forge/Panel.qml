@@ -16,16 +16,20 @@ Panel {
   implicitWidth: button.implicitWidth
   implicitHeight: button.implicitHeight
   property var snapshot: ({})
+  property var boardProjects: []
   property string errorText: ""
   property bool loading: false
+  property int pendingReads: 0
   readonly property string fontFamily: bar ? bar.fontFamily : Style.font.family
   readonly property color foreground: bar ? bar.foreground : Color.foreground
 
   function refresh() {
-    if (reader.running) return
+    if (reader.running || boardReader.running) return
     loading = true
     errorText = ""
+    pendingReads = 2
     reader.running = true
+    boardReader.running = true
   }
 
   function openBoard() { if (bar) bar.run("forge-board") }
@@ -46,8 +50,31 @@ Panel {
         try { snapshot = JSON.parse(output.text) }
         catch (error) { errorText = "Forge returned invalid dashboard JSON" }
       }
-      loading = false
+      root.readFinished()
     }
+  }
+
+  Process {
+    id: boardReader
+    command: ["forge", "board", "--json"]
+    stdout: StdioCollector { id: boardOutput }
+    stderr: StdioCollector { id: boardDiagnostics }
+    onExited: function(exitCode) {
+      if (exitCode !== 0) {
+        errorText = boardDiagnostics.text || "Forge board failed"
+      } else {
+        try {
+          var payload = JSON.parse(boardOutput.text)
+          boardProjects = payload.projects || []
+        } catch (error) { errorText = "Forge returned invalid board JSON" }
+      }
+      root.readFinished()
+    }
+  }
+
+  function readFinished() {
+    pendingReads = Math.max(0, pendingReads - 1)
+    if (pendingReads === 0) loading = false
   }
 
   IpcHandler {
@@ -77,8 +104,8 @@ Panel {
     bar: root.bar
     open: root.opened
     focusTarget: keyCatcher
-    contentWidth: panel.fittedContentWidth(Style.space(350))
-    contentHeight: panel.fittedContentHeight(column.implicitHeight, Style.space(430))
+    contentWidth: panel.fittedContentWidth(Style.space(500))
+    contentHeight: panel.fittedContentHeight(column.implicitHeight, Style.space(650))
 
     PanelKeyCatcher {
       id: keyCatcher
@@ -133,6 +160,186 @@ Panel {
         color: root.foreground
         font.family: root.fontFamily
         font.pixelSize: Style.font.caption
+      }
+      Text {
+        text: root.snapshot.calendar_error
+          ? "Schedule: unavailable on Linux (Apple Calendar)"
+          : "Schedule today: " + ((root.snapshot.calendar_today || []).length ? "events" : "none")
+        color: root.foreground
+        font.family: root.fontFamily
+        font.pixelSize: Style.font.caption
+        elide: Text.ElideRight
+      }
+      Text {
+        text: "Inbox (" + (root.snapshot.inbox_count || 0) + ")"
+        color: root.foreground
+        font.family: root.fontFamily
+        font.pixelSize: Style.font.heading
+      }
+      Column {
+        width: parent.width
+        spacing: Style.space(3)
+        Repeater {
+          model: root.snapshot.inbox || []
+          delegate: Text {
+            required property var modelData
+            width: parent.width
+            text: "• " + (modelData.title || "(untitled)")
+            color: root.foreground
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.body
+            elide: Text.ElideRight
+          }
+        }
+        Text {
+          visible: (root.snapshot.inbox || []).length === 0
+          text: "Empty"
+          color: root.foreground
+          font.family: root.fontFamily
+          font.pixelSize: Style.font.caption
+        }
+      }
+      Text {
+        text: "Overdue (" + (((root.snapshot.due_counts || {}).overdue) || 0) + ")"
+        color: root.foreground
+        font.family: root.fontFamily
+        font.pixelSize: Style.font.heading
+      }
+      Column {
+        width: parent.width
+        spacing: Style.space(3)
+        Repeater {
+          model: root.snapshot.due_overdue || []
+          delegate: Text {
+            required property var modelData
+            width: parent.width
+            text: "• " + (modelData.title || "(untitled)") + " · " + (modelData.project || "")
+            color: root.foreground
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.body
+            elide: Text.ElideRight
+          }
+        }
+        Text {
+          visible: (root.snapshot.due_overdue || []).length === 0
+          text: "None"
+          color: root.foreground
+          font.family: root.fontFamily
+          font.pixelSize: Style.font.caption
+        }
+      }
+      Text {
+        text: "Due today (" + (((root.snapshot.due_counts || {}).today) || 0) + ")"
+        color: root.foreground
+        font.family: root.fontFamily
+        font.pixelSize: Style.font.heading
+      }
+      Column {
+        width: parent.width
+        spacing: Style.space(3)
+        Repeater {
+          model: root.snapshot.due_today || []
+          delegate: Text {
+            required property var modelData
+            width: parent.width
+            text: "• " + (modelData.title || "(untitled)") + " · " + (modelData.project || "")
+            color: root.foreground
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.body
+            elide: Text.ElideRight
+          }
+        }
+        Text {
+          visible: (root.snapshot.due_today || []).length === 0
+          text: "None"
+          color: root.foreground
+          font.family: root.fontFamily
+          font.pixelSize: Style.font.caption
+        }
+      }
+      Text {
+        text: "URGENT (" + (root.snapshot.urgent || []).length + ")"
+        color: root.foreground
+        font.family: root.fontFamily
+        font.pixelSize: Style.font.heading
+      }
+      Column {
+        width: parent.width
+        spacing: Style.space(3)
+        Repeater {
+          model: root.snapshot.urgent || []
+          delegate: Text {
+            required property var modelData
+            width: parent.width
+            text: "• " + (modelData.column || "") + " · " + (modelData.name || "")
+            color: root.foreground
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.body
+            elide: Text.ElideRight
+          }
+        }
+        Text {
+          visible: (root.snapshot.urgent || []).length === 0
+          text: "None"
+          color: root.foreground
+          font.family: root.fontFamily
+          font.pixelSize: Style.font.caption
+        }
+      }
+      Text {
+        text: "Stuck in-flight (" + (root.snapshot.stuck || []).length + ")"
+        color: root.foreground
+        font.family: root.fontFamily
+        font.pixelSize: Style.font.heading
+      }
+      Column {
+        width: parent.width
+        spacing: Style.space(3)
+        Repeater {
+          model: root.snapshot.stuck || []
+          delegate: Text {
+            required property var modelData
+            width: parent.width
+            text: "• " + (modelData.column || "") + " · " + (modelData.name || "")
+            color: root.foreground
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.body
+            elide: Text.ElideRight
+          }
+        }
+        Text {
+          visible: (root.snapshot.stuck || []).length === 0
+          text: "None"
+          color: root.foreground
+          font.family: root.fontFamily
+          font.pixelSize: Style.font.caption
+        }
+      }
+      Text {
+        text: "Projects"
+        color: root.foreground
+        font.family: root.fontFamily
+        font.pixelSize: Style.font.heading
+      }
+      Column {
+        width: parent.width
+        spacing: Style.space(3)
+        Repeater {
+          model: root.boardProjects
+          delegate: Text {
+            required property var modelData
+            width: parent.width
+            text: (modelData.column || "(none)") + " · "
+              + (modelData.metaTags && modelData.metaTags.some(function(tag) {
+                  return String(tag).toUpperCase().indexOf("URGENT") === 0
+                }) ? "⚠️ " : "")
+              + (modelData.name || "")
+            color: root.foreground
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.body
+            elide: Text.ElideRight
+          }
+        }
       }
       RowLayout {
         width: parent.width
