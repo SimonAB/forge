@@ -321,6 +321,30 @@ helper (if any) fits each pull — favour speed for CLI scrapes; take over on
 timeout. The orchestrator synthesises the brief and retains the approval gate
 for board writes.
 
+#### Executive decision-support north star
+
+The brief exists to help the user make executive decisions and prioritise the
+day's workload. It is not a catalogue of application state. Synthesise the
+broader context across Super Productivity, Calendar, OmniFocus, Forge, GitHub
+issues/PRs, and other relevant sources before recommending priorities.
+
+- Lead with the few decisions that matter today: what deserves attention, what
+  can wait, and what should be paused, delegated, or clarified.
+- Surface stale, neglected, and at-risk projects, including mismatches between
+  task activity, calendar capacity, Forge state, and GitHub activity.
+- Identify calendar clashes, overloaded commitments, dependencies, external
+  pressure, and available momentum.
+- Distinguish genuine deadlines and commitments from merely dated tasks; do not
+  treat every due date as equally urgent.
+- Advise on the smallest useful next nudge for important projects, with enough
+  context for the user to choose among options. Recommendations are proposals,
+  never instructions, and must not invent commitments.
+- Keep Paused projects separate so they do not crowd out active work. Mention
+  hygiene only when it affects decision quality.
+- Use operational tables below the narrative as evidence. The final synthesis
+  must be based on the authoritative completed pull and reconciled counts, not
+  an unverified helper draft.
+
 #### Section 1: `Brief` (narrative, compact)
 
 - Heading must be exactly: `## Brief`
@@ -352,8 +376,9 @@ glance even when quiet. Forks: check all non-archived forks; report only those
 not in sync with upstream.
 
 Generating briefs is always safe; **moving columns or changing tags requires explicit user approval**.
-Morning `forge omnifocus refresh --apply-finder` is part of the agreed morning sync
-(OF→Finder). When Super Productivity is enabled, morning `reminders-capture-drain.sh`
+With Super Productivity primary, OmniFocus refresh is disabled in the morning
+sync; the historical OF→Finder join remains available manually for rollback.
+When Super Productivity is enabled, morning `reminders-capture-drain.sh`
 (Reminders Inbox → SP Inbox) is likewise standing authorisation. Neither is a free
 licence for other write commands.
 
@@ -422,13 +447,12 @@ For full specs: `@.cursor/rules/forge-cli.mdc`, `@.cursor/rules/forge-workflows.
 - Forge Watch means “monitor this project” (`Watch 👁️`); never map personal video-queue tags (e.g. `Watch Later…`) onto kanban columns.
 - Prefer `Completed ✔️` (not `Archived…`) as the post-Shipped meta tag.
 - When aligning GitHub forks with upstream, merge upstream into the fork locally, resolve conflicts, and push to the fork; do not open pull requests to upstream.
-- Prefer Super Productivity as the day-to-day task store when `superproductivity.primary` is true (dogfood); keep OmniFocus enabled only for kanban join and rollback — see `docs/of-frozen-sp-primary.md`. Do not write OF tasks, create new OF tasks, or re-run `of-to-sp --apply` without `--allow-while-primary` while primary. Capture via `forge capture` or Reminders Inbox → morning drain. Forge stays the kanban and link-tag join; leave community OmniFocus MCP servers uninstalled while that join lives in Forge.
+- Prefer Super Productivity as the day-to-day task store when `superproductivity.primary` is true; keep OmniFocus disabled for routine hooks and available only for deliberate manual rollback/import operations — see `docs/of-frozen-sp-primary.md`. Do not write OF tasks, create new OF tasks, or re-run `of-to-sp --apply` without `--allow-while-primary` while primary. Capture via `forge capture` or Reminders Inbox → morning drain. Forge stays the kanban nexus; leave community OmniFocus MCP servers uninstalled.
 - Prefer context-aware capture: frontmost Mail → mail link, Finder → file, browser → URL, and always attach selected text when present (single capture path rather than a mail-only shortcut).
 - Schedule with GTD **in the active task app** (OF or SP): the calendar is the hard landscape (time-specific events only). Due dates are for genuine deadlines (external, or an explicit personal commitment), kept on weekdays, typically the preceding Friday. Planned dates are when to engage; defer dates hide work until it can start. Do not use due dates to mean “do this on Thursday”. A missed planned date is re-planned, not rolled as an overdue due. Time-specific actions may match the calendar start/end. Do not put planned dates on action groups (OmniFocus inherits them onto children and clutters Forecast Past); plan only the next leaf action.
 - In briefs, list Paused projects in their own section; do not include them in Neglected or Stuck in-flight.
 - Prefer agent-facing CLI JSON (`--json` on writes, structured JSON errors, `docs/tool-schema.json`) over a full Forge MCP server for agentic integration.
-- Super Productivity project titles should match Forge folder names for `project_ids` mapping; create missing SP projects in-app or via Plugin API `addProject` (Local REST `POST /projects` returns 404).
-- Keep CDCS book work (`causal-dynamics-concept-notes`) separate from the `CausalDynamics.jl` package in Super Productivity; do not mix book chapters into the package project.
+- Super Productivity project titles should match Forge folder names for `project_ids` mapping; when rationalising duplicate SP projects, prefer Finder/Forge names over OmniFocus-only titles; keep CDCS book work (`causal-dynamics-concept-notes`) separate from the `CausalDynamics.jl` package; create missing SP projects in-app or via Plugin API `addProject` (Local REST `POST /projects` returns 404).
 - Prefer one shared kanban model on macOS and Omarchy Linux: Finder tags and Linux `user.xdg.tags` stay aligned via the portable sidecar and file sync (git, LocalSend, Dropbox), with `forge fs sync --apply` after transfers.
 
 ## Learned Workspace Facts
@@ -439,7 +463,7 @@ For full specs: `@.cursor/rules/forge-cli.mdc`, `@.cursor/rules/forge-workflows.
 - **AgeSCM** (`~/Documents/Work/Projects/Mozzies-MIRS-AI_Gates Deep Surveillance/AgeSCM`): Julia age-structured causal modelling project; private repo `SimonAB/AgeSCM` on GitHub.
 - `forge move` and `forge project-tag add|remove` support `--json` result and `ForgeJSONError` envelopes; agent tool definitions live in `docs/tool-schema.json`.
 - Forge is the project kanban nexus: portable sidecar `<project>/.forge/kanban.toml` when `nexus.sidecar_enabled`, Finder tags on macOS and `user.xdg.tags` on Linux as projections; `forge fs doctor|sync|migrate`; doctrine in `docs/nexus.md` / Omarchy notes in `docs/omarchy.md`.
-- Super Productivity is the sole task store when `superproductivity.enabled` (local REST on loopback `127.0.0.1:3876`; CLI `forge superproductivity` / `scripts/forge-superproductivity.py`); Forge remains kanban nexus only; `forge capture` / `forge tasks` and `forge-brief` inbox/dues use SP; API token lives in Keychain service `forge-superproductivity` (or Linux `secret-tool` / `~/.config/forge/superproductivity.token`); map folder titles via `project_ids` (Local REST cannot create projects — `POST /projects` 404; use in-app or Plugin API `addProject` / `scripts/sp-plugins/forge-bulk-projects.zip`); `mirror-menu-tree` / `scripts/forge-sp-menu-tree.py` mirrors Finder paths into the SP sidebar; **Open TASKS** (board tick / context menu) focuses the mapped SP project via `scripts/forge-sp-focus-project.py` (Preferences → General → Open TASKS opens); `scripts/reminders-capture-drain.sh` drains Apple Reminders list **Inbox** into SP (`forge capture --source reminders`) and is run by `morning-review-pull.sh` when SP is enabled (soft-fail; independent of `forge reminders` project lists); optional `nexus.sp_column_mirror` paints Finder-style column tags on SP tasks on `forge move` / board drag, and the morning pull runs a full-board reconcile (`forge superproductivity mirror-board`) when that flag is true; SP blocks clickable `message://` links — open captured mail via the **Forge Mail Open** header button (`scripts/sp-plugins/forge-mail-open.zip`), which opens Apple Mail by Message-Id (no `message://` Launch Services path, no HTML trampoline; those flash the default browser); SP supports only one-level subtasks; leave legacy `TASKS.toml` untouched for now (not authoritative when SP is enabled); see `docs/superproductivity.md` and `docs/app.md`.
-- OmniFocus → SP pending-task import: `scripts/of-to-sp.py` (dry-run / `--apply`; idempotent via `[forge:of-id:…]` in notes); `--apply` blocked while `superproductivity.primary` unless `--allow-while-primary`; mapped tasks go to the matching SP project; unmapped OF projects and Single Action Lists become **new SP projects titled exactly as in OmniFocus** (create those projects in-app or via plugin/zip first — Local REST cannot); true OF Inbox items stay a separate case; optional `scripts/of-to-sp-repeats.py` copies OF RRULEs onto SP repeat configs. Dogfood stance: [docs/of-frozen-sp-primary.md](docs/of-frozen-sp-primary.md).
-- When `superproductivity.primary` is true, SP owns day-to-day tasks; OmniFocus remains enabled for Finder column join and rollback only (do not sunset OF mid-week).
+- Super Productivity is the sole task store when `superproductivity.enabled` (local REST on loopback `127.0.0.1:3876`; CLI `forge superproductivity` / `scripts/forge-superproductivity.py`); Forge remains kanban nexus only; `forge capture` / `forge tasks` and `forge-brief` inbox/dues use SP; API token lives in Keychain service `forge-superproductivity` (or Linux `secret-tool` / `~/.config/forge/superproductivity.token`); map folder titles via `project_ids` (Local REST cannot create projects — `POST /projects` 404; use in-app or Plugin API `addProject` / `scripts/sp-plugins/forge-bulk-projects.zip`); `mirror-menu-tree` / `scripts/forge-sp-menu-tree.py` mirrors Finder paths into the SP sidebar; **Open TASKS** (board tick / context menu) focuses the mapped SP project via `scripts/forge-sp-focus-project.py` (Preferences → General → Open TASKS opens); `scripts/reminders-capture-drain.sh` drains Apple Reminders list **Inbox** into SP (`forge capture --source reminders`) and is run by `morning-review-pull.sh` when SP is enabled (soft-fail; independent of `forge reminders` project lists); optional `nexus.sp_column_mirror` paints Finder-style column tags on SP tasks on `forge move` / board drag, and the morning pull runs a full-board reconcile (`forge superproductivity mirror-board`) when that flag is true; SP blocks clickable `message://` links — open captured mail via the **Forge Mail Open** plugin (`scripts/sp-plugins/forge-mail-open.zip` v2+): permanent Links & Files **Open in Mail** FILE (HTML trampoline under `.forge/mail-open/`) plus header button that opens Apple Mail by Message-Id (no `message://` Launch Services; prefer the header button to avoid a browser flash); SP supports only one-level subtasks; leave legacy `TASKS.toml` untouched for now (not authoritative when SP is enabled); see `docs/superproductivity.md` and `docs/app.md`.
+- OmniFocus → SP pending-task import: `scripts/of-to-sp.py` (dry-run / `--apply`; idempotent via `[forge:of-id:…]` in notes); `--apply` blocked while `superproductivity.primary` unless `--allow-while-primary`; allocate **per-task OmniFocus `forgeFolder` first** (e.g. `VHP2_manuscript` / `VHP_2_src` vs umbrella `Viruses-ViralHostPredictor`), then Finder/OF project map — do not collapse whole OF projects onto a single alias when actions carry distinct folder links; when a board folder exists prefer that Finder spelling for the SP project title, otherwise unmapped OF projects and Single Action Lists become **new SP projects titled as in OmniFocus** (create in-app or via plugin/zip first — Local REST cannot); true OF Inbox items stay a separate case; optional `scripts/of-to-sp-repeats.py` copies OF RRULEs onto SP repeat configs. Dogfood stance: [docs/of-frozen-sp-primary.md](docs/of-frozen-sp-primary.md).
+- When `superproductivity.primary` is true, SP owns day-to-day tasks; OmniFocus is disabled for routine hooks and remains available only through deliberate manual rollback/import operations.
 - Forge.app / OmniFocus / Reminders remain macOS-native; Linux CLI targets Omarchy via `XattrTagStore` and the same nexus sidecar.

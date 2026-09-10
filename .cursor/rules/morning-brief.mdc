@@ -55,7 +55,7 @@ Standing authorisation for this morning review: `herdr pane split`, `herdr agent
 | GitHub owned | open issues/PRs on all owned (non-fork) repos |
 | GitHub forks | fork list + compare vs upstream (drift only) |
 
-**Orchestrator keeps:** step 1 sync (so the OF snapshot is ready), herd assignment, synthesis of `## Brief` / `## Details`. If a **Morning Brief** Herdr pane is idle, prompt it with the closed worker task below instead of duplicating pulls here. If Herdr is unavailable, run everything here.
+**Orchestrator keeps:** step 1 source readiness (SP/Calendar; OmniFocus is skipped when SP is primary), herd assignment, synthesis of `## Brief` / `## Details`. If a **Morning Brief** Herdr pane is idle, prompt it with the closed worker task below instead of duplicating pulls here. If Herdr is unavailable, run everything here.
 
 ### Herdr brief worker (adjacent pane)
 
@@ -119,13 +119,17 @@ provided). Do not invent due dates or task IDs; process later with
 `forge tasks assign`. With `superproductivity.primary`, do **not** create OmniFocus
 tasks; SP (or Reminders Inbox → morning drain) is the capture path.
 
-### 1. Sync Forge ↔ OmniFocus (kanban join)
+### 1. Prepare task and kanban sources
 
 ```bash
-forge omnifocus refresh --apply-finder
+# OmniFocus refresh is intentionally disabled when Super Productivity is primary.
+# The morning-review-pull.sh hook handles SP/Reminders/Forge instead.
 ```
 
-The OF refresh updates `.cache/omnifocus-snapshot.json` and pulls OF columns onto Finder (same OF half of board Refresh). With **Super Productivity** as the task store, skip `sync-of-tasks-from-of.py` unless deliberately refreshing legacy `TASKS.toml`. Report apply-finder errors briefly; continue the brief even if doctor still reports drift.
+With **Super Productivity** as the task store, skip OmniFocus refresh and
+`sync-of-tasks-from-of.py` during the morning review. OmniFocus remains available
+for deliberate manual rollback/import operations. Report source errors briefly
+and continue the brief where independent sources are available.
 
 When SP is enabled, `morning-review-pull.sh` also drains Apple Reminders **Inbox** into the SP Inbox (`scripts/reminders-capture-drain.sh`) before `forge-brief.py`, so captures from Siri/Reminders appear in the brief. Soft-fail if SP is down. That drain is standing morning authorisation (capture only); it is not a licence to move columns or change tags. When `nexus.sp_column_mirror` is true, the same pull reconciles Finder column tags onto mapped SP projects (`mirror-board`); soft-fail if SP is down.
 

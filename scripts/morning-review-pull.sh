@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # morning-review-pull.sh — morning data pulls (sync + brief bundle)
 #
-# Phase 1: OmniFocus refresh (kanban join). Legacy OF→TASKS.toml sync only when
-# Super Productivity is not the enabled task store.
+# Phase 1: OmniFocus refresh is intentionally disabled: Super Productivity is
+# the authoritative task store. Historical OF import utilities remain manual.
 # Phase 1b (SP only): drain Apple Reminders Inbox → SP Inbox
 #   (scripts/reminders-capture-drain.sh), then forge-brief sees the new captures.
 # Phase 1c (SP + nexus.sp_column_mirror): reconcile Finder column tags onto SP
@@ -34,8 +34,9 @@ if [[ -x "$forge_dir/.venv/bin/python3" ]]; then
 fi
 
 stamp="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
-echo "[$stamp] morning-review-pull: OF refresh"
-"$forge_bin" omnifocus refresh --apply-finder | tee "$cache_dir/of-refresh.txt"
+# echo "[$stamp] morning-review-pull: OF refresh"
+# "$forge_bin" omnifocus refresh --apply-finder | tee "$cache_dir/of-refresh.txt"
+echo "[$stamp] morning-review-pull: OF refresh skipped (SP is primary)"
 
 sp_enabled="$(
   python3 - <<'PY'
