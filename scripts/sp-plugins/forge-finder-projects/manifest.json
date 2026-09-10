@@ -1,10 +1,10 @@
 {
-  "id": "of-bulk-pgt",
-  "name": "Create PGT",
-  "version": "1.0.1",
+  "id": "forge-finder-projects",
+  "name": "Forge Finder Projects",
+  "version": "1.0.0",
   "manifestVersion": 1,
   "minSupVersion": "18.0.0",
-  "description": "Create Finder PGT SP project",
+  "description": "Create Super Productivity projects titled like Finder / board folders.",
   "author": "Forge",
   "icon": "icon.svg",
   "permissions": [

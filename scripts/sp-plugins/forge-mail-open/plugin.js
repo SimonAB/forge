@@ -1,11 +1,30 @@
-// Forge: open Apple Mail for the selected task without a browser flash.
-// Never open message:// via Launch Services / open location (can flash the
-// default browser). Never open .html trampolines (default app = browser).
-// Instead: decode Message-Id and tell Mail to open the message object.
+// Forge Mail Open — permanent Links & Files row + header button.
+//
+// Links & Files: FILE attachment titled "Open in Mail" (mail icon) pointing at
+// a static HTML trampoline under Forge `.forge/mail-open/` (same pattern as the
+// NERC superspreader example). Synced on boot and when mail-linked tasks change.
+//
+// Header button: opens Apple Mail by Message-Id via AppleScript (Mail message
+// object; no message:// Launch Services; no HTML). Prefer this for opening.
+// Clicking the Links & Files row may flash the default browser (SP opens FILE).
 
 const URI_COMMENT = /<!--\s*forge:uri:([^\s*]+?)\s*-->/i;
 const URI_BRACKET = /\[forge:uri:([^\]]+)\]/i;
 const BARE_MESSAGE = /(?:^|\n)\s*(message:[^\s]+)/i;
+const MAIL_HTML_COMMENT = /<!--\s*forge:mail-html:([^\s*]+?)\s*-->/i;
+const ATTACH_TITLE = 'Open in Mail';
+
+function forgeHomePath() {
+  // Prefer env; else the standard Forge dogfood home.
+  try {
+    if (typeof process !== 'undefined' && process.env && process.env.FORGE_HOME) {
+      return String(process.env.FORGE_HOME);
+    }
+  } catch (err) {
+    /* ignore */
+  }
+  return null;
+}
 
 function normalizeMailUri(uri) {
   const text = (uri || '').trim();
@@ -38,6 +57,11 @@ function parseMailUri(notes) {
   return null;
 }
 
+function parseMailHtmlPath(notes) {
+  const match = (notes || '').match(MAIL_HTML_COMMENT);
+  return match ? match[1].trim() : null;
+}
+
 function errorMessage(result) {
   if (!result) return 'no result';
   const err = result.error;
@@ -47,6 +71,120 @@ function errorMessage(result) {
     return 'Allow Node execution for Forge Mail Open (Settings → Plugins), then try again.';
   }
   return err.message || String(err);
+}
+
+async function ensureTrampolineFile(mailUri, existingHtmlPath) {
+  if (typeof PluginAPI.executeNodeScript !== 'function') {
+    return { ok: false, reason: 'executeNodeScript unavailable' };
+  }
+  const result = await PluginAPI.executeNodeScript({
+    script: `
+      const fs = require('fs');
+      const path = require('path');
+      const os = require('os');
+      const crypto = require('crypto');
+      const mailUri = args[0];
+      const existing = args[1];
+      const envHome = args[2];
+      if (typeof mailUri !== 'string' || !mailUri.toLowerCase().startsWith('message:')) {
+        throw new Error('refusing non-mail URI');
+      }
+      let forgeHome = envHome || path.join(os.homedir(), 'Documents', 'Software', 'Forge');
+      if (existing && typeof existing === 'string' && existing.includes('.forge')) {
+        const marker = path.sep + '.forge' + path.sep;
+        const idx = existing.indexOf(marker);
+        if (idx > 0) forgeHome = existing.slice(0, idx);
+      }
+      const digest = crypto.createHash('sha256').update(mailUri).digest('hex').slice(0, 16);
+      const dir = path.join(forgeHome, '.forge', 'mail-open');
+      fs.mkdirSync(dir, { recursive: true });
+      const htmlPath = path.join(dir, digest + '.html');
+      const sidecar = path.join(dir, digest + '.json');
+      fs.writeFileSync(sidecar, JSON.stringify({ uri: mailUri, digest }, null, 2) + '\\n');
+      const safe = mailUri
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+      const jsSafe = mailUri.replace(/\\\\/g, '\\\\\\\\').replace(/'/g, "\\\\'").replace(/\\n/g, '');
+      const body = [
+        '<!DOCTYPE html>',
+        '<html lang="en"><head>',
+        '<meta charset="utf-8">',
+        '<meta http-equiv="refresh" content="0;url=' + safe + '">',
+        '<title>Open in Mail</title>',
+        "<script>location.replace('" + jsSafe + "');</script>",
+        '</head><body>',
+        '<p><a href="' + safe + '">Open in Mail</a></p>',
+        '</body></html>',
+        '',
+      ].join('\\n');
+      if (!fs.existsSync(htmlPath) || fs.readFileSync(htmlPath, 'utf8') !== body) {
+        fs.writeFileSync(htmlPath, body);
+      }
+      return { path: htmlPath, digest };
+    `,
+    args: [normalizeMailUri(mailUri), existingHtmlPath || null, forgeHomePath()],
+    timeout: 15000,
+  });
+  if (result && result.success && result.result && result.result.path) {
+    return { ok: true, path: result.result.path, digest: result.result.digest };
+  }
+  // Some SP builds nest return under data
+  if (result && result.success && result.data && result.data.path) {
+    return { ok: true, path: result.data.path, digest: result.data.digest };
+  }
+  return { ok: false, reason: errorMessage(result) };
+}
+
+function attachmentId(digest) {
+  const slug = String(digest || 'mail').slice(0, 8);
+  return 'forgeMail' + slug;
+}
+
+function findOpenInMailAttachment(attachments) {
+  const atts = Array.isArray(attachments) ? attachments : [];
+  return atts.find((a) => a && a.title === ATTACH_TITLE) || null;
+}
+
+async function ensureMailAttachment(task) {
+  if (!task || !task.id || typeof PluginAPI.updateTask !== 'function') {
+    return { ok: false, reason: 'no task' };
+  }
+  const mailUri = parseMailUri(task.notes || '');
+  if (!mailUri) {
+    return { ok: false, reason: 'no mail uri' };
+  }
+  const existingHtml = parseMailHtmlPath(task.notes || '');
+  const trampoline = await ensureTrampolineFile(mailUri, existingHtml);
+  if (!trampoline.ok) {
+    return trampoline;
+  }
+  const htmlPath = trampoline.path;
+  const digest = trampoline.digest || 'mail';
+  const atts = Array.isArray(task.attachments) ? task.attachments.slice() : [];
+  const current = findOpenInMailAttachment(atts);
+  if (current && String(current.path || '') === htmlPath) {
+    return { ok: true, skipped: true, path: htmlPath };
+  }
+  const nextAtt = {
+    id: (current && current.id) || attachmentId(digest),
+    type: 'FILE',
+    title: ATTACH_TITLE,
+    path: htmlPath,
+    icon: 'mail_outline',
+  };
+  const without = atts.filter((a) => !(a && a.title === ATTACH_TITLE));
+  without.push(nextAtt);
+  try {
+    await PluginAPI.updateTask(task.id, { attachments: without });
+    return { ok: true, updated: true, path: htmlPath };
+  } catch (err) {
+    return {
+      ok: false,
+      reason: err && err.message ? err.message : String(err),
+    };
+  }
 }
 
 async function openMailByMessageId(mailUri) {
@@ -64,7 +202,6 @@ async function openMailByMessageId(mailUri) {
       reason: 'executeNodeScript unavailable — re-upload plugin with Node permission.',
     };
   }
-  // AppleScript opens the Mail message *object* (no message://, no .html).
   const result = await PluginAPI.executeNodeScript({
     script: `
       const { execFileSync } = require('child_process');
@@ -118,22 +255,6 @@ async function openMailByMessageId(mailUri) {
   return { ok: false, reason: errorMessage(result) };
 }
 
-async function stripHtmlMailAttachments(task) {
-  if (!task || typeof PluginAPI.updateTask !== 'function') return;
-  const atts = Array.isArray(task.attachments) ? task.attachments : [];
-  const next = atts.filter((a) => {
-    if (!a || a.title !== 'Open in Mail') return true;
-    const path = String(a.path || '');
-    return !(path.endsWith('.html') || path.indexOf('mail-open') !== -1);
-  });
-  if (next.length === atts.length) return;
-  try {
-    await PluginAPI.updateTask(task.id, { attachments: next });
-  } catch (err) {
-    console.warn('forge-mail-open: could not strip HTML attachments', err);
-  }
-}
-
 async function openSelectedMail() {
   let task = null;
   try {
@@ -157,7 +278,8 @@ async function openSelectedMail() {
     return;
   }
 
-  await stripHtmlMailAttachments(task);
+  // Keep / refresh the Links & Files row, then open Mail without using it.
+  await ensureMailAttachment(task);
 
   const direct = await openMailByMessageId(mailUri);
   if (direct.ok) {
@@ -171,7 +293,45 @@ async function openSelectedMail() {
   });
 }
 
-function register() {
+async function syncTaskIfMail(taskOrId) {
+  let task = taskOrId;
+  if (typeof taskOrId === 'string') {
+    try {
+      const tasks = await PluginAPI.getTasks();
+      task = (tasks || []).find((t) => t && t.id === taskOrId) || null;
+    } catch (err) {
+      console.warn('forge-mail-open: getTasks failed', err);
+      return;
+    }
+  }
+  if (!task || !parseMailUri(task.notes || '')) return;
+  const result = await ensureMailAttachment(task);
+  if (!result.ok && result.reason && result.reason !== 'no mail uri') {
+    console.warn('forge-mail-open: ensure attachment', result.reason);
+  }
+}
+
+async function syncAllMailTasks() {
+  if (typeof PluginAPI.getTasks !== 'function') return;
+  let tasks = [];
+  try {
+    tasks = (await PluginAPI.getTasks()) || [];
+  } catch (err) {
+    console.warn('forge-mail-open: getTasks failed', err);
+    return;
+  }
+  let updated = 0;
+  for (const task of tasks) {
+    if (!parseMailUri(task.notes || '')) continue;
+    const result = await ensureMailAttachment(task);
+    if (result.ok && result.updated) updated += 1;
+  }
+  if (updated > 0) {
+    console.log('forge-mail-open: synced Links & Files on', updated, 'mail task(s)');
+  }
+}
+
+function registerHeader() {
   if (window.__FORGE_MAIL_OPEN_BTN__) {
     console.log('forge-mail-open: header button already registered; skip');
     return;
@@ -192,11 +352,43 @@ function register() {
       });
     },
   });
-  console.log('forge-mail-open: header button registered (Message-Id object open)');
+}
+
+function registerHooks() {
+  const hooks = PluginAPI.Hooks || {};
+  const taskUpdate = hooks.TASK_UPDATE || 'taskUpdate';
+  const currentChange = hooks.CURRENT_TASK_CHANGE || 'currentTaskChange';
+  if (typeof PluginAPI.registerHook !== 'function') return;
+  try {
+    PluginAPI.registerHook(taskUpdate, (payload) => {
+      const task = payload && (payload.task || payload);
+      syncTaskIfMail(task).catch((err) =>
+        console.warn('forge-mail-open: taskUpdate sync', err),
+      );
+    });
+  } catch (err) {
+    console.warn('forge-mail-open: registerHook taskUpdate', err);
+  }
+  try {
+    PluginAPI.registerHook(currentChange, () => {
+      PluginAPI.getSelectedTask()
+        .then((task) => syncTaskIfMail(task))
+        .catch((err) => console.warn('forge-mail-open: currentTaskChange', err));
+    });
+  } catch (err) {
+    console.warn('forge-mail-open: registerHook currentTaskChange', err);
+  }
 }
 
 function boot() {
-  register();
+  registerHeader();
+  registerHooks();
+  syncAllMailTasks().catch((err) =>
+    console.warn('forge-mail-open: initial sync', err),
+  );
+  console.log(
+    'forge-mail-open: Links & Files sync + header button (Message-Id open)',
+  );
 }
 
 if (typeof PluginAPI.onReady === 'function') {

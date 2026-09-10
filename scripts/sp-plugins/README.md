@@ -8,12 +8,24 @@ plugin uses `PluginAPI.updateTask` for that. See
 
 ## forge-mail-open (standing)
 
-Header button **Open in Mail**: opens the selected task's Apple Mail message.
+**macOS only** for now. Opening uses Apple Mail via `osascript` (Message-Id);
+the Links & Files trampoline uses `message://`. On Linux / Omarchy, skip this
+plugin until a mail client and open path exist; then extend with a platform
+branch rather than installing this zip as-is.
 
-With **Node execution** allowed (SP consent prompt on first use / re-upload), it
-decodes `<!-- forge:uri:message://… -->` to a Message-Id and tells Mail to open
-that **message object** — no `message://` URL and no `.html` trampoline (those
-flash the default browser). Without Node consent the button shows an error.
+Permanent **Links & Files** row plus a header button for Mail-linked tasks.
+
+1. **Links & Files** — on boot and when a mail-linked task is selected/updated,
+   ensures a FILE attachment titled **Open in Mail** (`mail_outline` icon)
+   pointing at a trampoline under Forge `.forge/mail-open/*.html` (same pattern
+   as the NERC superspreader example). Local REST cannot write attachments; the
+   plugin uses `PluginAPI.updateTask`.
+2. **Header button** — preferred open path: decodes
+   `<!-- forge:uri:message://… -->` to a Message-Id and opens the Mail
+   **message object** via AppleScript (no `message://` Launch Services). Clicking
+   the Links & Files row may flash the default browser (SP opens FILE natively).
+
+Requires **Node execution** consent (SP prompt on first use / re-upload).
 
 ```sh
 python3 scripts/sp-plugins/build_forge_mail_open.py
@@ -21,14 +33,14 @@ python3 scripts/sp-plugins/build_forge_mail_open.py
 # Allow Node when prompted (re-upload re-asks consent)
 ```
 
-Select a Mail-linked task, then click **Open in Mail** in the SP header. Capture
-must have written `<!-- forge:uri:message://… -->` (Forge does this when SP is
-enabled). Remove any leftover Links & Files **Open in Mail** `.html` rows.
+Capture must write `<!-- forge:uri:message://… -->` (Forge does this when SP is
+enabled). After upload, open any mail-linked task once (or wait for boot sync)
+to populate missing Links & Files rows.
 
 | File | Role |
 |------|------|
 | `forge-mail-open/` | Plugin sources |
-| `forge-mail-open.zip` | Upload this |
+| `forge-mail-open.zip` | Upload this (v2+) |
 | `build_forge_mail_open.py` | Rebuild zip |
 
 ## forge-bulk-projects (one-shot)

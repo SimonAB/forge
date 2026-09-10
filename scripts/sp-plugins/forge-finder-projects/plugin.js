@@ -1,25 +1,16 @@
-// Forge one-shot: create missing SP projects for Forge board folders.
+// Forge: create SP projects matching Finder / board folder titles.
 const TITLES = [
-  "Badgers 2",
-  "CDCS"
+  "0. DSEE Admin",
+  "1. KRS",
+  "2. Fundamentals of Programming",
+  "3. Modern Inference",
+  "Badgers_WT",
+  "CDCS",
+  "PGT",
+  "Viruses-ViralHostPredictor"
 ];
 
-async function alreadyDone() {
-  try {
-    const raw = await PluginAPI.loadSyncedData();
-    if (!raw) return false;
-    const parsed = JSON.parse(raw);
-    return Boolean(parsed && parsed.completedAt);
-  } catch (e) {
-    return false;
-  }
-}
-
 async function run() {
-  if (await alreadyDone()) {
-    console.log('forge-bulk-projects: already completed; skip');
-    return;
-  }
   const existing = await PluginAPI.getAllProjects();
   const have = new Set((existing || []).map((p) => p.title));
   let created = 0;
@@ -44,12 +35,13 @@ async function run() {
       created,
       skipped,
       errors,
+      titles: TITLES,
     }),
   );
   const msg =
-    'Forge: created ' +
+    'Finder→SP: created ' +
     created +
-    ' SP project(s), skipped ' +
+    ' project(s), skipped ' +
     skipped +
     (errors.length ? ', errors ' + errors.length : '');
   console.log(msg, errors);
@@ -60,9 +52,9 @@ async function run() {
 }
 
 run().catch((err) => {
-  console.error('forge-bulk-projects failed', err);
+  console.error('forge-finder-projects failed', err);
   PluginAPI.showSnack({
-    msg: 'Forge bulk projects failed: ' + (err && err.message ? err.message : String(err)),
+    msg: 'Finder projects failed: ' + (err && err.message ? err.message : String(err)),
     type: 'ERROR',
   });
 });

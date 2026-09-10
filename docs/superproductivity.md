@@ -144,16 +144,20 @@ python3 scripts/forge-brief.py --calendar-days 1    # inbox + dues from SP
 
 `forge tasks assign` fails clearly if the folder has no `project_ids` entry.
 Notes may carry `[forge:source:…]`. Super Productivity blocks the `message://`
-scheme ("Link blocked: unsafe URL scheme"), so Mail captures store only:
+scheme ("Link blocked: unsafe URL scheme"), so Mail captures store:
 
 - `<!-- forge:uri:message://… -->` for the **Forge Mail Open** plugin and
   `forge tasks open`
-- optionally a sidecar HTML under `.forge/mail-open/` for tooling (never linked
-  from notes — `.html` opens in the default browser)
+- a sidecar HTML trampoline under `.forge/mail-open/` (written by capture and
+  by the plugin); the standing plugin also keeps a permanent Links & Files
+  **Open in Mail** FILE attachment pointing at that HTML
 
-Install the plugin (header button **Open in Mail** on the selected task). Allow
-**Node execution** when SP prompts — it opens the Mail **message object** by
-Message-Id (no `message://` / no HTML). Without Node consent the button errors.
+Install **`forge-mail-open.zip`** (v2+) on **macOS only**. Allow **Node
+execution** when SP prompts. On boot / task change it syncs the Links & Files
+row; the header button **Open in Mail** opens the Mail **message object** by
+Message-Id (no browser flash). Clicking the Links & Files FILE may flash the
+default browser. Linux / Omarchy: omit until a local mail client and open path
+are defined.
 
 ```sh
 python3 scripts/sp-plugins/build_forge_mail_open.py

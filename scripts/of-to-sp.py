@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 """One-shot OmniFocus → Super Productivity import (dry-run by default).
 
-Pending OF tasks map to:
+Destination titles follow ``forge_tasks_world.of_sp_destinations``:
 
-- Forge-linked / aliased folders that already have ``project_ids`` (or an SP
-  project with the same title)
-- Otherwise the OmniFocus project or Single Action List name (create that SP
-  project first via the generated plugin zip)
+- Finder / board folder spelling whenever an OF project maps there
+- Otherwise the OmniFocus project / SAL title
 - True Inbox (no containing project) → Super Productivity Inbox
 
 Identity marker in SP notes: ``[forge:of-id:<omnifocus-id>]``.
+Already-imported tasks in the wrong SP project are planned as ``rehome``.
 """
 
 from __future__ import annotations
@@ -31,10 +30,12 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR))
 
 from forge_tasks_world.capture import format_sp_note_attachment, normalize_mail_uri  # noqa: E402
-from forge_tasks_world.of_mapping import (  # noqa: E402
-    PROJECT_FOLDER_ALIASES,
-    keep_task,
-    resolve_folder,
+from forge_tasks_world.of_mapping import keep_task, resolve_folder  # noqa: E402
+from forge_tasks_world.of_sp_destinations import (  # noqa: E402
+    build_sp_destination_map,
+    destination_for_task,
+    fold_title,
+    lookup_sp_project_id,
 )
 from forge_tasks_world.superproductivity import (  # noqa: E402
     INBOX_PROJECT_ID,
@@ -125,6 +126,8 @@ def build_user_notes(
             )
         )
     return "\n".join(parts)
+
+
 def combine_of_notes(user_notes: str | None, of_id: str) -> str:
     """Attach the OmniFocus identity marker to notes."""
     marker = of_id_marker(of_id)
@@ -134,19 +137,27 @@ def combine_of_notes(user_notes: str | None, of_id: str) -> str:
 
 
 def sp_title_index(projects: list[dict[str, Any]]) -> dict[str, str]:
-    """Map SP project title → id (first wins on duplicates)."""
+    """Map SP project title → id (first wins; also index NFC-folded keys)."""
     out: dict[str, str] = {}
     for project in projects:
         title = (project.get("title") or "").strip()
         pid = project.get("id")
-        if title and pid and title not in out:
-            out[title] = str(pid)
+        if not title or not pid:
+            continue
+        ident = str(pid)
+        if title not in out:
+            out[title] = ident
+        folded = fold_title(title)
+        if folded not in out:
+            out[folded] = ident
     return out
 
 
-def collect_existing_of_ids(client: Any, project_ids: list[str]) -> set[str]:
-    """Scan SP notes for previously imported OmniFocus ids."""
-    found: set[str] = set()
+def collect_imported_tasks(
+    client: Any, project_ids: list[str]
+) -> dict[str, dict[str, str]]:
+    """Map OmniFocus id → ``{sp_id, project_id}`` for tasks with OF markers."""
+    found: dict[str, dict[str, str]] = {}
     targets = list(dict.fromkeys([*project_ids, INBOX_PROJECT_ID]))
     for project_id in targets:
         try:
@@ -156,45 +167,48 @@ def collect_existing_of_ids(client: Any, project_ids: list[str]) -> set[str]:
         for task in tasks:
             notes = task.get("notes") or task.get("note") or ""
             match = OF_ID_MARKER_RE.search(str(notes))
-            if match:
-                found.add(match.group(1))
+            if not match:
+                continue
+            of_id = match.group(1)
+            sp_id = str(task.get("id") or "").strip()
+            if not sp_id:
+                continue
+            found[of_id] = {
+                "sp_id": sp_id,
+                "project_id": str(task.get("projectId") or project_id),
+            }
     return found
+
+
+def collect_existing_of_ids(client: Any, project_ids: list[str]) -> set[str]:
+    """Scan SP notes for previously imported OmniFocus ids."""
+    return set(collect_imported_tasks(client, project_ids))
 
 
 def resolve_destination(
     task: dict[str, Any],
     *,
-    project_forge: dict[str, str | None],
+    dest_by_of_project: dict[str, str],
     forge_paths: dict[str, Path],
     project_ids: dict[str, str],
     sp_by_title: dict[str, str],
 ) -> tuple[str, str | None, bool]:
     """Return (destination label, SP project id or None, needs_new_project)."""
-    folder = resolve_folder(task, project_forge, forge_paths)
-    if folder:
-        if folder in project_ids:
-            return folder, project_ids[folder], False
-        if folder in sp_by_title:
-            return folder, sp_by_title[folder], False
-        # Forge-linked name with no SP project yet — create under that title.
-        return folder, None, True
+    destination = destination_for_task(
+        task,
+        dest_by_of_project=dest_by_of_project,
+        forge_paths=forge_paths,
+        sp_by_title=sp_by_title,
+    )
+    if destination == "Inbox":
+        return "Inbox", INBOX_PROJECT_ID, False
 
-    of_project = (task.get("ofProjectName") or "").strip() or None
-    if of_project:
-        alias = PROJECT_FOLDER_ALIASES.get(of_project)
-        if alias:
-            if alias in project_ids:
-                return alias, project_ids[alias], False
-            if alias in sp_by_title:
-                return alias, sp_by_title[alias], False
-            return alias, None, True
-        if of_project in project_ids:
-            return of_project, project_ids[of_project], False
-        if of_project in sp_by_title:
-            return of_project, sp_by_title[of_project], False
-        return of_project, None, True
-
-    return "Inbox", INBOX_PROJECT_ID, False
+    project_id = lookup_sp_project_id(
+        destination, project_ids=project_ids, sp_by_title=sp_by_title
+    )
+    if project_id:
+        return destination, project_id, False
+    return destination, None, True
 
 
 def plan_import(
@@ -204,6 +218,7 @@ def plan_import(
     project_ids: dict[str, str],
     sp_by_title: dict[str, str],
     existing_of_ids: set[str],
+    imported: dict[str, dict[str, str]] | None = None,
     forge_home: Path | None = None,
 ) -> list[PlannedRow]:
     """Build the dry-run / apply plan for pending OmniFocus tasks."""
@@ -211,6 +226,8 @@ def plan_import(
         project["name"]: project.get("forgeFolder") for project in of_data.get("projects") or []
     }
     of_project_ids = {project["id"] for project in of_data.get("projects") or []}
+    dest_by_of_project = build_sp_destination_map(of_data, forge_paths=forge_paths)
+    imported = imported or {}
     rows: list[PlannedRow] = []
 
     for task in of_data.get("tasks") or []:
@@ -225,7 +242,7 @@ def plan_import(
 
         destination, project_id, needs_project = resolve_destination(
             task,
-            project_forge=project_forge,
+            dest_by_of_project=dest_by_of_project,
             forge_paths=forge_paths,
             project_ids=project_ids,
             sp_by_title=sp_by_title,
@@ -237,6 +254,17 @@ def plan_import(
         of_project = (task.get("ofProjectName") or "").strip() or None
 
         if of_id in existing_of_ids:
+            prior = imported.get(of_id) or {}
+            prior_project = prior.get("project_id")
+            if needs_project and project_id is None:
+                action = "rehome_blocked"
+                reason = "already imported; create SP project then rehome"
+            elif project_id and prior_project and prior_project != project_id:
+                action = "rehome"
+                reason = f"move from {prior_project} → {destination}"
+            else:
+                action = "skip"
+                reason = "already imported"
             rows.append(
                 PlannedRow(
                     of_id=of_id,
@@ -245,18 +273,18 @@ def plan_import(
                     forge_folder=forge_folder,
                     destination=destination,
                     project_id=project_id,
-                    needs_project=False,
+                    needs_project=needs_project,
                     due=due,
                     planned=planned,
                     notes=notes,
-                    action="skip",
-                    reason="already imported",
+                    action=action,
+                    reason=reason,
                 )
             )
             continue
 
         if needs_project and project_id is None:
-            action = "blocked"  # until plugin creates the SP project
+            action = "blocked"
             reason = "SP project missing (create via of-bulk-projects.zip)"
         else:
             action = "create"
@@ -282,28 +310,14 @@ def plan_import(
 
 
 def write_of_bulk_plugin(titles: list[str]) -> Path:
-    """Write a one-shot plugin zip that creates missing OF project titles in SP."""
+    """Write a one-shot plugin zip that creates missing SP project titles."""
     PLUGIN_DIR.mkdir(parents=True, exist_ok=True)
     titles_js = json.dumps(titles, ensure_ascii=False, indent=2)
-    plugin_js = f"""// Forge one-shot: create SP projects for OmniFocus project/SAL names.
+    plugin_js = f"""// Forge: create missing SP projects (OF titles / Finder-aligned names).
+// Idempotent by title — always creates any title still missing.
 const TITLES = {titles_js};
 
-async function alreadyDone() {{
-  try {{
-    const raw = await PluginAPI.loadSyncedData();
-    if (!raw) return false;
-    const parsed = JSON.parse(raw);
-    return Boolean(parsed && parsed.completedAt);
-  }} catch (e) {{
-    return false;
-  }}
-}}
-
 async function run() {{
-  if (await alreadyDone()) {{
-    console.log('of-bulk-projects: already completed; skip');
-    return;
-  }}
   const existing = await PluginAPI.getAllProjects();
   const have = new Set((existing || []).map((p) => p.title));
   let created = 0;
@@ -328,6 +342,7 @@ async function run() {{
       created,
       skipped,
       errors,
+      titles: TITLES,
     }}),
   );
   const msg =
@@ -353,12 +368,12 @@ run().catch((err) => {{
 """
     (PLUGIN_DIR / "plugin.js").write_text(plugin_js, encoding="utf-8")
     manifest = {
-        "id": "of-bulk-projects",
-        "name": "OF Bulk Projects",
-        "version": "1.0.0",
+        "id": "of-bulk-projects-v2",
+        "name": "OF Bulk Projects v2",
+        "version": "2.0.0",
         "manifestVersion": 1,
         "minSupVersion": "18.0.0",
-        "description": "One-shot: create Super Productivity projects for OmniFocus project/SAL names.",
+        "description": "Create Super Productivity projects for OF titles / Finder-aligned destinations.",
         "author": "Forge",
         "icon": "icon.svg",
         "permissions": [
@@ -407,14 +422,36 @@ def create_sp_task(client: Any, row: PlannedRow) -> str:
     return _created_task_id(created)
 
 
+def rehome_sp_task(
+    client: Any,
+    *,
+    of_id: str,
+    imported: dict[str, dict[str, str]],
+    project_id: str,
+) -> str:
+    """Move an already-imported SP task into ``project_id``; return SP task id."""
+    prior = imported.get(of_id)
+    if not prior:
+        raise SuperProductivityError(f"no imported SP task for OF id {of_id}")
+    sp_id = prior["sp_id"]
+    client.update_task(sp_id, {"projectId": project_id})
+    return sp_id
+
+
 def summarise(rows: list[PlannedRow]) -> dict[str, Any]:
     """Return aggregate counts for the plan."""
     counts = Counter(row.action for row in rows)
     by_dest: dict[str, int] = defaultdict(int)
-    needs_projects = sorted({row.destination for row in rows if row.needs_project and row.action != "skip"})
+    needs_projects = sorted(
+        {
+            row.destination
+            for row in rows
+            if row.needs_project and row.action != "skip"
+        }
+    )
     inbox = sum(1 for row in rows if row.destination == "Inbox" and row.action == "create")
     for row in rows:
-        if row.action in ("create", "blocked"):
+        if row.action in ("create", "blocked", "rehome", "rehome_blocked"):
             by_dest[row.destination] += 1
     return {
         "pending_considered": len(rows),
@@ -437,13 +474,13 @@ def print_human(summary: dict[str, Any], rows: list[PlannedRow], *, limit: int) 
         print(f"  - {title}")
     if summary["projects_to_create_count"] > 40:
         print(f"  … and {summary['projects_to_create_count'] - 40} more")
-    print("\nTop destinations (create/blocked):")
-    for dest, count in list(summary["by_destination"].items())[:20]:
+    print("\nTop destinations (create/rehome/blocked):")
+    for dest, count in list(summary["by_destination"].items())[:25]:
         print(f"  {count:4d}  {dest}")
     print(f"\nSample rows (up to {limit}):")
     for row in rows[:limit]:
         flag = "NEW-PROJ" if row.needs_project else ("INBOX" if row.destination == "Inbox" else "mapped")
-        print(f"  [{row.action:7}] {flag:8} → {row.destination} | {row.title[:60]}")
+        print(f"  [{row.action:14}] {flag:8} → {row.destination} | {row.title[:60]}")
 
 
 def main() -> int:
@@ -460,12 +497,12 @@ def main() -> int:
     parser.add_argument(
         "--write-plugin",
         action="store_true",
-        help="Write of-bulk-projects.zip for missing OF project/SAL titles",
+        help="Write of-bulk-projects.zip for missing destination titles",
     )
     parser.add_argument(
         "--apply",
         action="store_true",
-        help="Create SP tasks for destinations that already exist (not dry-run)",
+        help="Create and rehome SP tasks for destinations that already exist",
     )
     parser.add_argument(
         "--allow-while-primary",
@@ -498,12 +535,14 @@ def main() -> int:
     sp_projects = client.projects()
     sp_by_title = sp_title_index(sp_projects)
 
+    imported: dict[str, dict[str, str]] = {}
     existing: set[str] = set()
     if not args.skip_scan:
         print("Scanning SP for prior OF imports…", file=sys.stderr)
-        existing = collect_existing_of_ids(
+        imported = collect_imported_tasks(
             client, list({*config.project_ids.values(), *sp_by_title.values()})
         )
+        existing = set(imported)
 
     rows = plan_import(
         of_data,
@@ -511,6 +550,7 @@ def main() -> int:
         project_ids=dict(config.project_ids),
         sp_by_title=sp_by_title,
         existing_of_ids=existing,
+        imported=imported,
         forge_home=forge_home,
     )
     summary = summarise(rows)
@@ -523,10 +563,12 @@ def main() -> int:
             print(f"plugin zip: {path}", file=sys.stderr)
 
     applied: list[dict[str, Any]] = []
+    rehoused: list[dict[str, Any]] = []
     failed: list[dict[str, Any]] = []
     if args.apply:
         creatable = [row for row in rows if row.action == "create" and row.project_id]
-        blocked = [row for row in rows if row.action == "blocked"]
+        rehome_rows = [row for row in rows if row.action == "rehome" and row.project_id]
+        blocked = [row for row in rows if row.action in ("blocked", "rehome_blocked")]
         if blocked:
             print(
                 f"warning: {len(blocked)} task(s) blocked until SP projects exist; "
@@ -541,6 +583,21 @@ def main() -> int:
             except (SuperProductivityError, ValueError) as exc:
                 failed.append({"of_id": row.of_id, "title": row.title, "error": str(exc)})
                 print(f"failed: {row.title}: {exc}", file=sys.stderr)
+        print(f"Rehoming {len(rehome_rows)} task(s)…", file=sys.stderr)
+        for row in rehome_rows:
+            try:
+                sp_id = rehome_sp_task(
+                    client,
+                    of_id=row.of_id,
+                    imported=imported,
+                    project_id=row.project_id or "",
+                )
+                rehoused.append(
+                    {"of_id": row.of_id, "sp_id": sp_id, "destination": row.destination}
+                )
+            except (SuperProductivityError, ValueError) as exc:
+                failed.append({"of_id": row.of_id, "title": row.title, "error": str(exc)})
+                print(f"rehome failed: {row.title}: {exc}", file=sys.stderr)
 
     result = {
         "ok": not failed,
@@ -549,6 +606,7 @@ def main() -> int:
         "summary": summary,
         "plugin_zip": plugin_path,
         "applied": applied,
+        "rehoused": rehoused,
         "failed": failed,
         "generated_at": datetime.now().astimezone().isoformat(),
         "rows": [asdict(row) for row in rows] if args.json else None,
@@ -560,13 +618,16 @@ def main() -> int:
     else:
         print_human(summary, rows, limit=args.limit)
         if args.apply:
-            print(f"\napplied: {len(applied)}  failed: {len(failed)}  blocked: {summary['actions'].get('blocked', 0)}")
+            print(
+                f"\napplied creates={len(applied)} rehomes={len(rehoused)} "
+                f"failed={len(failed)} blocked={summary['actions'].get('blocked', 0) + summary['actions'].get('rehome_blocked', 0)}"
+            )
         else:
             print(
                 "\nDry-run only. Next:\n"
                 f"  1. Upload {PLUGIN_ZIP} in SP → Settings → Plugins (if projects_to_create > 0)\n"
-                "  2. Re-run this script (no --apply) to confirm blocked → create\n"
-                "  3. python3 scripts/of-to-sp.py --apply"
+                "  2. Re-run this script (no --apply) to confirm blocked → create/rehome\n"
+                "  3. python3 scripts/of-to-sp.py --apply --allow-while-primary"
             )
     return 0 if result["ok"] else 1
 
