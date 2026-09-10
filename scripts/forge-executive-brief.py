@@ -209,7 +209,7 @@ def main() -> int:
         match = re.match(r"\s+-\s+([^\t]+)\t(.+)", line)
         if match and match.group(1) not in {"Today", "Upcoming", "Warnings (within 24h)"}:
             details.append(f"| {match.group(1)} | {match.group(2)} |")
-    if not any("Calendar clash" in line for line in conflicts):
+    if not conflicts:
         details.append("| Warnings | None |")
     else:
         for conflict in conflicts:
@@ -223,10 +223,18 @@ def main() -> int:
             details.extend(f"| {md_cell(title)} |" for title in titles[:12])
         task_rows = due_today_rows(raw)
         if task_rows:
+            unassigned_rows = [row for row in task_rows if row[1] in {"?", "(none)"}]
+            assigned_rows = [row for row in task_rows if row not in unassigned_rows]
+            if unassigned_rows:
+                projects = ", ".join(dict.fromkeys(row[2] for row in unassigned_rows))
+                details.append(
+                    f"\n- Unassigned/non-board due today: **{len(unassigned_rows)}** "
+                    f"({md_cell(projects)})."
+                )
             details += ["", "| Due | Column | Project | Task |", "|---|---|---|---|"]
             details.extend(
                 f"| {md_cell(due)} | {md_cell(column)} | {md_cell(project)} | {md_cell(title)} |"
-                for due, column, project, title in task_rows[:15]
+                for due, column, project, title in (assigned_rows + unassigned_rows)[:15]
             )
     if sp_unavailable:
         details.append('- SP unavailable — run `open -a "Super Productivity"`.')
