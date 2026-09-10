@@ -83,8 +83,8 @@ else
   python3 scripts/sync-of-tasks-from-of.py | tee "$cache_dir/sync-tasks.txt"
 fi
 
-echo "[$stamp] morning-review-pull: forge-brief (calendar + board + due)"
-python3 scripts/forge-brief.py --calendar-days 1 | tee "$cache_dir/forge-brief.txt"
+echo "[$stamp] morning-review-pull: executive brief (calendar + SP + board + GitHub)"
+python3 scripts/forge-executive-brief.py | tee "$cache_dir/forge-brief.txt"
 
 echo "[$stamp] morning-review-pull: done"
 echo "  brief: $cache_dir/forge-brief.txt"

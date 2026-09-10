@@ -271,6 +271,52 @@ class CalendarEvent:
     all_day: bool
 
 
+def _calendar_conflict_groups(events: Sequence[CalendarEvent], *, now: datetime) -> list[list[CalendarEvent]]:
+    """Return groups of overlapping, future same-day timed events."""
+
+    timed = sorted(
+        [e for e in events if not e.all_day and _is_today(e.start, now=now) and e.end > now],
+        key=lambda e: (e.start, e.end, e.title.casefold()),
+    )
+    groups: list[list[CalendarEvent]] = []
+    for event in timed:
+        if not groups or event.start >= max(item.end for item in groups[-1]):
+            groups.append([event])
+        else:
+            groups[-1].append(event)
+    return [group for group in groups if len(group) > 1]
+
+
+def _busy_hours(events: Sequence[CalendarEvent], *, now: datetime) -> float:
+    """Return union busy time for future same-day timed events."""
+
+    intervals = sorted(
+        [(max(e.start, now), e.end) for e in events if not e.all_day and _is_today(e.start, now=now) and e.end > now],
+        key=lambda pair: pair[0],
+    )
+    total = timedelta(0)
+    current: tuple[datetime, datetime] | None = None
+    for start, end in intervals:
+        if current is None:
+            current = (start, end)
+        elif start <= current[1]:
+            current = (current[0], max(current[1], end))
+        else:
+            total += current[1] - current[0]
+            current = (start, end)
+    if current is not None:
+        total += current[1] - current[0]
+    return total.total_seconds() / 3600.0
+
+
+def _project_matches(project_name: str, task_project_name: str) -> bool:
+    """Match board folders to SP project titles with conservative prefix matching."""
+
+    left = " ".join(project_name.casefold().split())
+    right = " ".join(task_project_name.casefold().split())
+    return left == right or left.startswith(right) or right.startswith(left)
+
+
 def _run_forge_board_json() -> Mapping[str, Any]:
     """Return parsed JSON from `forge board --json`."""
 
@@ -505,12 +551,19 @@ def build_brief(
     out.append(f"Forge brief ({_now_utc_iso()})")
 
     now_local = _local_now()
+    calendar_events: list[CalendarEvent] = []
+    calendar_error: str | None = None
+    due_rows: list[DueTaskRow] = []
+    due_today: list[DueTaskRow] = []
+    upcoming_due: list[DueTaskRow] = []
     if calendar_days > 0:
         events, cal_err = _try_run_calendar_events(
             days=calendar_days,
             timeout_seconds=calendar_timeout_seconds,
             calendar_names=calendar_names,
         )
+        calendar_events = events
+        calendar_error = cal_err
         out.append(f"\nCalendar (next {calendar_days} days)")
         if cal_err:
             out.append(f"- Unavailable: {cal_err}")
@@ -573,7 +626,7 @@ def build_brief(
         today = _local_now().date()
         overdue = [row for row in due_rows if (day := _parse_due_day(row.due)) and day < today]
         due_today = [row for row in due_rows if (day := _parse_due_day(row.due)) and day == today]
-        upcoming = [row for row in due_rows if (day := _parse_due_day(row.due)) and day > today]
+        upcoming_due = [row for row in due_rows if (day := _parse_due_day(row.due)) and day > today]
 
         out.append(f"\nDue tasks (horizon {due_days} days)")
         if index_err:
@@ -600,14 +653,62 @@ def build_brief(
                     out.append(f"  - {_format_due_task(row)}")
             else:
                 out.append("  - None")
-            out.append(f"- Upcoming ({len(upcoming)})")
-            if upcoming:
-                for row in upcoming[:show]:
+            out.append(f"- Upcoming ({len(upcoming_due)})")
+            if upcoming_due:
+                for row in upcoming_due[:show]:
                     out.append(f"  - {_format_due_task(row)}")
-                if len(upcoming) > show:
-                    out.append(f"  - … and {len(upcoming) - show} more")
+                if len(upcoming_due) > show:
+                    out.append(f"  - … and {len(upcoming_due) - show} more")
             else:
                 out.append("  - None")
+
+    out.append("\nDecision signals")
+    conflicts = _calendar_conflict_groups(calendar_events, now=now_local)
+    if conflicts:
+        for group in conflicts:
+            start = min(e.start for e in group).strftime("%H:%M")
+            end = max(e.end for e in group).strftime("%H:%M")
+            titles = " / ".join(e.title for e in group)
+            out.append(f"- Calendar clash {start}–{end}: {titles}")
+    elif calendar_error:
+        out.append(f"- Calendar conflict check unavailable: {calendar_error}")
+    else:
+        out.append("- Calendar clashes: none")
+
+    if due_rows:
+        busy = _busy_hours(calendar_events, now=now_local)
+        out.append(
+            f"- Calendar load: {len(due_today)} task(s) due today; calendar commitments occupy "
+            f"approximately {busy:.1f}h of future timed events. Treat the due queue as triage, not a promise."
+        )
+
+        for project in urgent_sorted:
+            if not any(_project_matches(project.name, row.project_name) for row in due_rows):
+                out.append(f"- Cross-source gap: urgent {project.name} has no dated SP task in the current horizon.")
+
+        for project in stale_sorted[:show]:
+            matching = [row for row in due_rows if _project_matches(project.name, row.project_name)]
+            if matching:
+                dates = sorted({(_parse_due_day(row.due) or date.max).isoformat() for row in matching})
+                out.append(f"- Cross-source mismatch: stale {project.name} has dated SP work ({', '.join(dates)}).")
+
+        board_projects_with_missing_columns = [
+            project
+            for project in projects
+            if project.column == "(none)" or not project.workflow_tag
+        ]
+        untagged_due = [
+            row
+            for row in due_rows
+            if any(
+                _project_matches(project.name, row.project_name)
+                for project in board_projects_with_missing_columns
+            )
+        ]
+        if untagged_due:
+            out.append(f"- Workflow gap: {len(untagged_due)} dated SP task(s) belong to projects without a Forge column.")
+    else:
+        out.append("- Capacity and cross-source task checks unavailable: no dated-task data returned.")
 
     out.append("\nColumn load")
     out.extend([f"- {line}" for line in counts_lines])
@@ -740,4 +841,3 @@ def main(argv: Sequence[str]) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main(sys.argv[1:]))
-
